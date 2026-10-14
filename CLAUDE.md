@@ -23,11 +23,15 @@ Global hotkey -> Collect context -> Redact sensitive information -> Generate Mar
 8. Tests for formatting and collection logic.
 
 ## Architecture
-- `Collectors/`: Context collectors.
-- `Formatting/`: Markdown generation.
-- `Platform/`: Windows APIs, hotkeys, clipboard, notifications.
-- `Program.cs`: Startup and orchestration.
+- `src/ContextSnap.Core/`: Library with all non-UI logic.
+  - `Collectors/`: Context collectors (filter + OS source per collector; `Git/` for Git).
+  - `Privacy/`: Exclusion rules and redaction.
+  - `Formatting/`: Markdown generation and output limits.
+  - `Capture/`: `SnapshotService` orchestration and command-line runner.
+  - `Configuration/`, `Output/` (clipboard), `Platform/` (Windows APIs, hotkeys).
+- `src/ContextSnap/`: WPF app; `Program.cs` chooses GUI or command-line mode.
 - `tests/ContextSnap.Tests/`: Unit tests.
+- See `docs/ARCHITECTURE.md`.
 
 Keep collection, formatting, and platform integration separate. Use abstractions only when they improve testing or extensibility.
 

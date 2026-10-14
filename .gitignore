@@ -1,5 +1,41 @@
-﻿**/bin/
+# Build output
+**/bin/
 **/obj/
+publish/
+artifacts/
+TestResults/
+
+# IDE
 .vs/
+.vscode/
+.idea/
 *.user
 *.suo
+
+# Local settings, logs, and captured context (never commit snapshots)
+settings.json
+*.settings.local.json
+*.log
+logs/
+*.snapshot.md
+snapshot*.md
+
+# macOS build output and Swift tooling
+macos/.build/
+macos/dist/
+.swiftpm/
+*.xcuserstate
+xcuserdata/
+.DS_Store
+
+# Website deployment state and generated downloads
+website/downloads/
+.vercel/
+
+# Credentials (never commit)
+*.p12
+*.pfx
+*.pem
+*.key
+.env
+.env.*

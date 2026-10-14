@@ -1,0 +1,354 @@
+<Window x:Class="ContextSnap.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ContextSnap"
+        Title="ContextSnap"
+        Width="1000" Height="740" MinWidth="680" MinHeight="500"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource AppBackgroundBrush}"
+        Foreground="{DynamicResource TextBrush}"
+        FontFamily="Segoe UI" FontSize="13"
+        UseLayoutRounding="True">
+
+    <Window.Resources>
+        <local:LinesConverter x:Key="Lines" />
+        <local:EnumMatchConverter x:Key="EnumMatch" />
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+    </Window.Resources>
+
+    <Window.CommandBindings>
+        <CommandBinding Command="{x:Static local:MainWindow.CaptureCommand}" Executed="OnCaptureExecuted" CanExecute="OnCaptureCanExecute" />
+        <CommandBinding Command="{x:Static local:MainWindow.CopyCommand}" Executed="OnCopyExecuted" CanExecute="OnCopyCanExecute" />
+    </Window.CommandBindings>
+
+    <Window.InputBindings>
+        <KeyBinding Key="F5" Command="{x:Static local:MainWindow.CaptureCommand}" />
+        <KeyBinding Key="Enter" Modifiers="Ctrl" Command="{x:Static local:MainWindow.CaptureCommand}" />
+        <KeyBinding Key="C" Modifiers="Ctrl+Shift" Command="{x:Static local:MainWindow.CopyCommand}" />
+    </Window.InputBindings>
+
+    <DockPanel>
+        <!-- Header with the primary actions -->
+        <Border DockPanel.Dock="Top" Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="24,16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                    <TextBlock Text="ContextSnap" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Style="{DynamicResource MutedText}" Margin="0,2,0,0"
+                               Text="Capture a Markdown snapshot of what you're working on, then paste it into any AI chat. Everything stays on this PC." />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="CaptureButton" Style="{DynamicResource PrimaryButton}" Padding="18,8"
+                            Command="{x:Static local:MainWindow.CaptureCommand}"
+                            ToolTip="Collect context and show the preview (F5 or Ctrl+Enter)"
+                            AutomationProperties.Name="Capture snapshot"
+                            Content="_Capture snapshot"
+                            AutomationProperties.HelpText="Collects context from enabled sources. Shortcuts F5 and Ctrl+Enter." />
+                    <Button x:Name="CopyButton" Margin="8,0,0,0" Padding="16,8"
+                            Command="{x:Static local:MainWindow.CopyCommand}"
+                            Content="C_opy to clipboard"
+                            ToolTip="Copy the Markdown below (Ctrl+Shift+C)"
+                            AutomationProperties.HelpText="Copies the preview text to the clipboard. Shortcut Ctrl+Shift+C." />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Status bar -->
+        <Border DockPanel.Dock="Bottom" Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="24,10">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Ellipse x:Name="StatusDot" Width="9" Height="9" Margin="0,0,8,0" Fill="#8C959F" VerticalAlignment="Center" />
+                    <TextBlock x:Name="StatusText" Grid.Column="1" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                               Text="Ready." AutomationProperties.LiveSetting="Polite" AutomationProperties.Name="Status" />
+                    <TextBlock x:Name="MetaText" Grid.Column="2" Style="{DynamicResource MutedText}" VerticalAlignment="Center"
+                               TextWrapping="NoWrap" Margin="16,0,0,0" />
+                </Grid>
+                <ItemsControl x:Name="CollectorChips" Margin="0,8,0,0" Focusable="False" Visibility="Collapsed"
+                              AutomationProperties.Name="Collector results">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type local:CollectorChip}">
+                            <Border Background="{Binding Background}" CornerRadius="10" Padding="9,3" Margin="0,0,6,4"
+                                    ToolTip="{Binding Details}" ToolTipService.ShowDuration="20000">
+                                <TextBlock Text="{Binding Label}" Foreground="{Binding Foreground}" FontSize="12" />
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+
+        <TabControl x:Name="Tabs" Margin="20,10,20,0">
+            <!-- Preview -->
+            <TabItem Header="_Preview" AutomationProperties.Name="Preview">
+                <Grid Margin="0,10,0,14">
+                    <Border Style="{DynamicResource Card}" Padding="0" Margin="0">
+                        <TextBox x:Name="PreviewBox" BorderThickness="0" Padding="14,12"
+                                 FontFamily="Cascadia Mono, Consolas" FontSize="12.5"
+                                 TextWrapping="Wrap" AcceptsReturn="True" AcceptsTab="False"
+                                 VerticalScrollBarVisibility="Auto" VerticalContentAlignment="Top"
+                                 Visibility="Collapsed" TextChanged="OnPreviewTextChanged"
+                                 AutomationProperties.Name="Snapshot Markdown preview"
+                                 AutomationProperties.HelpText="Editable. Changes affect only what is copied and are not saved." />
+                    </Border>
+
+                    <!-- Empty state / first run -->
+                    <ScrollViewer x:Name="EmptyState" VerticalScrollBarVisibility="Auto" Focusable="False">
+                        <StackPanel MaxWidth="560" Margin="24,36" HorizontalAlignment="Center">
+                            <TextBlock Text="Capture what you're working on" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                            <TextBlock Style="{DynamicResource MutedText}" TextAlignment="Center" Margin="0,8,0,20"
+                                       Text="ContextSnap builds a short Markdown summary of your open windows, projects, and folders so an AI assistant understands your situation without a long explanation." />
+                            <Border Style="{DynamicResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="1.  Press Capture snapshot (F5 or Ctrl+Enter)." Margin="0,2" />
+                                    <TextBlock Text="2.  Review the preview. You can edit or delete anything before copying." Margin="0,2" TextWrapping="Wrap" />
+                                    <TextBlock Text="3.  Copy to clipboard (Ctrl+Shift+C) and paste into your AI chat." Margin="0,2" TextWrapping="Wrap" />
+                                    <TextBlock x:Name="HotkeyHint" Style="{DynamicResource MutedText}" Margin="0,8,0,0" />
+                                </StackPanel>
+                            </Border>
+                            <TextBlock x:Name="EnabledCollectorsText" Style="{DynamicResource MutedText}" TextAlignment="Center" />
+                            <TextBlock x:Name="FirstRunText" Style="{DynamicResource MutedText}" TextAlignment="Center" Margin="0,10,0,0"
+                                       Visibility="Collapsed"
+                                       Text="First run: browser tabs are off, redaction is on, and ContextSnap will start minimized when you sign in. Review the Settings and Privacy tabs to change any of this." />
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </TabItem>
+
+            <!-- Settings -->
+            <TabItem Header="_Settings" AutomationProperties.Name="Settings">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                    <StackPanel x:Name="SettingsPanel" Margin="0,10,8,14" MaxWidth="820" HorizontalAlignment="Left"
+                                CheckBox.Click="OnSettingChanged" LostFocus="OnSettingsLostFocus">
+
+                        <Border Style="{DynamicResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{DynamicResource SectionTitle}" Text="What to collect" />
+                                <CheckBox Content="Open application windows (titles and process names)" IsChecked="{Binding CollectWindows}" />
+                                <CheckBox Content="Git repositories (branch, change summary, recent commits — never diffs)" IsChecked="{Binding CollectGit}" />
+                                <CheckBox Content="Open File Explorer folders" IsChecked="{Binding CollectExplorerFolders}" />
+                                <CheckBox Content="Running developer tools (names, PIDs, executable paths — never command lines)" IsChecked="{Binding CollectProcesses}" />
+                                <CheckBox Content="Desktop items (names and sizes only — file contents are never read)" IsChecked="{Binding CollectDesktop}" />
+                                <CheckBox Content="System summary (Windows version, CPU count, memory)" IsChecked="{Binding CollectSystemSummary}" />
+                                <CheckBox x:Name="BrowserTabsCheck" Content="Browser tab titles (experimental, opt-in)" IsChecked="{Binding CollectBrowserTabs}" />
+                                <CheckBox Margin="24,4,0,4" Content="Include the active tab's address" IsChecked="{Binding IncludeBrowserUrls}"
+                                          IsEnabled="{Binding IsChecked, ElementName=BrowserTabsCheck}" />
+                                <TextBlock Style="{DynamicResource MutedText}" Margin="24,0,0,0" FontSize="12"
+                                           Text="Browser tabs are read from Chrome, Edge, Brave, Vivaldi, Opera, and Firefox through Windows UI Automation (the accessibility interface). No browser history, profiles, or cookies are accessed. Private/incognito windows are skipped by the title keywords below." />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{DynamicResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{DynamicResource SectionTitle}" Text="Visible screen text" />
+                                <CheckBox x:Name="ScreenTextCheck" IsChecked="{Binding CaptureScreenText}"
+                                          Content="Read the text visible in application windows (for example, a chat, document, or editor)" />
+                                <StackPanel Margin="24,2,0,0" IsEnabled="{Binding IsChecked, ElementName=ScreenTextCheck}">
+                                    <RadioButton GroupName="ScreenTextMode" Margin="0,4" Content="Focused window only (recommended)"
+                                                 IsChecked="{Binding ScreenTextMode, Converter={StaticResource EnumMatch}, ConverterParameter=FocusedWindow}" />
+                                    <RadioButton GroupName="ScreenTextMode" Margin="0,4" Content="All visible windows"
+                                                 IsChecked="{Binding ScreenTextMode, Converter={StaticResource EnumMatch}, ConverterParameter=AllVisibleWindows}" />
+                                    <CheckBox Content="Use on-device OCR when an app does not expose its text" IsChecked="{Binding ScreenTextUseOcr}" />
+                                    <CheckBox Content="Also include text the app reports as scrolled out of view (broader, less precise)" IsChecked="{Binding ScreenTextIncludeOffscreen}" />
+                                    <Grid Margin="0,6,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <Label Target="{Binding ElementName=ScreenTextCharsBox}" Content="Maximum characters per _window" Margin="0,0,12,4" />
+                                        <TextBox x:Name="ScreenTextCharsBox" Grid.Column="1" Style="{DynamicResource NumberInput}" Margin="0,0,0,4"
+                                                 Text="{Binding MaxScreenTextCharactersPerWindow, ValidatesOnExceptions=True}" ToolTip="200 to 50,000" />
+                                        <Label Grid.Row="1" Target="{Binding ElementName=ScreenTextWindowsBox}" Content="Maximum windows (all-windows mode)" Margin="0,0,12,4" />
+                                        <TextBox x:Name="ScreenTextWindowsBox" Grid.Row="1" Grid.Column="1" Style="{DynamicResource NumberInput}" Margin="0,0,0,4"
+                                                 Text="{Binding MaxScreenTextWindows, ValidatesOnExceptions=True}" ToolTip="1 to 12" />
+                                    </Grid>
+                                    <Label Padding="0,4,0,4" Target="{Binding ElementName=ScreenTextExclusionsBox}" Content="Never read text from these apps or windows (process names or title keywords)" />
+                                    <TextBox x:Name="ScreenTextExclusionsBox" Style="{DynamicResource ListBoxInput}" Height="64"
+                                             Text="{Binding ScreenTextExclusions, Converter={StaticResource Lines}}"
+                                             ToolTip="One per line, for example: Signal, Outlook, Bank. The general exclusions below also apply." />
+                                </StackPanel>
+                                <TextBlock Style="{DynamicResource MutedText}" Margin="0,8,0,0" FontSize="12"
+                                           Text="Text is read on this PC through Windows UI Automation and, when needed, Windows OCR. Nothing is sent anywhere or saved. Password fields are skipped, and for browsers only the page is read, never tabs or the address bar. ContextSnap never clicks, scrolls, or changes focus to read more." />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{DynamicResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{DynamicResource SectionTitle}" Text="Privacy and redaction" />
+                                <CheckBox Content="Redact secrets (API keys, tokens, passwords, connection strings, private keys)" IsChecked="{Binding RedactSecrets}" />
+                                <CheckBox Content="Redact email addresses" IsChecked="{Binding RedactEmails}" />
+                                <CheckBox Content="Hide my identity (user folder becomes ~, user and computer names become [USER] and [HOST])" IsChecked="{Binding HideUserIdentity}" />
+                                <CheckBox Content="Remove query strings and fragments from URLs" IsChecked="{Binding StripUrlQueryStrings}" />
+                                <CheckBox Content="Include executable paths for developer tools" IsChecked="{Binding IncludeExecutablePaths}" />
+                                <CheckBox Content="Include changed file names in Git summaries" IsChecked="{Binding IncludeGitChangedFiles}" />
+                                <CheckBox Content="Keep copied snapshots out of Windows clipboard history and cloud sync" IsChecked="{Binding ExcludeFromClipboardHistory}" />
+                                <TextBlock Style="{DynamicResource MutedText}" Margin="0,6,0,0" FontSize="12"
+                                           Text="Redaction is pattern-based and best-effort. It cannot recognize every secret, so always review the preview before sharing." />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{DynamicResource Card}">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="16" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.ColumnSpan="3" Style="{DynamicResource SectionTitle}" Text="Exclusions (one per line)" />
+
+                                <StackPanel Grid.Row="1" Margin="0,4,0,10">
+                                    <Label Padding="0,0,0,4" Target="{Binding ElementName=ExcludedProcessesBox}" Content="E_xcluded processes" />
+                                    <TextBox x:Name="ExcludedProcessesBox" Style="{DynamicResource ListBoxInput}"
+                                             Text="{Binding ExcludedProcesses, Converter={StaticResource Lines}}"
+                                             ToolTip="Windows and processes from these programs are never included (for example, password managers)." />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,4,0,10">
+                                    <Label Padding="0,0,0,4" Target="{Binding ElementName=ExcludedTitlesBox}" Content="Excluded _title keywords" />
+                                    <TextBox x:Name="ExcludedTitlesBox" Style="{DynamicResource ListBoxInput}"
+                                             Text="{Binding ExcludedTitleKeywords, Converter={StaticResource Lines}}"
+                                             ToolTip="Windows and browser tabs whose title contains any of these words are skipped." />
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Margin="0,0,0,10">
+                                    <Label Padding="0,0,0,4" Target="{Binding ElementName=ExcludedPathsBox}" Content="Excluded _folders" />
+                                    <TextBox x:Name="ExcludedPathsBox" Style="{DynamicResource ListBoxInput}"
+                                             Text="{Binding ExcludedPathPrefixes, Converter={StaticResource Lines}}"
+                                             ToolTip="Folders (and everything below them) never listed. Environment variables and ~ are allowed, e.g. ~\Documents\Private" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Grid.Column="2" Margin="0,0,0,10">
+                                    <Label Padding="0,0,0,4" Target="{Binding ElementName=CustomTermsBox}" Content="_Words to redact" />
+                                    <TextBox x:Name="CustomTermsBox" Style="{DynamicResource ListBoxInput}"
+                                             Text="{Binding CustomRedactionTerms, Converter={StaticResource Lines}}"
+                                             ToolTip="Any occurrence of these words (case-insensitive) is replaced with [REDACTED], e.g. client or project code names." />
+                                </StackPanel>
+                                <StackPanel Grid.Row="3" Margin="0,0,0,4">
+                                    <Label Padding="0,0,0,4" Target="{Binding ElementName=ProjectFoldersBox}" Content="Pro_ject folders for Git" />
+                                    <TextBox x:Name="ProjectFoldersBox" Style="{DynamicResource ListBoxInput}"
+                                             Text="{Binding ProjectFolders, Converter={StaticResource Lines}}"
+                                             ToolTip="Always checked for Git repositories, in addition to open File Explorer folders. E.g. ~\source\repos\MyApp" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="3" Grid.Column="2" Margin="0,0,0,4">
+                                    <Label Padding="0,0,0,4" Target="{Binding ElementName=DevProcessesBox}" Content="De_veloper tools to detect" />
+                                    <TextBox x:Name="DevProcessesBox" Style="{DynamicResource ListBoxInput}"
+                                             Text="{Binding DeveloperProcesses, Converter={StaticResource Lines}}"
+                                             ToolTip="Process names (without .exe) reported under Developer tools." />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <Border Style="{DynamicResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{DynamicResource SectionTitle}" Text="Limits" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <Label Grid.Row="0" Target="{Binding ElementName=MaxOutputBox}" Content="_Maximum output size (characters)" Margin="0,0,12,4" />
+                                    <TextBox x:Name="MaxOutputBox" Grid.Row="0" Grid.Column="1" Style="{DynamicResource NumberInput}" Margin="0,0,0,4"
+                                             Text="{Binding MaxOutputCharacters, ValidatesOnExceptions=True}"
+                                             ToolTip="1,000 to 200,000. Output is cut at a line boundary with a visible notice." />
+                                    <Label Grid.Row="1" Target="{Binding ElementName=MaxItemsBox}" Content="Maximum _items per section" Margin="0,0,12,4" />
+                                    <TextBox x:Name="MaxItemsBox" Grid.Row="1" Grid.Column="1" Style="{DynamicResource NumberInput}" Margin="0,0,0,4"
+                                             Text="{Binding MaxItemsPerSection, ValidatesOnExceptions=True}" />
+                                    <Label Grid.Row="2" Target="{Binding ElementName=MaxDesktopBox}" Content="Maximum Des_ktop items" Margin="0,0,12,4" />
+                                    <TextBox x:Name="MaxDesktopBox" Grid.Row="2" Grid.Column="1" Style="{DynamicResource NumberInput}" Margin="0,0,0,4"
+                                             Text="{Binding MaxDesktopItems, ValidatesOnExceptions=True}" />
+                                    <Label Grid.Row="3" Target="{Binding ElementName=MaxReposBox}" Content="Maximum _Git repositories" Margin="0,0,12,4" />
+                                    <TextBox x:Name="MaxReposBox" Grid.Row="3" Grid.Column="1" Style="{DynamicResource NumberInput}" Margin="0,0,0,4"
+                                             Text="{Binding MaxRepositories, ValidatesOnExceptions=True}" />
+                                    <Label Grid.Row="4" Target="{Binding ElementName=MaxChangesBox}" Content="Changed files _listed per repository" Margin="0,0,12,0" />
+                                    <TextBox x:Name="MaxChangesBox" Grid.Row="4" Grid.Column="1" Style="{DynamicResource NumberInput}"
+                                             Text="{Binding MaxChangedFilesPerRepository, ValidatesOnExceptions=True}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{DynamicResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{DynamicResource SectionTitle}" Text="Behavior" />
+                                <CheckBox x:Name="HotkeyCheck" IsChecked="{Binding EnableGlobalHotkey}">
+                                    <TextBlock x:Name="HotkeyCheckText" Text="Global shortcut Ctrl+Alt+Shift+C: capture and copy while ContextSnap is open" TextWrapping="Wrap" />
+                                </CheckBox>
+                                <TextBlock x:Name="HotkeyStatusText" Style="{DynamicResource MutedText}" Margin="24,0,0,4" FontSize="12" />
+                                <CheckBox Content="Copy to clipboard automatically after Capture" IsChecked="{Binding CopyAfterCapture}" />
+                                <CheckBox Content="Show a notification when a snapshot is copied" IsChecked="{Binding ShowCopyNotifications}"
+                                          AutomationProperties.HelpText="A small, non-intrusive notice in the bottom-right corner with character, word, and size counts. It never shows snapshot contents." />
+                                <CheckBox Content="Start ContextSnap minimized when I sign in to Windows" IsChecked="{Binding StartWithWindows}"
+                                          AutomationProperties.HelpText="Adds or removes a ContextSnap shortcut in your Startup folder. No administrator rights are needed." />
+                                <TextBlock x:Name="StartupStatusText" Style="{DynamicResource MutedText}" Margin="24,0,0,4" FontSize="12" />
+                            </StackPanel>
+                        </Border>
+
+                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
+                            <Button Content="Restore _defaults" Click="OnRestoreDefaults" />
+                            <TextBlock x:Name="SettingsPathText" Style="{DynamicResource MutedText}" VerticalAlignment="Center" Margin="12,0,0,0" FontSize="12" />
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Privacy information -->
+            <TabItem Header="P_rivacy" AutomationProperties.Name="Privacy">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False">
+                    <StackPanel Margin="0,10,8,14" MaxWidth="820" HorizontalAlignment="Left">
+                        <Border Style="{DynamicResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{DynamicResource SectionTitle}" Text="Stays on this PC" />
+                                <TextBlock TextWrapping="Wrap" Text="ContextSnap makes no network requests and has no telemetry, accounts, or cloud features. A snapshot leaves this application only when you copy it, and it goes only to your clipboard. Nothing is written to disk except your settings file and, while Start with Windows is on, a ContextSnap shortcut in your Startup folder (it contains only the program path)." />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{DynamicResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{DynamicResource SectionTitle}" Text="What is read" />
+                                <TextBlock TextWrapping="Wrap" LineHeight="20" Text="• Titles of visible application windows and their process names.&#x0a;• Names, PIDs, and executable paths of developer tools in your list.&#x0a;• Folder paths of open File Explorer windows.&#x0a;• For Git repositories in those folders (or your project list): branch, upstream status, changed file names, and the last three commit subjects. Git runs read-only with optional locks and fsmonitor disabled.&#x0a;• Names and sizes of non-hidden items on your Desktop.&#x0a;• Windows version, CPU count, and memory size.&#x0a;• Only if you turn it on: browser tab titles and, optionally, the active tab's address.&#x0a;• When Visible screen text is on (default: focused window only): the text currently shown in that window, read through Windows accessibility (UI Automation) or on-device Windows OCR. This can include anything on screen, such as messages or code, so review the preview before sharing." />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{DynamicResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{DynamicResource SectionTitle}" Text="What is never read" />
+                                <TextBlock TextWrapping="Wrap" LineHeight="20" Text="• Files or Git diffs from disk (text shown on screen is read only through the visible-text option).&#x0a;• Process command-line arguments or environment-variable values.&#x0a;• Passwords, cookies, browser history, or browser profiles.&#x0a;• Clipboard contents or clipboard history.&#x0a;• Windows from excluded programs such as password managers, and private/incognito browser windows." />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{DynamicResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{DynamicResource SectionTitle}" Text="Redaction limits" />
+                                <TextBlock TextWrapping="Wrap" Text="Redaction recognizes common formats (key=value secrets, bearer tokens, JWTs, GitHub/GitLab/Slack/AWS/Google/Stripe/OpenAI/Anthropic keys, connection-string passwords, URL credentials, private keys, long random-looking tokens, and email addresses). It can miss secrets in unusual formats and can occasionally redact harmless text. Window titles, paths, and file names may still reveal what you are working on. Always review the preview before sharing it." />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

@@ -1,0 +1,7 @@
+{
+  "version": null,
+  "platforms": {
+    "windows": { "label": "Windows", "detail": "Windows 10/11, 64-bit · requires the .NET 10 Desktop Runtime", "file": null, "size": null, "sha256": null },
+    "macos": { "label": "macOS", "detail": "macOS 14 or later · Apple silicon and Intel", "file": null, "size": null, "sha256": null }
+  }
+}

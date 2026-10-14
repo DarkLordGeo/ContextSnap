@@ -1,113 +1,115 @@
-﻿using System.Diagnostics;
-using System.Runtime.InteropServices;
 using System.Text;
-using ContextSnap.Formatting;
+using System.Windows;
+using ContextSnap.Capture;
+using ContextSnap.Configuration;
+using ContextSnap.Notifications;
+using ContextSnap.Output;
+using ContextSnap.Platform;
 
-internal static class Program
+namespace ContextSnap;
+
+public static class Program
 {
-    private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
-
-    [DllImport("user32.dll")]
-    private static extern bool EnumWindows(EnumWindowsProc callback, IntPtr lParam);
-
-    [DllImport("user32.dll")]
-    private static extern bool IsWindowVisible(IntPtr hWnd);
-
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    private static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
-
-    [DllImport("user32.dll")]
-    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
-
-    private static int Main()
+    [STAThread]
+    public static int Main(string[] args)
     {
-        var markdown = new StringBuilder();
-        markdown.AppendLine("# ContextSnap");
-        markdown.AppendLine();
-        markdown.AppendLine($"Generated: {DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss zzz}");
-        markdown.AppendLine();
+        var options = CommandLineOptions.Parse(args);
+        return options.Mode == RunMode.Gui && options.Error is null
+            ? RunGui(options.StartMinimized)
+            : RunHeadless(options);
+    }
 
-        markdown.AppendLine("## Visible windows");
-        markdown.AppendLine();
-
-        var windows = new List<(string Process, string Title)>();
-
-        EnumWindows((hWnd, _) =>
+    private static int RunGui(bool startMinimized)
+    {
+        using var instance = SingleInstance.Acquire();
+        if (!instance.IsFirstInstance)
         {
-            if (!IsWindowVisible(hWnd)) return true;
-
-            var title = new StringBuilder(1024);
-            GetWindowText(hWnd, title, title.Capacity);
-            if (title.Length == 0) return true;
-
-            GetWindowThreadProcessId(hWnd, out uint processId);
-
-            try
-            {
-                var process = Process.GetProcessById((int)processId);
-                windows.Add((process.ProcessName, title.ToString()));
-            }
-            catch (ArgumentException) { }
-
-            return true;
-        }, IntPtr.Zero);
-
-        foreach (var window in windows)
-            markdown.AppendLine($"- **{window.Process}**: {window.Title.Replace("|", "\\|")}");
-
-        markdown.AppendLine();
-        markdown.AppendLine("## Desktop items");
-        markdown.AppendLine();
-
-        var desktop = Environment.GetFolderPath(
-            Environment.SpecialFolder.DesktopDirectory);
-
-        foreach (var path in Directory.GetFileSystemEntries(desktop).OrderBy(Path.GetFileName))
-        {
-            try
-            {
-                var attributes = File.GetAttributes(path);
-                if ((attributes & (FileAttributes.Hidden | FileAttributes.System)) != 0)
-                    continue;
-
-                var name = Path.GetFileName(path);
-                if ((attributes & FileAttributes.Directory) != 0)
-                    markdown.AppendLine($"- [Folder] {name}");
-                else
-                    markdown.AppendLine($"- [File] {name} ({new FileInfo(path).Length:N0} bytes)");
-            }
-            catch (IOException) { }
-            catch (UnauthorizedAccessException) { }
+            // Already running: a manual launch brings the existing window forward; a sign-in launch stays silent.
+            if (!startMinimized)
+                instance.ActivateFirstInstance();
+            return 0;
         }
 
-        var snapshot = MarkdownFormatter.LimitOutput(PrivacyFilter.Redact(markdown.ToString()));
-        var encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(snapshot));
-
-        var start = new ProcessStartInfo("powershell.exe")
+        var store = SettingsStore.CreateDefault();
+        var service = new SnapshotService(CollectorSet.CreateDefault());
+        var app = new Application { ShutdownMode = ShutdownMode.OnMainWindowClose };
+        app.DispatcherUnhandledException += (_, e) =>
         {
-            UseShellExecute = false,
-            CreateNoWindow = true
+            // Last-resort boundary: report instead of terminating; the user can retry or close.
+            MessageBox.Show($"An unexpected error occurred:\n\n{e.Exception.GetType().Name}: {e.Exception.Message}",
+                "ContextSnap", MessageBoxButton.OK, MessageBoxImage.Error);
+            e.Handled = true;
         };
-        start.ArgumentList.Add("-NoProfile");
-        start.ArgumentList.Add("-NonInteractive");
-        start.ArgumentList.Add("-Command");
-        start.ArgumentList.Add(
-            $"$s=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('{encoded}')); Set-Clipboard -Value $s");
 
-        using var clipboard = Process.Start(start);
-        if (clipboard is null) return 1;
-        clipboard.WaitForExit();
-
-        if (clipboard.ExitCode != 0)
+        // Custom styling is skipped in high-contrast mode so system colors apply.
+        if (!SystemParameters.HighContrast)
         {
-            Console.Error.WriteLine("Clipboard copy failed.");
+            app.Resources.MergedDictionaries.Add(new ResourceDictionary
+            {
+                Source = new Uri("pack://application:,,,/ContextSnap;component/Themes/Styles.xaml"),
+            });
+        }
+
+        var notifier = new WpfCopyNotifier(app.Dispatcher);
+        var window = new MainWindow(store, service, new Win32ClipboardWriter(), notifier, StartupRegistration.CreateDefault(), startMinimized);
+        instance.ListenForActivation(() => window.Dispatcher.BeginInvoke(window.BringToFront));
+        return app.Run(window);
+    }
+
+    private static int RunHeadless(CommandLineOptions options)
+    {
+        // Scripts and pipes get no notification and no delay; interactive or shortcut launches do.
+        var outputRedirected = ConsoleAttachment.AttachToParentIfNeeded();
+        Console.OutputEncoding = new UTF8Encoding(false);
+
+        var notifier = outputRedirected ? null : new DeferredCopyNotifier();
+        var runner = new HeadlessRunner(
+            new SnapshotService(CollectorSet.CreateDefault()),
+            SettingsStore.CreateDefault(),
+            new Win32ClipboardWriter(),
+            notifier);
+
+        int exitCode;
+        try
+        {
+            exitCode = runner.RunAsync(options, Console.Out, Console.Error, Environment.CurrentDirectory)
+                .GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"ContextSnap failed: {ex.GetType().Name}: {ex.Message}");
             return 1;
         }
 
-        Console.WriteLine($"Snapshot copied to clipboard. {windows.Count} windows captured.");
-        Console.WriteLine($"Desktop: {desktop}");
-        Console.WriteLine($"Markdown size: {Encoding.UTF8.GetByteCount(snapshot):N0} bytes");
-        return 0;
+        if (notifier?.Last is { } notification)
+            ShowStandaloneToast(notification);
+        return exitCode;
+    }
+
+    /// <summary>
+    /// Shows the copy toast from a command-line run after the clipboard work (and its exit code) is final.
+    /// The process exits as soon as the toast is dismissed.
+    /// </summary>
+    private static void ShowStandaloneToast(CopyNotificationContent content)
+    {
+        try
+        {
+            var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+            var toast = new ToastWindow();
+            toast.Dismissed += (_, _) => app.Shutdown();
+
+            // Safety net if rendering stalls, so a command-line run can never hang.
+            var deadline = new System.Windows.Threading.DispatcherTimer { Interval = content.Duration + TimeSpan.FromSeconds(3) };
+            deadline.Tick += (_, _) => app.Shutdown();
+            deadline.Start();
+
+            app.Dispatcher.InvokeAsync(() => toast.Present(content));
+            app.Run();
+        }
+        catch (Exception ex)
+        {
+            // Cosmetic only: the copy already succeeded or failed and the exit code is unchanged.
+            Console.Error.WriteLine($"Notification could not be shown: {ex.GetType().Name}: {ex.Message}");
+        }
     }
 }
-

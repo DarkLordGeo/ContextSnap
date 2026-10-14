@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/ContextSnap.Core/ContextSnap.Core.csproj" />
     <Project Path="src/ContextSnap/ContextSnap.csproj" />
   </Folder>
   <Folder Name="/tests/">

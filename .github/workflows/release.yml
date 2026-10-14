@@ -1,0 +1,94 @@
+name: Release
+
+# Builds versioned Windows and macOS packages with checksums. Optional website publishing needs
+# repository secrets VERCEL_TOKEN, VERCEL_ORG_ID, and VERCEL_PROJECT_ID (never hardcoded).
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version (for example 1.0.0)"
+        required: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - name: Version
+        shell: bash
+        run: echo "VERSION=${{ github.event.inputs.version || github.ref_name }}" | sed 's/=v/=/' >> "$GITHUB_ENV"
+      - run: dotnet test -c Release
+        env:
+          CI: "true"
+      - run: dotnet publish src/ContextSnap -c Release -p:Version=${{ env.VERSION }} -o publish/ContextSnap
+      - name: Package
+        shell: pwsh
+        run: |
+          $zip = "ContextSnap-$env:VERSION-windows-x64.zip"
+          Compress-Archive -Path publish/ContextSnap/* -DestinationPath $zip
+          (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower() + "  $zip" | Out-File "$zip.sha256" -Encoding ascii
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: ContextSnap-*-windows-x64.zip*
+
+  macos:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version
+        run: echo "VERSION=${{ github.event.inputs.version || github.ref_name }}" | sed 's/=v/=/' >> "$GITHUB_ENV"
+      - run: swift test
+        working-directory: macos
+      - run: ./scripts/build.sh "$VERSION"
+        working-directory: macos
+      - name: Checksums
+        working-directory: macos/dist
+        run: for f in ContextSnap-*; do shasum -a 256 "$f" > "$f.sha256"; done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos
+          path: macos/dist/ContextSnap-*
+
+  publish:
+    needs: [windows, macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Version
+        run: echo "VERSION=${{ github.event.inputs.version || github.ref_name }}" | sed 's/=v/=/' >> "$GITHUB_ENV"
+      - name: GitHub release (private, for maintainers)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "v$VERSION" artifacts/*/* --title "ContextSnap $VERSION" --notes "Development build. macOS build is ad-hoc signed and not notarized." || true
+      - name: Publish downloads to the website
+        if: ${{ env.VERCEL_TOKEN != '' }}
+        run: |
+          mkdir -p website/downloads
+          cp artifacts/windows/*.zip artifacts/macos/*.dmg website/downloads/
+          node -e '
+            const fs = require("fs"), path = require("path"), crypto = require("crypto");
+            const v = process.env.VERSION, dir = "website/downloads";
+            const info = (f) => { const b = fs.readFileSync(path.join(dir, f)); return { file: "/downloads/" + f, size: (b.length / 1048576).toFixed(1) + " MB", sha256: crypto.createHash("sha256").update(b).digest("hex") }; };
+            const m = JSON.parse(fs.readFileSync("website/downloads.json"));
+            m.version = v;
+            Object.assign(m.platforms.windows, info(`ContextSnap-${v}-windows-x64.zip`));
+            Object.assign(m.platforms.macos, info(`ContextSnap-${v}-macos-universal.dmg`));
+            fs.writeFileSync("website/downloads.json", JSON.stringify(m, null, 2));'
+          url=$(npx --yes vercel@latest deploy website --prod --yes --token "$VERCEL_TOKEN")
+          for f in website/downloads/*; do curl -fsSI "$url/downloads/$(basename "$f")" > /dev/null; done
+          echo "Published to $url"

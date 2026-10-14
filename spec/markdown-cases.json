@@ -1,0 +1,137 @@
+{
+  "description": "Shared Markdown cases generated from the Windows reference implementation. Both implementations must match exactly.",
+  "truncationNotice": "\n\n_[Snapshot truncated by the output limit.]_\n",
+  "escape": [
+    {
+      "input": "a*b_c",
+      "expected": "a\\*b\\_c"
+    },
+    {
+      "input": "x | y",
+      "expected": "x \\| y"
+    },
+    {
+      "input": "<script>",
+      "expected": "\\<script\\>"
+    },
+    {
+      "input": "[link](url)",
+      "expected": "\\[link\\](url)"
+    },
+    {
+      "input": "back\\slash",
+      "expected": "back\\\\slash"
+    },
+    {
+      "input": "key [REDACTED] and [USER]",
+      "expected": "key [REDACTED] and [USER]"
+    },
+    {
+      "input": "plain text",
+      "expected": "plain text"
+    }
+  ],
+  "codeSpan": [
+    {
+      "input": "plain",
+      "expected": "`plain`"
+    },
+    {
+      "input": "a`b",
+      "expected": "`` a`b ``"
+    },
+    {
+      "input": "a``b",
+      "expected": "``` a``b ```"
+    },
+    {
+      "input": "",
+      "expected": "` `"
+    }
+  ],
+  "fence": [
+    {
+      "input": "no backticks",
+      "expected": "```"
+    },
+    {
+      "input": "use ```code``` here",
+      "expected": "````"
+    },
+    {
+      "input": "````",
+      "expected": "`````"
+    }
+  ],
+  "limitOutput": [
+    {
+      "input": "# Hello",
+      "maxCharacters": 12000,
+      "expected": "# Hello"
+    },
+    {
+      "input": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "maxCharacters": 40,
+      "expected": "\n\n_[Snapshot truncated by the output lim"
+    },
+    {
+      "input": "- line number 0\n- line number 1\n- line number 2\n- line number 3\n- line number 4\n- line number 5\n- line number 6\n- line number 7\n- line number 8\n- line number 9\n- line number 10\n- line number 11\n- line number 12\n- line number 13\n- line number 14\n- line number 15\n- line number 16\n- line number 17\n- line number 18\n- line number 19\n- line number 20\n- line number 21\n- line number 22\n- line number 23\n- line number 24\n- line number 25\n- line number 26\n- line number 27\n- line number 28\n- line number 29\n- line number 30\n- line number 31\n- line number 32\n- line number 33\n- line number 34\n- line number 35\n- line number 36\n- line number 37\n- line number 38\n- line number 39\n- line number 40\n- line number 41\n- line number 42\n- line number 43\n- line number 44\n- line number 45\n- line number 46\n- line number 47\n- line number 48\n- line number 49\n- line number 50\n- line number 51\n- line number 52\n- line number 53\n- line number 54\n- line number 55\n- line number 56\n- line number 57\n- line number 58\n- line number 59\n- line number 60\n- line number 61\n- line number 62\n- line number 63\n- line number 64\n- line number 65\n- line number 66\n- line number 67\n- line number 68\n- line number 69\n- line number 70\n- line number 71\n- line number 72\n- line number 73\n- line number 74\n- line number 75\n- line number 76\n- line number 77\n- line number 78\n- line number 79\n- line number 80\n- line number 81\n- line number 82\n- line number 83\n- line number 84\n- line number 85\n- line number 86\n- line number 87\n- line number 88\n- line number 89\n- line number 90\n- line number 91\n- line number 92\n- line number 93\n- line number 94\n- line number 95\n- line number 96\n- line number 97\n- line number 98\n- line number 99\n- line number 100\n- line number 101\n- line number 102\n- line number 103\n- line number 104\n- line number 105\n- line number 106\n- line number 107\n- line number 108\n- line number 109\n- line number 110\n- line number 111\n- line number 112\n- line number 113\n- line number 114\n- line number 115\n- line number 116\n- line number 117\n- line number 118\n- line number 119\n- line number 120\n- line number 121\n- line number 122\n- line number 123\n- line number 124\n- line number 125\n- line number 126\n- line number 127\n- line number 128\n- line number 129\n- line number 130\n- line number 131\n- line number 132\n- line number 133\n- line number 134\n- line number 135\n- line number 136\n- line number 137\n- line number 138\n- line number 139\n- line number 140\n- line number 141\n- line number 142\n- line number 143\n- line number 144\n- line number 145\n- line number 146\n- line number 147\n- line number 148\n- line number 149\n- line number 150\n- line number 151\n- line number 152\n- line number 153\n- line number 154\n- line number 155\n- line number 156\n- line number 157\n- line number 158\n- line number 159\n- line number 160\n- line number 161\n- line number 162\n- line number 163\n- line number 164\n- line number 165\n- line number 166\n- line number 167\n- line number 168\n- line number 169\n- line number 170\n- line number 171\n- line number 172\n- line number 173\n- line number 174\n- line number 175\n- line number 176\n- line number 177\n- line number 178\n- line number 179\n- line number 180\n- line number 181\n- line number 182\n- line number 183\n- line number 184\n- line number 185\n- line number 186\n- line number 187\n- line number 188\n- line number 189\n- line number 190\n- line number 191\n- line number 192\n- line number 193\n- line number 194\n- line number 195\n- line number 196\n- line number 197\n- line number 198\n- line number 199",
+      "maxCharacters": 500,
+      "expected": "- line number 0\n- line number 1\n- line number 2\n- line number 3\n- line number 4\n- line number 5\n- line number 6\n- line number 7\n- line number 8\n- line number 9\n- line number 10\n- line number 11\n- line number 12\n- line number 13\n- line number 14\n- line number 15\n- line number 16\n- line number 17\n- line number 18\n- line number 19\n- line number 20\n- line number 21\n- line number 22\n- line number 23\n- line number 24\n- line number 25\n- line number 26\n\n_[Snapshot truncated by the output limit.]_\n"
+    }
+  ],
+  "textStatistics": [
+    {
+      "input": "",
+      "characters": 0,
+      "words": 0,
+      "utf8Bytes": 0
+    },
+    {
+      "input": "hello",
+      "characters": 5,
+      "words": 1,
+      "utf8Bytes": 5
+    },
+    {
+      "input": "# Title\n\n- **bold** item | x",
+      "characters": 28,
+      "words": 4,
+      "utf8Bytes": 28
+    },
+    {
+      "input": "- - | # ---",
+      "characters": 11,
+      "words": 0,
+      "utf8Bytes": 11
+    },
+    {
+      "input": "naïve café",
+      "characters": 10,
+      "words": 2,
+      "utf8Bytes": 12
+    }
+  ],
+  "formatSize": [
+    {
+      "bytes": 0,
+      "expected": "0 B"
+    },
+    {
+      "bytes": 1023,
+      "expected": "1023 B"
+    },
+    {
+      "bytes": 1536,
+      "expected": "1.5 KB"
+    },
+    {
+      "bytes": 10240,
+      "expected": "10 KB"
+    },
+    {
+      "bytes": 164626432,
+      "expected": "157 MB"
+    }
+  ]
+}

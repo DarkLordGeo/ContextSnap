@@ -1,0 +1,155 @@
+{
+  "description": "Shared redaction cases. Both the Windows (.NET) and macOS (Swift) redactors must turn each input into exactly the expected output with default options (secrets and emails redacted; identity hiding and custom terms off).",
+  "cases": [
+    {
+      "name": "key-value api key",
+      "input": "api_key=abc123",
+      "expected": "api_key=[REDACTED]"
+    },
+    {
+      "name": "password with colon",
+      "input": "password: hunter2",
+      "expected": "password: [REDACTED]"
+    },
+    {
+      "name": "quoted env token",
+      "input": "GITHUB_TOKEN=\"s3cr3t\"",
+      "expected": "GITHUB_TOKEN=\"[REDACTED]\""
+    },
+    {
+      "name": "client secret single quotes",
+      "input": "client_secret = 'xyz'",
+      "expected": "client_secret = '[REDACTED]'"
+    },
+    {
+      "name": "email address",
+      "input": "Contact me at person@example.com",
+      "expected": "Contact me at [REDACTED_EMAIL]"
+    },
+    {
+      "name": "connection string password",
+      "input": "Server=db;User Id=sa;Password=p@ss word;Database=x",
+      "expected": "Server=db;User Id=sa;Password=[REDACTED];Database=x"
+    },
+    {
+      "name": "authorization bearer header",
+      "input": "curl -H \"Authorization: Bearer abcdefghijklmnop1234\"",
+      "expected": "curl -H \"Authorization: Bearer [REDACTED]\""
+    },
+    {
+      "name": "credentials in url",
+      "input": "https://admin:hunter2@example.org/path",
+      "expected": "https://[REDACTED]@example.org/path"
+    },
+    {
+      "name": "sensitive query parameter",
+      "input": "https://x.test/cb?code=abc&state=1",
+      "expected": "https://x.test/cb?code=[REDACTED]&state=1"
+    },
+    {
+      "name": "github token",
+      "input": "value ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 end",
+      "expected": "value [REDACTED_TOKEN] end"
+    },
+    {
+      "name": "github fine-grained token",
+      "input": "value github_pat_11ABCDEFG0123456789_abcdefghijklmnop end",
+      "expected": "value [REDACTED_TOKEN] end"
+    },
+    {
+      "name": "gitlab token",
+      "input": "value glpat-abcdefghijklmnopqrstu end",
+      "expected": "value [REDACTED_TOKEN] end"
+    },
+    {
+      "name": "slack token",
+      "input": "value xoxb-1234567890-abcdefghij end",
+      "expected": "value [REDACTED_TOKEN] end"
+    },
+    {
+      "name": "aws access key",
+      "input": "value AKIAIOSFODNN7EXAMPLE end",
+      "expected": "value [REDACTED_TOKEN] end"
+    },
+    {
+      "name": "google api key",
+      "input": "value AIzaSyA1234567890abcdefghijklmnopqrstuv end",
+      "expected": "value [REDACTED_TOKEN] end"
+    },
+    {
+      "name": "stripe live key",
+      "input": "value sk_live_abcdefghijklmnop1234 end",
+      "expected": "value [REDACTED_TOKEN] end"
+    },
+    {
+      "name": "anthropic key",
+      "input": "value sk-ant-api03-abcdefghijklmnopqrstuvwxyz end",
+      "expected": "value [REDACTED_TOKEN] end"
+    },
+    {
+      "name": "openai project key",
+      "input": "value sk-proj-abcdefghijklmnopqrstuvwxyz012345 end",
+      "expected": "value [REDACTED_TOKEN] end"
+    },
+    {
+      "name": "json web token",
+      "input": "value eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U end",
+      "expected": "value [REDACTED_TOKEN] end"
+    },
+    {
+      "name": "random-looking token",
+      "input": "value Q2xpZW50U2VjcmV0X2Zvcl9hcHBfMTIzNDU2Nzg5MA9xZ end",
+      "expected": "value [REDACTED_TOKEN] end"
+    },
+    {
+      "name": "private key block",
+      "input": "before -----BEGIN RSA PRIVATE KEY-----\nMIIEow\nabc\n-----END RSA PRIVATE KEY----- after",
+      "expected": "before [REDACTED_PRIVATE_KEY] after"
+    },
+    {
+      "name": "unchanged editor title",
+      "input": "Program.cs - ContextSnap - Visual Studio Code",
+      "expected": "Program.cs - ContextSnap - Visual Studio Code"
+    },
+    {
+      "name": "unchanged commit subject",
+      "input": "ed0064a Apply redaction and output limits",
+      "expected": "ed0064a Apply redaction and output limits"
+    },
+    {
+      "name": "unchanged windows path",
+      "input": "C:\\Users\\Public\\Documents\\report_final_v2.docx",
+      "expected": "C:\\Users\\Public\\Documents\\report_final_v2.docx"
+    },
+    {
+      "name": "unchanged git hash",
+      "input": "3f786850e387550fdab836ed7e6dc881de23001b",
+      "expected": "3f786850e387550fdab836ed7e6dc881de23001b"
+    },
+    {
+      "name": "unchanged token count",
+      "input": "Token count: tokens_used=42",
+      "expected": "Token count: tokens_used=42"
+    },
+    {
+      "name": "unchanged ssh-like host",
+      "input": "git@github",
+      "expected": "git@github"
+    },
+    {
+      "name": "unchanged basic phrase",
+      "input": "Basic setup guide",
+      "expected": "Basic setup guide"
+    },
+    {
+      "name": "unchanged long identifier",
+      "input": "MyVeryLongComponentNameForTestingStuff",
+      "expected": "MyVeryLongComponentNameForTestingStuff"
+    },
+    {
+      "name": "unchanged unix path",
+      "input": "/Users/alex/Projects/contextsnap/README.md",
+      "expected": "/Users/alex/Projects/contextsnap/README.md"
+    }
+  ]
+}

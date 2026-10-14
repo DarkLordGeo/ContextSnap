@@ -1,0 +1,71 @@
+# Architecture
+
+ContextSnap is two projects plus tests:
+
+```
+src/ContextSnap.Core/      Class library: everything except the window
+  Model/                   ContextSnapshot, CollectorResult<T>, item records
+  Collectors/              One collector per source, each split into a testable filter and an OS-facing source
+    Git/                   Repository discovery, safe Git runner, porcelain parser
+    ScreenText/            Visible text: target selection, UI Automation reader, OCR capture/reader,
+                           pure assembler (visibility, dedupe, line joining), OCR layout and merge
+  Privacy/                 PrivacyRules (exclusions) and Redactor (pattern redaction)
+  Formatting/              MarkdownFormatter (sections, output limit) and MarkdownText (escaping)
+  Capture/                 SnapshotService (orchestration), HeadlessRunner and command-line parsing
+  Configuration/           AppSettings (defaults, normalization) and SettingsStore (JSON file)
+  Notifications/           Copy notification content (CopyNotifications, TextStatistics) and ToastController
+  Output/                  Win32ClipboardWriter, CopyService (clipboard first, then notification)
+  Platform/                P/Invoke, STA helper, executable lookup, hotkey, console attach,
+                           startup shortcut (StartupRegistration, ShellLinkShortcutStore), SingleInstance
+src/ContextSnap/           WPF executable: Program (entry, GUI vs. command line), MainWindow, styles,
+                           Notifications/ (ToastWindow, WpfCopyNotifier, palette, reduced-motion check)
+tests/ContextSnap.Tests/   xUnit tests against Core
+```
+
+## Data flow
+
+```
+                ┌─ WindowCollector ────┐
+                ├─ ProcessCollector ───┤
+ SnapshotService├─ ExplorerCollector ──┤ parallel, each isolated with a timeout
+                ├─ DesktopCollector ───┤
+                ├─ BrowserTabCollector ┤ (opt-in)
+                └─ SystemSummary ──────┘
+                          │ Explorer folders + configured project folders (+ CLI cwd)
+                          ▼
+                     GitCollector
+                          │
+                   ContextSnapshot  (typed results with status: Ok/Empty/Disabled/Unavailable/Failed)
+                          │
+        MarkdownFormatter(Redactor) → every string: redact → single-line/truncate → escape or code-quote
+                          │
+              MarkdownFormatter.LimitOutput (line-boundary cut + notice)
+                          │
+             UI preview / --print ──► IClipboardWriter (only on explicit copy or hotkey)
+```
+
+## Key decisions
+
+- **Collector contract.** `ICollector<T>.Collect` returns items plus notes and an excluded count, and may throw. `SnapshotService.RunAsync` is the single isolation boundary: disabled → `Disabled`; `CollectorUnavailableException` → `Unavailable` (source not present, such as Git missing); any other exception or timeout → `Failed`; empty list → `Empty`. Only caller cancellation propagates. Item limits are applied here, so collectors stay simple.
+- **Filter/source split.** Each OS-facing collector has a small source interface (`IWindowSource`, `IProcessSource`, `IShellWindowSource`, `IGitRunner`, `IBrowserTabSource`) and a pure filter (`WindowFilter`, `ProcessGrouper`, `ExplorerFilter`, `GitStatusParser`). Tests cover the filters with fakes; the Win32/COM sources are thin.
+- **Redaction at the formatter boundary.** The formatter routes every captured string through `Text()`, `Code()`, or `Url()`, each of which calls the `Redactor` first. A new section cannot forget to redact. Exclusions (dropping whole items) happen earlier, in collectors, so excluded items never enter the snapshot.
+- **Windows.** `EnumWindows` + Alt+Tab-style filtering (visible, titled, not cloaked, not tool windows, not owned popups, not shell surfaces, not ContextSnap itself). Process names come from `QueryFullProcessImageName` with `PROCESS_QUERY_LIMITED_INFORMATION`.
+- **Explorer.** The documented `Shell.Application` → `ShellWindows` automation object, read on a dedicated STA thread with a timeout. Only windows hosted by `explorer.exe` count; virtual locations are counted, not listed. Every COM object is released.
+- **Git safety.** `git.exe` is resolved to an absolute path from absolute `PATH` entries only (never the current directory). Arguments go through `ProcessStartInfo.ArgumentList` (no shell). Every call adds `--no-pager --no-optional-locks -c core.fsmonitor=false -c log.showSignature=false -c color.ui=false -C <root>`, sets `GIT_OPTIONAL_LOCKS=0` and `GIT_TERMINAL_PROMPT=0`, and removes inherited `GIT_DIR`-style variables. Only `status --porcelain=v2 -z` and `log -3 --format=…` are run; output is bounded (512 KB), each command times out after 5 s and its process tree is killed. Git's `safe.directory` check is respected, not bypassed. Filters configured in the user's own Git config can still run during `git status`, as with any Git GUI.
+- **Browser tabs.** UI Automation walk of the browser window that skips `Document` subtrees, so page content is never read and page widgets are not mistaken for tabs. No profiles, history, or remote-debugging ports. Opt-in.
+- **Clipboard.** Direct `CF_UNICODETEXT` write with retry, CRLF line endings, optional `CanIncludeInClipboardHistory=0` / `CanUploadToCloudClipboard=0`. Replaces the prototype's PowerShell-based copy, which exposed the snapshot on a command line.
+- **UI.** WPF (ships with the .NET SDK on Windows, no extra workloads or NuGet packages). Code-behind with routed commands; settings bind directly to `AppSettings` and save on change. The global hotkey uses `RegisterHotKey` on the main window and only reacts to that one key combination.
+- **Start with Windows.** `StartupRegistration.Apply(enabled)` makes `%APPDATA%\...\Startup\ContextSnap.lnk` match the setting. `LaunchTargetResolver` picks the `ContextSnap.exe` launcher next to the running app (both `dotnet run` and published builds have one), falling back to `dotnet.exe ContextSnap.dll` only when no launcher exists. The `.lnk` is written with the built-in Shell link COM object (`IShellLinkW` + `IPersistFile`), so there is no extra dependency. Only a shortcut whose target is ContextSnap is ever modified or deleted. Expected OS failures (I/O, access denied, COM) become a `StartupState` message, never an exception. `IShortcutStore` and injected folder/target providers keep tests away from the real Startup folder. The window applies the setting on open and whenever it changes.
+- **Single instance.** `SingleInstance` uses a session-local named mutex (`Local\ContextSnap.Instance`) and event (`Local\ContextSnap.Activate`). A second GUI launch signals the event and exits; the first instance restores and activates its window. `--startup` launches exit silently instead. Command-line modes do not take the lock.
+- **Visible screen text.** `ScreenTextCollector` is an ordinary `ICollector<WindowText>` run first in the capture (so it sees the window the user is looking at). `ScreenTextTargetSelector` (pure) picks the focused window (or the most recent other window when ContextSnap is in front) and, in all-windows mode, other windows whose hit-tested visible fraction is at least 5%, applying the general and screen-text exclusions. Per window, in parallel (at most 3) with its own timeout: `UiaTextReader` walks the control view with one cached round-trip per element (name, type, bounds, off-screen, password, value, pattern availability) into a detached `UiaNode` tree, reading only page documents for browsers and Chromium windows and using `TextPattern.GetVisibleRanges` for leaf text controls. `VisibleTextAssembler` (pure) turns the tree into lines. If the result is small for the window's area, `WindowsOcrReader` renders the window with `PrintWindow(PW_RENDERFULLCONTENT)` (screen copy only for the focused window when the render is blank), upscales small text 2× at 100–125% DPI, recognizes it with the lazily created `Windows.Media.Ocr` engine (one shared engine, serialized), and `OcrLayout` orders lines by column and merges them without duplicating UI Automation text. The formatter writes visible text first in fenced blocks (after redaction), then "System context". The projects target `net10.0-windows10.0.19041.0` to reach the WinRT OCR API; this adds the CsWinRT projection (~25 MB) to the output. A browser extension was evaluated and not built: Chromium already exposes rendered page text with viewport information through UI Automation, which needs no install or browser permissions.
+- **Copy notifications.** `CopyService.Copy` writes the clipboard, then builds a `CopyNotificationContent` from counts only (`TextStatistics`) and hands it to an `ICopyNotifier`; exceptions from the notifier are caught and reported as `NotificationError`, never as a copy failure. In the GUI, `WpfCopyNotifier` queues work to the dispatcher (returns immediately) and drives a single reused `ToastWindow` through `ToastController`, which calls `Present` when hidden and `Refresh` when visible, so repeated copies update one toast. `ToastWindow` is a layered, topmost, `WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW` window; placement uses the active monitor's work area in physical pixels (`ScreenPlacement`), moving onto the monitor first so WPF adopts its DPI before the final bottom-right position is computed. Animations are `DoubleAnimation`s on opacity and render transforms only (a custom `SpringEase` for the entry slide, a dash-offset draw for the checkmark, staggered fades for the counts, a scale-X countdown bar whose completion triggers dismissal guarded by a generation counter). `MotionPreference` reads `SystemParameters.ClientAreaAnimation`. The command-line `--capture` uses a `DeferredCopyNotifier` and shows the same `ToastWindow` after the exit code is final, only when output is not redirected. Native Windows toasts were not used: they need app registration (AUMID), cannot be updated in place with a custom countdown, and do not support the requested motion.
+- **Settings.** `%APPDATA%\ContextSnap\settings.json`, written atomically and only when changed. `Normalize()` clamps all numbers and cleans lists, so a hand-edited file cannot disable limits.
+
+## Tests
+
+- Unit: redaction patterns and false positives, Markdown escaping and code spans, output limiting, formatter output for every status, window/process/Explorer filters, Desktop listing (temp folder), browser tab filtering, Git porcelain parsing, Git collector behavior with a fake runner, orchestration (isolation, timeout, limits, disabled collectors, cancellation, candidate ordering), settings round-trip/normalization, command-line parsing and headless runner.
+- Screen text: tree order, container/leaf deduplication, same-line joining, off-screen/outside/tiny filtering, password and title-bar/tab skipping, web-document label rules, visible ranges, character limits; OCR column ordering and UIA merge; target selection (focused, ContextSnap-in-front, all windows, covered/minimized/cloaked, exclusions); collector policy with fake readers (OCR threshold by area, OCR disabled/unavailable/failing, UIA failure fallback, browser page-only OCR, per-window timeout, cancellation, grouping, empty results); formatting and redaction; pipeline integration with the copy notification; settings backward compatibility. Integration (Windows, skipped on CI): real UI Automation on a WPF window (including a password box) and real Windows OCR on text drawn as pixels.
+- Notifications: wording for success, truncation, empty, and failure; character/word/UTF-8 size formatting and edge cases; durations; that notifications never contain snapshot text; clipboard-first ordering; disabled notifications; a throwing notifier not affecting a successful copy; repeated copies updating one toast via `ToastController`; command-line notification behavior; bottom-right placement maths for offset and undersized work areas.
+- Startup: launch-target resolution (launcher, `dotnet` host fallback, missing executable, development builds), enable/disable/idempotence/repair, refusal to touch a foreign `ContextSnap.lnk`, failure reporting for access-denied/I/O/COM errors, Windows-disabled warning, a real `.lnk` round trip in a temp folder, single-instance signalling with a unique name, `--startup` parsing, and setting persistence.
+- Integration: a real `git` run against a throwaway repository in the temp folder (skipped when Git is absent), asserting no `index.lock` is left behind.
+- Not automated: toast rendering and animation (verified by frame captures of the bottom-right screen region), the real Startup folder and actual sign-in, the Win32 window source, Shell COM source, UI Automation source, clipboard writer, and WPF window. These were exercised manually on Windows 11.
