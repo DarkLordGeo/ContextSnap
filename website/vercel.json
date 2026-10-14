@@ -4,7 +4,7 @@
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:; connect-src 'self' https://vitals.vercel-insights.com" },
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; style-src 'self'; script-src 'self'; img-src 'self' data:" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "Referrer-Policy", "value": "no-referrer" }
       ]
