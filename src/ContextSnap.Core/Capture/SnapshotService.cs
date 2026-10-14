@@ -128,7 +128,11 @@ public sealed class SnapshotService(CollectorSet collectors, TimeProvider? timeP
 
         try
         {
-            var output = await Task.Run(() => collector.Collect(context, timeoutSource.Token), timeoutSource.Token)
+            // Collectors block (COM, Win32, child processes) and a hung one is abandoned after its
+            // timeout, so each gets its own thread instead of starving the thread pool that the
+            // timeout itself depends on.
+            var output = await Task.Factory.StartNew(() => collector.Collect(context, timeoutSource.Token), timeoutSource.Token,
+                    TaskCreationOptions.LongRunning, TaskScheduler.Default)
                 .WaitAsync(timeout, cancellationToken)
                 .ConfigureAwait(false);
 

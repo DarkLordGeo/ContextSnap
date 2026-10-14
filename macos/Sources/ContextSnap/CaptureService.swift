@@ -2,6 +2,9 @@ import AppKit
 import ContextSnapCore
 import SwiftUI
 
+/// SwiftUI also declares `Section`; this file means the snapshot section from ContextSnapCore.
+private typealias Section<Item: Sendable> = ContextSnapCore.Section<Item>
+
 /// Runs one capture when the user asks for it: collect, redact, format, copy, notify.
 /// Nothing runs in the background and nothing captured is stored.
 final class CaptureService: ObservableObject {
@@ -86,11 +89,16 @@ enum SnapshotBuilder {
                     visible = Section(name: visibleTextName, status: .empty, notes: ["The active app is excluded by your privacy settings."])
                 } else {
                     let read = await readWindow(target, preferences)
-                    title = read.title
-                    documentPath = read.documentPath
-                    visible = read.window.text.isEmpty
-                        ? Section(name: visibleTextName, status: .empty, notes: read.window.warnings)
-                        : .collected(visibleTextName, [read.window])
+                    if preferences.isTitleExcluded(read.title) {
+                        // Discard everything read from the window, including its title and document path.
+                        visible = Section(name: visibleTextName, status: .empty, notes: ["The active window is excluded by your privacy settings."])
+                    } else {
+                        title = read.title
+                        documentPath = read.documentPath
+                        visible = read.window.text.isEmpty
+                            ? Section(name: visibleTextName, status: .empty, notes: read.window.warnings)
+                            : .collected(visibleTextName, [read.window])
+                    }
                 }
             } else {
                 visible = Section(name: visibleTextName, status: .empty, notes: ["No active app was found."])

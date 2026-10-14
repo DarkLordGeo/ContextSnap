@@ -228,7 +228,7 @@ public static class VisibleTextAssembler
             if (builder.Length + needed > maxCharacters)
             {
                 if (builder.Length == 0)
-                    builder.Append(line, 0, Math.Max(0, maxCharacters - 1)).Append('…');
+                    builder.Append(line, 0, CutLength(line, Math.Max(0, maxCharacters - 1))).Append('…');
                 return (builder.ToString(), true);
             }
 
@@ -238,5 +238,21 @@ public static class VisibleTextAssembler
         }
 
         return (builder.ToString(), false);
+    }
+
+    /// <summary>
+    /// Text is limited before it is redacted, so a cut inside a word could leave a token prefix that
+    /// no longer matches a redaction pattern. Cut at the last whitespace instead when there is one.
+    /// </summary>
+    private static int CutLength(string line, int length)
+    {
+        if (length >= line.Length || length == 0 || char.IsWhiteSpace(line[length]))
+            return length;
+
+        var lastSpace = line.LastIndexOfAny([' ', '\t'], length - 1);
+        if (lastSpace > 0)
+            return lastSpace;
+
+        return char.IsHighSurrogate(line[length - 1]) ? length - 1 : length;
     }
 }

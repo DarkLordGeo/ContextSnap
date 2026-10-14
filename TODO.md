@@ -22,6 +22,13 @@
 - [x] Animated copy notifications (bottom-right toast for button, auto-copy, hotkey, and `--capture`; success/truncated/empty/failure; reduced motion; light/dark) — verified on one 100% DPI monitor
 - [x] Visible screen text (focused or all visible windows; UI Automation with on-device OCR fallback; browsers read page only; password/tab/title-bar skipping; limits, timeouts, exclusions) — verified on Chrome (ChatGPT, YouTube), Claude app, Notepad, message box, VS Code first-run screen (OCR), two-window capture
 - [x] Single instance per session (second launch activates the first; `--startup` duplicate exits silently) — verified
+- [x] Per-window screen text limit cuts an overlong line at a word boundary, so a token is never split before redaction (Windows + macOS; regression tests added) — Windows logic checked on Linux with a standalone run; test suite not run here
+- [x] Release workflow publishes packages to the public releases repository, verifies anonymous downloads by SHA-256, and opens a PR that updates `website/downloads.json`; the website enables a button only for a GitHub Release asset URL (checked in headless Chromium with generated, empty, and invalid metadata)
+- [x] Website redesign (static HTML/CSS/JS, green accents, entrance/scroll fade-ins, reduced motion, skip link, focus styles, accurate privacy page) — served locally and checked in headless Chromium at 1280/820/375 px: no console errors, no horizontal overflow, all links resolve, download buttons stay disabled while `downloads.json` lists no files
+
+## macOS (not built or tested; needs a Mac)
+- [ ] Run `swift test` and `./scripts/build.sh` on macOS 14+
+- [ ] Verify the new window-title exclusions (InPrivate, Incognito, Private Browsing, Password by default) skip private browser windows
 
 ## Next
 - [ ] Tray icon
@@ -29,6 +36,8 @@
 - [ ] Dark theme
 - [ ] Installer/MSIX packaging and an application icon
 - [ ] Automated UI smoke test
+- [ ] One-time release setup (public `ContextSnap-Releases` repo, `RELEASES_TOKEN` secret, allow Actions to open PRs) and the first release; see docs/RELEASING.md. The release workflow and website handling are implemented but have not run against a real release yet
+- [ ] Code signing (Windows) and Developer ID signing + notarization (macOS)
 
 ## Known limitations
 - Terminal working directories are not collected (no documented, safe Windows API).
@@ -39,4 +48,6 @@
 - Start with Windows follows the most recently opened copy, so running from source re-points it at the build output.
 - Visible screen text not verified with AnyDesk, a VS Code editor/terminal pane, high-DPI, or multiple monitors; Windows OCR projection adds ~25 MB.
 - Copy notifications not yet tried on multi-monitor, non-100% scaling, or non-bottom taskbars; real clipboard-lock failure not reproducible here.
+- When the output limit cuts inside a visible-text code block, the block is left unclosed and the truncation notice appears inside it.
+- Website: the Vercel project's Root Directory must be set to `website` in the dashboard (not verifiable from the repository).
 - Bringing the existing window forward can be blocked by Windows focus rules; the taskbar button flashes instead.

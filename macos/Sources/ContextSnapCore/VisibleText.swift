@@ -115,13 +115,23 @@ public enum VisibleTextAssembler {
         for line in lines {
             let needed = line.utf16.count + (output.isEmpty ? 0 : 1)
             if output.utf16.count + needed > maxCharacters {
-                if output.isEmpty { output = String(line.prefix(max(0, maxCharacters - 1))) + "…" }
+                if output.isEmpty { output = cut(line, to: max(0, maxCharacters - 1)) + "…" }
                 return (output, true)
             }
             if !output.isEmpty { output += "\n" }
             output += line
         }
         return (output, false)
+    }
+
+    /// Text is limited before it is redacted, so a cut inside a word could leave a token prefix that
+    /// no longer matches a redaction pattern. Cuts at the last space or tab instead when there is one.
+    static func cut(_ line: String, to length: Int) -> String {
+        let prefix = line.prefix(length)
+        guard prefix.count < line.count, length > 0, !line[prefix.endIndex].isWhitespace,
+              let space = prefix.lastIndex(where: { $0 == " " || $0 == "\t" }), space > prefix.startIndex
+        else { return String(prefix) }
+        return String(prefix[..<space])
     }
 }
 
