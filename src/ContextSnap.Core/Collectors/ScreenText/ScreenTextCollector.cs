@@ -76,7 +76,7 @@ public sealed class ScreenTextCollector(
         // thread-pool thread and the timeout does not depend on the pool having a free thread.
         var read = Task.Factory.StartNew(() => ReadWindow(target, settings, windowCancellation.Token),
             CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
-        if (Task.WaitAny([read], timeout, cancellationToken) < 0)
+        if (Task.WaitAny([read], (int)timeout.TotalMilliseconds, cancellationToken) < 0)
             return Empty(target, started.Elapsed, timedOut);
 
         try
