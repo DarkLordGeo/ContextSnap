@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
+using ContextSnap.Formatting;
 
 internal static class Program
 {
@@ -79,7 +80,7 @@ internal static class Program
             catch (UnauthorizedAccessException) { }
         }
 
-        var snapshot = markdown.ToString();
+        var snapshot = MarkdownFormatter.LimitOutput(PrivacyFilter.Redact(markdown.ToString()));
         var encoded = Convert.ToBase64String(Encoding.UTF8.GetBytes(snapshot));
 
         var start = new ProcessStartInfo("powershell.exe")
@@ -109,3 +110,4 @@ internal static class Program
         return 0;
     }
 }
+
