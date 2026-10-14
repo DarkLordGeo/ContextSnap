@@ -2,6 +2,9 @@ import AppKit
 import ContextSnapCore
 import SwiftUI
 
+/// SwiftUI also declares `Section`; this file means the snapshot section from ContextSnapCore.
+private typealias Section<Item: Sendable> = ContextSnapCore.Section<Item>
+
 /// Runs one capture when the user asks for it: collect, redact, format, copy, notify.
 /// Nothing runs in the background and nothing captured is stored.
 final class CaptureService: ObservableObject {
