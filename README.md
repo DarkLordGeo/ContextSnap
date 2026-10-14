@@ -258,3 +258,7 @@ ContextSnap makes no network requests. The only files it writes are its settings
 ## Project layout
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## License
+
+MIT. See [LICENSE](LICENSE).
