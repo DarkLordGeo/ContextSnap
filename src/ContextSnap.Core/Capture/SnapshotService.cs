@@ -129,12 +129,19 @@ public sealed class SnapshotService(CollectorSet collectors, TimeProvider? timeP
         try
         {
             // Collectors block (COM, Win32, child processes) and a hung one is abandoned after its
-            // timeout, so each gets its own thread instead of starving the thread pool that the
-            // timeout itself depends on.
-            var output = await Task.Factory.StartNew(() => collector.Collect(context, timeoutSource.Token), timeoutSource.Token,
-                    TaskCreationOptions.LongRunning, TaskScheduler.Default)
-                .WaitAsync(timeout, cancellationToken)
+            // timeout, so each gets its own thread. The timeout is also waited for on a dedicated
+            // thread rather than by a timer: a timer callback needs a free thread-pool thread, so a
+            // busy pool would let a slow collector run past its timeout.
+            var work = Task.Factory.StartNew(() => collector.Collect(context, timeoutSource.Token), timeoutSource.Token,
+                TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            var finished = await Task.Factory.StartNew(
+                    () => Task.WaitAny([work], (int)timeout.TotalMilliseconds, cancellationToken) >= 0,
+                    CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)
                 .ConfigureAwait(false);
+            if (!finished)
+                throw new TimeoutException();
+
+            var output = await work.ConfigureAwait(false);
 
             var items = output.Items;
             var omitted = Math.Max(0, items.Count - maxItems);
