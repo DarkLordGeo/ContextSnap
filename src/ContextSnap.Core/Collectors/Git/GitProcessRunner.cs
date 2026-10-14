@@ -104,9 +104,20 @@ public sealed class GitProcessRunner : IGitRunner
             return new GitCommandResult(-1, string.Empty, string.Empty, TimedOut: true);
         }
 
-        Task.WaitAll([output, error], TimeSpan.FromSeconds(2));
-        var (text, truncated) = output.IsCompletedSuccessfully ? output.Result : (string.Empty, false);
-        var (errorText, _) = error.IsCompletedSuccessfully ? error.Result : (string.Empty, false);
+        // Exit does not mean the pipes are drained. Never report a success with missing output: on a
+        // busy machine that would show a repository with no branch or status and no error.
+        try
+        {
+            if (!Task.WaitAll([output, error], timeout))
+                return new GitCommandResult(-1, string.Empty, string.Empty, TimedOut: true);
+        }
+        catch (AggregateException)
+        {
+            return new GitCommandResult(-1, string.Empty, "Git output could not be read.", TimedOut: false);
+        }
+
+        var (text, truncated) = output.Result;
+        var (errorText, _) = error.Result;
         return new GitCommandResult(process.ExitCode, text, errorText, TimedOut: false, truncated);
     }
 
