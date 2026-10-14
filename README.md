@@ -4,6 +4,8 @@ A small, local-only Windows app that captures a compact Markdown snapshot of wha
 
 ContextSnap has no AI integration, network access, telemetry, or accounts. A snapshot only leaves the app when you copy it to your clipboard.
 
+This README describes the Windows app. A macOS menu-bar app with the same privacy model (on-demand capture, local redaction, no network access) lives in [`macos/`](macos/); it reads the active window through Accessibility, uses on-device OCR (Apple Vision) only when Screen Recording is granted, and adds running apps, Git, and system context. Downloads for both are published as [GitHub Releases](https://github.com/DarkLordGeo/ContextSnap-Releases/releases) (see [docs/RELEASING.md](docs/RELEASING.md)); the static website is in [`website/`](website/).
+
 ## Features
 
 - **Capture → review → copy.** One button (or `F5` / `Ctrl+Enter`) collects context and shows an editable Markdown preview. `Ctrl+Shift+C` copies it.

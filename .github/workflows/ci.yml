@@ -5,6 +5,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Read-only token: CI only builds and tests, including for pull requests from forks.
+permissions:
+  contents: read
+
 jobs:
   windows:
     runs-on: windows-latest

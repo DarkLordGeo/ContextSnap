@@ -37,5 +37,10 @@ website/downloads/
 *.pfx
 *.pem
 *.key
+*.p8
+*.cer
+*.snk
+*.mobileprovision
+*.provisionprofile
 .env
 .env.*

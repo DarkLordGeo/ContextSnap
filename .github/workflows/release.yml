@@ -1,7 +1,7 @@
 name: Release
 
 # Builds versioned Windows and macOS packages with checksums, publishes them as a GitHub Release in
-# the public releases repository (the source repository stays private), verifies that the public
+# the public releases repository (ContextSnap-Releases), verifies that the public
 # download URLs serve the exact files, and opens a pull request that updates website/downloads.json.
 # Binaries are never committed to this repository. Setup: docs/RELEASING.md.
 on:

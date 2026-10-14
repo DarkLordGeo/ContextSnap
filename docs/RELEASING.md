@@ -1,8 +1,8 @@
 # Releasing ContextSnap
 
-The source repository (`ContextSnap`) stays private. Release packages are published as GitHub
-Releases in a separate **public** repository, `ContextSnap-Releases`, and the website links to those
-assets. No binaries are committed to the source repository.
+Release packages are published as GitHub Releases in a separate public repository,
+`ContextSnap-Releases`, and the website links to those assets. No binaries are committed to the
+source repository (`ContextSnap`).
 
 ## What the Release workflow does
 
@@ -34,7 +34,7 @@ enables a button for an `https://github.com/<owner>/<repo>/releases/download/<ta
    - Repository permissions: **Contents: Read and write** (Metadata: read is added automatically).
      Nothing else.
    - Choose an expiration and note when to rotate it.
-3. **Store it as a secret** in the private `ContextSnap` repository: Settings → Secrets and
+3. **Store it as a secret** in the `ContextSnap` repository: Settings → Secrets and
    variables → Actions → New repository secret, name `RELEASES_TOKEN`. Never commit it.
 4. **Allow the workflow to open pull requests**: Settings → Actions → General → Workflow
    permissions → enable **Allow GitHub Actions to create and approve pull requests**. (Without it the
