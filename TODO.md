@@ -23,6 +23,7 @@
 - [x] Visible screen text (focused or all visible windows; UI Automation with on-device OCR fallback; browsers read page only; password/tab/title-bar skipping; limits, timeouts, exclusions) — verified on Chrome (ChatGPT, YouTube), Claude app, Notepad, message box, VS Code first-run screen (OCR), two-window capture
 - [x] Single instance per session (second launch activates the first; `--startup` duplicate exits silently) — verified
 - [x] Per-window screen text limit cuts an overlong line at a word boundary, so a token is never split before redaction (Windows + macOS; regression tests added) — Windows logic checked on Linux with a standalone run; test suite not run here
+- [x] Release workflow publishes packages to the public releases repository, verifies anonymous downloads by SHA-256, and opens a PR that updates `website/downloads.json`; the website enables a button only for a GitHub Release asset URL (checked in headless Chromium with generated, empty, and invalid metadata)
 - [x] Website redesign (static HTML/CSS/JS, green accents, entrance/scroll fade-ins, reduced motion, skip link, focus styles, accurate privacy page) — served locally and checked in headless Chromium at 1280/820/375 px: no console errors, no horizontal overflow, all links resolve, download buttons stay disabled while `downloads.json` lists no files
 
 ## macOS (not built or tested; needs a Mac)
@@ -35,7 +36,7 @@
 - [ ] Dark theme
 - [ ] Installer/MSIX packaging and an application icon
 - [ ] Automated UI smoke test
-- [ ] First tagged release so the website download buttons have real files (`release.yml` fills `downloads.json`)
+- [ ] One-time release setup (public `ContextSnap-Releases` repo, `RELEASES_TOKEN` secret, allow Actions to open PRs) and the first release; see docs/RELEASING.md. The release workflow and website handling are implemented but have not run against a real release yet
 - [ ] Code signing (Windows) and Developer ID signing + notarization (macOS)
 
 ## Known limitations
