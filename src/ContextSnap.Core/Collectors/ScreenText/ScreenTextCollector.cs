@@ -69,16 +69,23 @@ public sealed class ScreenTextCollector(
         using var windowCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         windowCancellation.CancelAfter(timeout);
         var started = Stopwatch.StartNew();
+        var timedOut = string.Create(CultureInfo.InvariantCulture, $"Timed out after {timeout.TotalSeconds:0} s; the app did not respond in time.");
+
+        // UI Automation calls cannot be interrupted, so a hung app is abandoned rather than waited on.
+        // Each read gets its own thread and is waited on synchronously, so a hung app never holds a
+        // thread-pool thread and the timeout does not depend on the pool having a free thread.
+        var read = Task.Factory.StartNew(() => ReadWindow(target, settings, windowCancellation.Token),
+            CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        if (Task.WaitAny([read], timeout, cancellationToken) < 0)
+            return Empty(target, started.Elapsed, timedOut);
+
         try
         {
-            // UI Automation calls cannot be interrupted, so a hung app is abandoned rather than waited on.
-            return Task.Run(() => ReadWindow(target, settings, windowCancellation.Token), windowCancellation.Token)
-                .WaitAsync(timeout, cancellationToken)
-                .GetAwaiter().GetResult();
+            return read.GetAwaiter().GetResult();
         }
-        catch (Exception ex) when (ex is TimeoutException || (ex is OperationCanceledException && !cancellationToken.IsCancellationRequested))
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            return Empty(target, started.Elapsed, string.Create(CultureInfo.InvariantCulture, $"Timed out after {timeout.TotalSeconds:0} s; the app did not respond in time."));
+            return Empty(target, started.Elapsed, timedOut);
         }
     }
 
