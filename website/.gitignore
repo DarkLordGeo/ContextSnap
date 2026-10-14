@@ -1,0 +1,5 @@
+# Dependencies
+node_modules/
+
+# Build outputs (app.js is built from src/app.js)
+# Note: app.js should be committed as it's the production bundle
