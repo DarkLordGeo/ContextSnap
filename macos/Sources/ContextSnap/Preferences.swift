@@ -18,6 +18,7 @@ enum PreferenceKey {
     static let maxOutputCharacters = "maxOutputCharacters"
     static let projectFolders = "projectFolders"
     static let excludedApps = "excludedApps"
+    static let excludedTitleKeywords = "excludedTitleKeywords"
     static let onboardingShown = "onboardingShown"
     static let launchAtLoginInitialized = "launchAtLoginInitialized"
 
@@ -27,6 +28,7 @@ enum PreferenceKey {
             captureVisibleText: true, useOCR: true, showNotification: true, redactEmails: true, hideIdentity: true,
             concealFromClipboardManagers: true, maxCharactersPerWindow: 4_000, maxOutputCharacters: 12_000,
             projectFolders: "", excludedApps: "1Password\nKeePassXC\nBitwarden\nKeychain Access",
+            excludedTitleKeywords: "InPrivate\nIncognito\nPrivate Browsing\nPassword",
             onboardingShown: false, launchAtLoginInitialized: false,
         ])
     }
@@ -44,6 +46,7 @@ struct Preferences: Sendable {
     var maxOutputCharacters: Int
     var projectFolders: [String]
     var excludedApps: [String]
+    var excludedTitleKeywords: [String]
 
     static func current(_ defaults: UserDefaults = .standard) -> Preferences {
         Preferences(
@@ -56,13 +59,20 @@ struct Preferences: Sendable {
             maxCharactersPerWindow: min(max(defaults.integer(forKey: PreferenceKey.maxCharactersPerWindow), 200), 50_000),
             maxOutputCharacters: min(max(defaults.integer(forKey: PreferenceKey.maxOutputCharacters), 1_000), 200_000),
             projectFolders: lines(defaults.string(forKey: PreferenceKey.projectFolders)),
-            excludedApps: lines(defaults.string(forKey: PreferenceKey.excludedApps)))
+            excludedApps: lines(defaults.string(forKey: PreferenceKey.excludedApps)),
+            excludedTitleKeywords: lines(defaults.string(forKey: PreferenceKey.excludedTitleKeywords)))
     }
 
     func isExcluded(appName: String, bundleID: String?) -> Bool {
         excludedApps.contains { entry in
             entry.caseInsensitiveCompare(appName) == .orderedSame || entry.caseInsensitiveCompare(bundleID ?? "") == .orderedSame
         }
+    }
+
+    /// Private-browsing and password windows are skipped by title, matching the Windows defaults.
+    func isTitleExcluded(_ title: String?) -> Bool {
+        guard let title, !title.isEmpty else { return false }
+        return excludedTitleKeywords.contains { title.localizedCaseInsensitiveContains($0) }
     }
 
     private static func lines(_ text: String?) -> [String] {

@@ -1,19 +1,81 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Privacy — ContextSnap</title><link rel="stylesheet" href="styles.css"></head>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy — ContextSnap</title>
+<meta name="description" content="What ContextSnap captures, when it captures it, and what stays on your computer.">
+<meta name="theme-color" content="#f7faf8">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css">
+</head>
 <body>
-<header class="wrap"><a class="wordmark" href="/">ContextSnap</a></header>
-<main class="wrap prose">
-<h1>Privacy</h1>
-<ul>
-<li>ContextSnap runs only when you press its shortcut or click Capture. It never monitors activity or captures in the background.</li>
-<li>Everything is processed on your computer. Snapshots are never sent anywhere; the app has no telemetry, accounts, or cloud features.</li>
-<li>A snapshot can include visible window text, app and window names, project and Git metadata, and basic system information. Password fields are never read, and browsers contribute page content only.</li>
-<li>Secrets, tokens, and email addresses are redacted locally before copying. Redaction is pattern-based and cannot catch everything, so review what you paste.</li>
-<li>Nothing captured is stored. Settings are kept on your computer.</li>
-<li>This website uses no cookies, analytics, or external fonts.</li>
-</ul>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap nav">
+    <a class="wordmark" href="/" aria-label="ContextSnap home"><span class="mark" aria-hidden="true"></span>ContextSnap</a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="/#how">How it works</a></li>
+        <li><a href="privacy" aria-current="page">Privacy</a></li>
+        <li><a class="nav-cta" href="/#download">Download</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main" class="wrap prose">
+  <h1>Privacy</h1>
+  <p class="lead">ContextSnap captures context only when you ask it to, processes it on your computer, and puts the result on your clipboard. That is the whole data flow.</p>
+
+  <h2>When it captures</h2>
+  <ul>
+    <li>Only when you press its shortcut, click Capture, or run <code>ContextSnap --capture</code> / <code>--print</code> on Windows.</li>
+    <li>It never monitors activity, records the screen continuously, or captures in the background.</li>
+  </ul>
+
+  <h2>What a snapshot can include</h2>
+  <ul>
+    <li>Visible text of the window you are using (optionally other visible windows on Windows), read through accessibility APIs, with on-device OCR when an app exposes too little text.</li>
+    <li>Names and titles of open apps and windows; Git branch, status, changed file names, and recent commit subjects; basic system information.</li>
+    <li>On Windows also: open File Explorer folders, running developer tools, Desktop item names, and, only if you turn it on, browser tab titles and the active tab's address.</li>
+  </ul>
+
+  <h2>What it never collects</h2>
+  <ul>
+    <li>Password fields, file contents, Git diffs, cookies, browser history, clipboard history, environment-variable values, or process command-line arguments.</li>
+    <li>Password managers and private or incognito browser windows are excluded by default. You can add your own app and window-title exclusions.</li>
+  </ul>
+
+  <h2>Processing and storage</h2>
+  <ul>
+    <li>Everything is processed on your computer. The apps make no network requests and have no telemetry, accounts, or cloud features.</li>
+    <li>Secrets, tokens, and email addresses are redacted locally before anything is copied. Redaction is pattern-based and cannot catch every secret, and window titles or file names can still reveal what you work on, so review what you paste.</li>
+    <li>Nothing captured is saved. Settings are stored on your computer only.</li>
+    <li>Copies are marked so Windows clipboard history and cloud sync, and macOS clipboard managers that honor the convention, skip them (both on by default).</li>
+  </ul>
+
+  <h2>Permissions</h2>
+  <ul>
+    <li>Windows: no administrator rights. The optional Start with Windows setting adds a shortcut to your Startup folder.</li>
+    <li>macOS: Accessibility lets ContextSnap read the active window's text. Screen Recording is optional and used only for on-device OCR when you capture. Without them, app, Git, and system context still work.</li>
+  </ul>
+
+  <h2>This website</h2>
+  <ul>
+    <li>No cookies, analytics, external fonts, or third-party scripts.</li>
+  </ul>
 </main>
-<footer class="wrap"><a href="/">ContextSnap</a> · <a href="privacy">Privacy</a></footer>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <span>ContextSnap</span>
+    <nav aria-label="Footer">
+      <a href="/#how">How it works</a>
+      <a href="privacy">Privacy</a>
+      <a href="/#download">Download</a>
+    </nav>
+  </div>
+</footer>
 </body>
 </html>

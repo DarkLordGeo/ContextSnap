@@ -166,6 +166,7 @@ struct SettingsView: View {
     @AppStorage(PreferenceKey.maxOutputCharacters) private var maxOutput = 12_000
     @AppStorage(PreferenceKey.projectFolders) private var projectFolders = ""
     @AppStorage(PreferenceKey.excludedApps) private var excludedApps = ""
+    @AppStorage(PreferenceKey.excludedTitleKeywords) private var excludedTitleKeywords = ""
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
     @State private var shortcutStatus = ""
 
@@ -203,6 +204,10 @@ struct SettingsView: View {
                 VStack(alignment: .leading) {
                     Text("Never read these apps (names or bundle IDs, one per line)").font(.caption)
                     TextEditor(text: $excludedApps).font(.system(.body, design: .monospaced)).frame(height: 70)
+                }
+                VStack(alignment: .leading) {
+                    Text("Never read windows whose title contains (one per line)").font(.caption)
+                    TextEditor(text: $excludedTitleKeywords).font(.system(.body, design: .monospaced)).frame(height: 70)
                 }
                 Text("Secrets and tokens are always redacted. Redaction is pattern-based and cannot catch everything, so review what you paste.")
                     .font(.caption).foregroundStyle(.secondary)

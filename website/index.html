@@ -4,31 +4,138 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ContextSnap — Capture your context. Paste it anywhere.</title>
-<meta name="description" content="One shortcut. A useful snapshot. Your machine, your data.">
+<meta name="description" content="ContextSnap turns what you are working on into a redacted Markdown snapshot, only when you press its shortcut. Processed locally on Windows and macOS.">
+<meta name="theme-color" content="#f7faf8">
+<meta property="og:title" content="ContextSnap">
+<meta property="og:description" content="One shortcut. A useful Markdown snapshot of your current context. Processed on your machine.">
+<meta property="og:type" content="website">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<header class="wrap"><a class="wordmark" href="/">ContextSnap</a></header>
-<main class="wrap">
-  <section class="hero">
-    <h1>Capture your context. Paste it anywhere.</h1>
-    <p class="lead">One shortcut. A useful snapshot. Your machine, your data.</p>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap nav">
+    <a class="wordmark" href="/" aria-label="ContextSnap home"><span class="mark" aria-hidden="true"></span>ContextSnap</a>
+    <nav aria-label="Main">
+      <ul>
+        <li><a href="#how">How it works</a></li>
+        <li><a href="#privacy">Privacy</a></li>
+        <li><a class="nav-cta" href="#download">Download</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <section class="wrap hero" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <p class="eyebrow">For Windows and macOS</p>
+      <h1 id="hero-title">Capture your context.<br>Paste it anywhere.</h1>
+      <p class="lead">Press one shortcut and ContextSnap turns what you are working on into a short, redacted Markdown snapshot on your clipboard. Paste it into ChatGPT, Claude, or any other assistant.</p>
+      <div class="actions">
+        <a class="button primary" href="#download">Get ContextSnap</a>
+        <a class="button ghost" href="#how">See how it works</a>
+      </div>
+      <p class="fine">Runs only when you ask it to. Processed on your computer. No account.</p>
+    </div>
+
+    <figure class="preview" aria-label="Example of a copied snapshot">
+      <div class="preview-bar" aria-hidden="true"><span></span><span></span><span></span><em>Clipboard · Markdown</em></div>
+      <pre class="preview-body"><code><b># Context Snapshot</b>
+<i>_Captured 2026-10-14 19:31 by ContextSnap._</i>
+
+<b>## Visible text</b>
+<b>### Active window:</b> Code — Program.cs
+api_key = <mark>[REDACTED]</mark>
+
+<b>## System context</b>
+<b>### Git repositories (1)</b>
+- Branch: `main` → `origin/main` (ahead 1)
+- Working tree: 2 unstaged, 1 untracked</code></pre>
+      <figcaption class="preview-toast" aria-hidden="true"><span class="check"></span>Context copied to clipboard</figcaption>
+    </figure>
   </section>
-  <ol class="steps">
-    <li><strong>Press your shortcut.</strong></li>
-    <li><strong>ContextSnap collects the current context on demand:</strong> visible text, project and Git state, open apps.</li>
-    <li><strong>Paste the Markdown</strong> into ChatGPT, Claude, or another tool.</li>
-  </ol>
-  <section class="downloads" id="downloads">
-    <article class="card" data-platform="windows"><h2>Windows</h2><p class="detail">Windows 10/11, 64-bit</p><p class="meta"></p><a class="button" aria-disabled="true">Build coming soon</a></article>
-    <article class="card" data-platform="macos"><h2>macOS</h2><p class="detail">macOS 14 or later, Apple silicon and Intel</p><p class="meta"></p><a class="button" aria-disabled="true">Build coming soon</a></article>
+
+  <section class="wrap section" id="how" aria-labelledby="how-title" data-reveal>
+    <h2 id="how-title">How it works</h2>
+    <ol class="steps">
+      <li class="card">
+        <span class="step-number" aria-hidden="true">1</span>
+        <h3>Press the shortcut</h3>
+        <p><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> on Windows, <kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd> on macOS by default. Nothing is read before you do.</p>
+      </li>
+      <li class="card">
+        <span class="step-number" aria-hidden="true">2</span>
+        <h3>Context is collected and redacted</h3>
+        <p>Visible text of the window you are using, open apps, Git state, and system basics. Secrets, tokens, and email addresses are redacted on your machine.</p>
+      </li>
+      <li class="card">
+        <span class="step-number" aria-hidden="true">3</span>
+        <h3>Paste the Markdown</h3>
+        <p>The snapshot lands on your clipboard with a short confirmation. Review it, then paste it wherever you need it.</p>
+      </li>
+    </ol>
   </section>
-  <section class="privacy">
-    <h2>Private by design</h2>
-    <p>Context is captured only when you press the shortcut, processed and redacted locally, and copied to your clipboard. No accounts, no cloud, no analytics. <a href="privacy">Privacy details</a></p>
+
+  <section class="wrap section" aria-labelledby="captures-title" data-reveal>
+    <h2 id="captures-title">What a snapshot can include</h2>
+    <p class="section-lead">Each source can be turned off. Size limits keep the result short enough to be useful.</p>
+    <ul class="features">
+      <li class="card"><h3>Visible text</h3><p>Text on screen in the focused window, read through accessibility APIs with on-device OCR as a fallback. Password fields are skipped.</p></li>
+      <li class="card"><h3>Apps and windows</h3><p>Names and titles of open apps. Password managers and private browsing windows are excluded by default.</p></li>
+      <li class="card"><h3>Git state</h3><p>Branch, upstream, changed file names, and recent commit subjects. Git is run read-only; diffs and file contents are never read.</p></li>
+      <li class="card"><h3>System basics</h3><p>Operating system, architecture, CPU count, and memory. On Windows also Explorer folders, developer tools, and Desktop items.</p></li>
+    </ul>
+  </section>
+
+  <section class="wrap section" id="privacy" aria-labelledby="privacy-title" data-reveal>
+    <div class="privacy card">
+      <div>
+        <h2 id="privacy-title">Private by design</h2>
+        <p>ContextSnap is a capture tool, not a monitor. It does nothing until you press the shortcut or click Capture, and it keeps no history.</p>
+      </div>
+      <ul class="checks">
+        <li>Captures only when you trigger it</li>
+        <li>Processed and redacted locally</li>
+        <li>No network requests, telemetry, or accounts</li>
+        <li>Nothing captured is saved to disk</li>
+      </ul>
+      <p class="note">Redaction is pattern-based and cannot catch every secret. Window titles and file names can still reveal what you work on, so review the snapshot before you share it. <a href="privacy">Read the privacy details</a>.</p>
+    </div>
+  </section>
+
+  <section class="wrap section" id="download" aria-labelledby="download-title" data-reveal>
+    <h2 id="download-title">Download</h2>
+    <p class="section-lead">Builds for both platforms are published here when a release is available.</p>
+    <div class="downloads">
+      <article class="card download" data-platform="windows" aria-labelledby="dl-windows">
+        <h3 id="dl-windows">Windows</h3>
+        <p class="detail">Windows 10/11, 64-bit · requires the .NET 10 Desktop Runtime</p>
+        <p class="meta"></p>
+        <a class="button primary" aria-disabled="true">Download not yet available</a>
+      </article>
+      <article class="card download" data-platform="macos" aria-labelledby="dl-macos">
+        <h3 id="dl-macos">macOS</h3>
+        <p class="detail">macOS 14 or later · Apple silicon and Intel</p>
+        <p class="meta"></p>
+        <a class="button primary" aria-disabled="true">Download not yet available</a>
+      </article>
+    </div>
+    <p class="fine">Current builds are not code-signed or notarized, so Windows SmartScreen and macOS Gatekeeper may ask you to confirm the first launch. Each download lists its SHA-256 checksum.</p>
   </section>
 </main>
-<footer class="wrap"><a href="/">ContextSnap</a> · <a href="privacy">Privacy</a> · <span>Issue reporting: coming soon</span></footer>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <span>ContextSnap</span>
+    <nav aria-label="Footer">
+      <a href="#how">How it works</a>
+      <a href="privacy">Privacy</a>
+      <a href="#download">Download</a>
+    </nav>
+  </div>
+</footer>
 <script src="app.js" defer></script>
 </body>
 </html>

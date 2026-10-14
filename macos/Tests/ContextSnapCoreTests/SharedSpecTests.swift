@@ -66,4 +66,11 @@ final class SharedSpecTests: XCTestCase {
                      OCRLine(text: "Sidebar", frame: CGRect(x: 10, y: 60, width: 150, height: 16))]
         XCTAssertEqual(OCRLayout.order(lines), ["Sidebar", "Message"])
     }
+
+    func testLimitCutsOverlongLineAtWordBoundary() {
+        let token = "ghp_" + String(repeating: "A", count: 36)
+        let (text, truncated) = VisibleTextAssembler.limit(["see \(token) here"], maxCharacters: 20)
+        XCTAssertTrue(truncated)
+        XCTAssertEqual(text, "see…")
+    }
 }

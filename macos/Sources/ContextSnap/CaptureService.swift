@@ -86,11 +86,16 @@ enum SnapshotBuilder {
                     visible = Section(name: visibleTextName, status: .empty, notes: ["The active app is excluded by your privacy settings."])
                 } else {
                     let read = await readWindow(target, preferences)
-                    title = read.title
-                    documentPath = read.documentPath
-                    visible = read.window.text.isEmpty
-                        ? Section(name: visibleTextName, status: .empty, notes: read.window.warnings)
-                        : .collected(visibleTextName, [read.window])
+                    if preferences.isTitleExcluded(read.title) {
+                        // Discard everything read from the window, including its title and document path.
+                        visible = Section(name: visibleTextName, status: .empty, notes: ["The active window is excluded by your privacy settings."])
+                    } else {
+                        title = read.title
+                        documentPath = read.documentPath
+                        visible = read.window.text.isEmpty
+                            ? Section(name: visibleTextName, status: .empty, notes: read.window.warnings)
+                            : .collected(visibleTextName, [read.window])
+                    }
                 }
             } else {
                 visible = Section(name: visibleTextName, status: .empty, notes: ["No active app was found."])

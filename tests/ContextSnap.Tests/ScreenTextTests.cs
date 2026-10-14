@@ -137,6 +137,17 @@ public class VisibleTextAssemblerTests
     }
 
     [Fact]
+    public void Limit_CutsAnOverlongLineAtAWordBoundarySoTokensAreNotSplit()
+    {
+        var token = "ghp_" + new string('A', 36);
+        var (text, truncated) = VisibleTextAssembler.Limit([$"see {token} here"], 20);
+
+        Assert.True(truncated);
+        Assert.Equal("see…", text);
+        Assert.DoesNotContain("ghp_", text);
+    }
+
+    [Fact]
     public void Normalize_RemovesInvisibleCharacters()
     {
         Assert.Equal("a b c", VisibleTextAssembler.Normalize("a​ ￼  b\t﻿c"));
