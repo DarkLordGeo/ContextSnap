@@ -64,7 +64,7 @@ struct MenuContent: View {
     @State private var launchAtLogin = LaunchAtLogin.isEnabled
 
     var body: some View {
-        Button("Capture & Copy  \(Shortcut.current().display)") { capture.captureAndCopy() }
+        Button("Capture  \(Shortcut.current().display)") { capture.captureAndCopy() }
             .disabled(capture.isCapturing)
         Text(capture.lastStatus)
         Divider()
@@ -91,7 +91,7 @@ struct OnboardingView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("ContextSnap captures your current context only when you press \(Shortcut.current().display), redacts it on this Mac, and copies Markdown to your clipboard. Nothing is sent anywhere.")
+            Text("ContextSnap captures your current context only when you press \(Shortcut.current().display) and redacts it on this Mac. When the snapshot includes text from your screen, you review it before it is copied to your clipboard. Nothing is sent anywhere.")
                 .fixedSize(horizontal: false, vertical: true)
 
             PermissionRow(
@@ -159,6 +159,7 @@ struct SettingsView: View {
     @AppStorage(PreferenceKey.captureVisibleText) private var captureVisibleText = true
     @AppStorage(PreferenceKey.useOCR) private var useOCR = true
     @AppStorage(PreferenceKey.showNotification) private var showNotification = true
+    @AppStorage(PreferenceKey.copyWithoutReview) private var copyWithoutReview = false
     @AppStorage(PreferenceKey.redactEmails) private var redactEmails = true
     @AppStorage(PreferenceKey.hideIdentity) private var hideIdentity = true
     @AppStorage(PreferenceKey.concealFromClipboardManagers) private var conceal = true
@@ -221,6 +222,7 @@ struct SettingsView: View {
                         launchAtLogin = LaunchAtLogin.isEnabled
                     }))
                 Toggle("Show a notification after copying", isOn: $showNotification)
+                Toggle("Copy immediately without review, even when visible text is included", isOn: $copyWithoutReview)
             }
         }
         .formStyle(.grouped)

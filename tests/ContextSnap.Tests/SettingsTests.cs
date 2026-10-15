@@ -21,9 +21,22 @@ public sealed class SettingsTests : IDisposable
         Assert.True(settings.RedactEmails);
         Assert.True(settings.HideUserIdentity);
         Assert.True(settings.ExcludeFromClipboardHistory);
+        Assert.False(settings.HotkeyCopiesImmediately);
         Assert.Equal(12_000, settings.MaxOutputCharacters);
         Assert.Contains("KeePassXC", settings.ExcludedProcesses);
         Assert.Contains("InPrivate", settings.ExcludedTitleKeywords);
+    }
+
+    [Fact]
+    public void Load_SettingsSavedBeforeReviewOptionExistedUseReviewDefault()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
+        File.WriteAllText(SettingsPath, """{ "enableGlobalHotkey": true, "copyAfterCapture": false }""");
+
+        var settings = new SettingsStore(SettingsPath).Load().Settings;
+
+        Assert.True(settings.EnableGlobalHotkey);
+        Assert.False(settings.HotkeyCopiesImmediately);
     }
 
     [Fact]

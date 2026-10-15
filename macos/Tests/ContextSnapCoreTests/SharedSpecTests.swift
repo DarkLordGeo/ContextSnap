@@ -128,4 +128,13 @@ final class SharedSpecTests: XCTestCase {
         runGit("status")
         XCTAssertTrue(FileManager.default.fileExists(atPath: marker))
     }
+
+    func testVisibleTextIsReviewedBeforeCopyingByDefault() {
+        let window = WindowText(appName: "Safari", windowTitle: "Chat", isFocused: true, accessibilityCharacters: 4, ocrCharacters: 0,
+                                text: "Chat", truncated: false, warnings: [])
+        XCTAssertFalse(CopyBehavior.copiesImmediately(copyWithoutReview: false, visibleText: .collected("Visible screen text", [window])))
+        XCTAssertTrue(CopyBehavior.copiesImmediately(copyWithoutReview: true, visibleText: .collected("Visible screen text", [window])))
+        XCTAssertTrue(CopyBehavior.copiesImmediately(copyWithoutReview: false, visibleText: .disabled("Visible screen text")))
+        XCTAssertTrue(CopyBehavior.copiesImmediately(copyWithoutReview: false, visibleText: .collected("Visible screen text", [])))
+    }
 }

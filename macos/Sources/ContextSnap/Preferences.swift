@@ -11,6 +11,7 @@ enum PreferenceKey {
     static let captureVisibleText = "captureVisibleText"
     static let useOCR = "useOCR"
     static let showNotification = "showNotification"
+    static let copyWithoutReview = "copyWithoutReview"
     static let redactEmails = "redactEmails"
     static let hideIdentity = "hideIdentity"
     static let concealFromClipboardManagers = "concealFromClipboardManagers"
@@ -25,7 +26,7 @@ enum PreferenceKey {
     static func registerDefaults() {
         UserDefaults.standard.register(defaults: [
             shortcutKey: "C", shortcutCommand: true, shortcutOption: true, shortcutControl: true, shortcutShift: false,
-            captureVisibleText: true, useOCR: true, showNotification: true, redactEmails: true, hideIdentity: true,
+            captureVisibleText: true, useOCR: true, showNotification: true, copyWithoutReview: false, redactEmails: true, hideIdentity: true,
             concealFromClipboardManagers: true, maxCharactersPerWindow: 4_000, maxOutputCharacters: 12_000,
             projectFolders: "", excludedApps: "1Password\nKeePassXC\nBitwarden\nKeychain Access",
             excludedTitleKeywords: "InPrivate\nIncognito\nPrivate Browsing\nPassword",
@@ -39,6 +40,7 @@ struct Preferences: Sendable {
     var captureVisibleText: Bool
     var useOCR: Bool
     var showNotification: Bool
+    var copyWithoutReview: Bool
     var redactEmails: Bool
     var hideIdentity: Bool
     var concealFromClipboardManagers: Bool
@@ -53,6 +55,7 @@ struct Preferences: Sendable {
             captureVisibleText: defaults.bool(forKey: PreferenceKey.captureVisibleText),
             useOCR: defaults.bool(forKey: PreferenceKey.useOCR),
             showNotification: defaults.bool(forKey: PreferenceKey.showNotification),
+            copyWithoutReview: defaults.bool(forKey: PreferenceKey.copyWithoutReview),
             redactEmails: defaults.bool(forKey: PreferenceKey.redactEmails),
             hideIdentity: defaults.bool(forKey: PreferenceKey.hideIdentity),
             concealFromClipboardManagers: defaults.bool(forKey: PreferenceKey.concealFromClipboardManagers),

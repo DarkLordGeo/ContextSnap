@@ -9,7 +9,7 @@ This README describes the Windows app. A macOS menu-bar app with the same privac
 ## Features
 
 - **Capture → review → copy.** One button (or `F5` / `Ctrl+Enter`) collects context and shows an editable Markdown preview. `Ctrl+Shift+C` copies it.
-- **Global shortcut.** `Ctrl+Alt+Shift+C` captures and copies in one step from any application while ContextSnap is open (can be turned off).
+- **Global shortcut.** `Ctrl+Alt+Shift+C` captures from any application while ContextSnap is open (can be turned off). A snapshot that includes visible screen text opens in the preview for review before anything is copied; snapshots without screen text are copied in one step. **Settings → Behavior → Shortcut copies immediately, without review** restores one-step copying for every snapshot.
 - **Copy notifications** (on by default). After every copy, a small animated notice appears in the bottom-right corner: "Context copied to clipboard" with character, word, and size counts, a warning when the snapshot was truncated, or "Copy failed" with the reason. See [Copy notifications](#copy-notifications).
 - **Start with Windows** (on by default). ContextSnap opens minimized when you sign in, so the shortcut is ready. Only one copy ever runs: launching it again brings the existing window forward. See [Start with Windows](#start-with-windows).
 - **Visible screen text** (on by default, focused window only). The text you can currently see in the window you are working in, such as a ChatGPT or Claude conversation, a document, or a dialog, read through Windows UI Automation with an on-device Windows OCR fallback. See [Visible screen text](#visible-screen-text).

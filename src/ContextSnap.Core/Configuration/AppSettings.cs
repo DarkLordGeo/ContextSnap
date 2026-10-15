@@ -75,6 +75,13 @@ public sealed class AppSettings
 
     // Behavior
     public bool EnableGlobalHotkey { get; set; } = true;
+
+    /// <summary>
+    /// When false (default), a shortcut capture that includes visible screen text opens the preview for
+    /// review instead of copying. When true, the shortcut always captures and copies in one step.
+    /// </summary>
+    public bool HotkeyCopiesImmediately { get; set; }
+
     public bool CopyAfterCapture { get; set; }
 
     /// <summary>Adds a shortcut to the current user's Startup folder so ContextSnap opens minimized at sign-in.</summary>
