@@ -2,8 +2,10 @@
   <Folder Name="/src/">
     <Project Path="src/ContextSnap.Core/ContextSnap.Core.csproj" />
     <Project Path="src/ContextSnap/ContextSnap.csproj" />
+    <Project Path="src/ContextSnap.Linux/ContextSnap.Linux.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/ContextSnap.Linux.Tests/ContextSnap.Linux.Tests.csproj" />
     <Project Path="tests/ContextSnap.Tests/ContextSnap.Tests.csproj" />
   </Folder>
 </Solution>

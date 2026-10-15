@@ -8,13 +8,10 @@
       "size": "6.6 MB",
       "sha256": "b111144ebb76dcce4af2cd89c77e1c073a920e12493c8eae412e7caa1bbcb618"
     },
-    "macos": {
-      "label": "macOS",
-      "detail": "macOS 14 or later · Apple silicon and Intel",
-      "file": "https://github.com/DarkLordGeo/ContextSnap-Releases/releases/download/v1.0.0/ContextSnap-1.0.0-macos-universal.dmg",
-      "size": "0.7 MB",
-      "sha256": "a74223d6b94887c6ad5fe6c5d830c7ec24e3c7cfb21c78d30cd9869b2245a424",
-      "note": "Not notarized by Apple yet. The first time you open it, click Done, then go to System Settings → Privacy & Security and click Open Anyway."
+    "linux": {
+      "label": "Linux",
+      "detail": "64-bit (x64) · command-line app for X11 and Wayland · no .NET install needed",
+      "note": "Extract it, put contextsnap on your PATH, and bind it to a keyboard shortcut. Copying needs wl-clipboard (Wayland) or xclip (X11); listing windows needs wmctrl."
     }
   }
 }

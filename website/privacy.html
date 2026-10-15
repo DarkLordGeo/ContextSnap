@@ -33,15 +33,15 @@
 
   <h2>When it captures</h2>
   <ul>
-    <li>Only when you press its shortcut, click Capture, or run <code>ContextSnap --capture</code> / <code>--print</code> on Windows.</li>
+    <li>Only when you press its shortcut, click Capture, or run <code>ContextSnap --capture</code> / <code>--print</code> on Windows, or when you run <code>contextsnap</code> on Linux (usually from a keyboard shortcut you set up).</li>
     <li>It never monitors activity, records the screen continuously, or captures in the background.</li>
   </ul>
 
   <h2>What a snapshot can include</h2>
   <ul>
-    <li>Visible text of the window you are using (optionally other visible windows on Windows), read through accessibility APIs, with on-device OCR when an app exposes too little text.</li>
+    <li>On Windows, visible text of the window you are using (optionally other visible windows), read through accessibility APIs, with on-device OCR when an app exposes too little text.</li>
     <li>Names and titles of open apps and windows; Git branch, status, changed file names, and recent commit subjects; basic system information.</li>
-    <li>On Windows also: open File Explorer folders, running developer tools, Desktop item names, and, only if you turn it on, browser tab titles and the active tab's address.</li>
+    <li>Running developer tools and Desktop item names. On Windows also: open File Explorer folders and, only if you turn it on, browser tab titles and the active tab's address.</li>
   </ul>
 
   <h2>What it never collects</h2>
@@ -55,13 +55,13 @@
     <li>Everything is processed on your computer. The apps make no network requests and have no telemetry, accounts, or cloud features.</li>
     <li>Secrets, tokens, and email addresses are redacted locally before anything is copied. Redaction is pattern-based and cannot catch every secret, and window titles or file names can still reveal what you work on, so review what you paste.</li>
     <li>Nothing captured is saved. Settings are stored on your computer only.</li>
-    <li>Copies are marked so Windows clipboard history and cloud sync, and macOS clipboard managers that honor the convention, skip them (both on by default).</li>
+    <li>On Windows, copies are marked so clipboard history and cloud sync skip them (on by default). On Linux, a clipboard manager you run may keep its own copy.</li>
   </ul>
 
   <h2>Permissions</h2>
   <ul>
     <li>Windows: no administrator rights. The optional Start with Windows setting adds a shortcut to your Startup folder.</li>
-    <li>macOS: Accessibility lets ContextSnap read the active window's text. Screen Recording is optional and used only for on-device OCR when you capture. Without them, app, Git, and system context still work.</li>
+    <li>Linux: no root access. Windows are listed with <code>wmctrl</code> and <code>xprop</code>, copying uses <code>wl-copy</code>, <code>xclip</code>, or <code>xsel</code>, and only process names and executable paths are read from <code>/proc</code>.</li>
   </ul>
 
   <h2>This website</h2>

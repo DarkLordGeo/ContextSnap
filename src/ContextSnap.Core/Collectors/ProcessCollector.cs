@@ -1,6 +1,4 @@
-using System.Diagnostics;
 using ContextSnap.Model;
-using ContextSnap.Platform;
 using ContextSnap.Privacy;
 
 namespace ContextSnap.Collectors;
@@ -77,30 +75,4 @@ public sealed class ProcessCollector(IProcessSource source) : ICollector<Process
 
     private static string StripExe(string name) =>
         name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? name[..^4] : name;
-}
-
-public sealed class SystemProcessSource : IProcessSource
-{
-    public IReadOnlyList<RawProcess> GetProcesses()
-    {
-        var processes = new List<RawProcess>();
-        foreach (var process in Process.GetProcesses())
-        {
-            using (process)
-            {
-                try
-                {
-                    processes.Add(new RawProcess(process.Id, process.ProcessName));
-                }
-                catch (InvalidOperationException)
-                {
-                    // The process exited between enumeration and reading its name.
-                }
-            }
-        }
-
-        return processes;
-    }
-
-    public string? GetExecutablePath(int processId) => ProcessInfoReader.GetImagePath(processId);
 }

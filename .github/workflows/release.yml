@@ -1,9 +1,10 @@
 name: Release
 
-# Builds versioned Windows and macOS packages with checksums, publishes them as a GitHub Release in
+# Builds versioned Windows and Linux packages with checksums, publishes them as a GitHub Release in
 # the public releases repository (ContextSnap-Releases), verifies that the public
 # download URLs serve the exact files, and opens a pull request that updates website/downloads.json.
 # Binaries are never committed to this repository. Setup: docs/RELEASING.md.
+# The macOS app (macos/) is built and tested by CI but not released until it can be notarized.
 on:
   push:
     tags: ["v*"]
@@ -63,72 +64,43 @@ jobs:
           name: windows
           path: ContextSnap-*-windows-x64.zip*
 
-  macos:
+  linux:
     needs: version
-    runs-on: macos-15
+    runs-on: ubuntu-latest
     env:
       VERSION: ${{ needs.version.outputs.version }}
-    outputs:
-      notarized: ${{ steps.signing.outputs.notarized }}
     steps:
       - uses: actions/checkout@v5
-      - run: swift test
-        working-directory: macos
-      # Optional Developer ID signing and notarization (docs/RELEASING.md). Without the secrets the app is
-      # ad-hoc signed and the website tells macOS users how to open it.
-      - name: Import Developer ID certificate
-        id: signing
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - name: Install X11 test tools
+        run: sudo apt-get update -q && sudo apt-get install -y -q xvfb xclip
+      - run: xvfb-run -a dotnet test tests/ContextSnap.Linux.Tests -c Release
         env:
-          MACOS_CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
-          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
-          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
-          NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
-          NOTARY_KEY: ${{ secrets.NOTARY_KEY }}
+          CI: "true"
+      # Self-contained single file: users need no .NET runtime.
+      - run: >-
+          dotnet publish src/ContextSnap.Linux -c Release -r linux-x64 --self-contained
+          -p:PublishSingleFile=true -p:Version=${{ env.VERSION }} -o publish/linux
+      - name: Smoke test
         run: |
-          if [[ -z "$MACOS_CERTIFICATE_P12" ]]; then
-            echo "::warning::No Developer ID certificate configured; the macOS app is ad-hoc signed and not notarized."
-            echo "notarized=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          keychain="$RUNNER_TEMP/signing.keychain-db"
-          password="$(uuidgen)"
-          security create-keychain -p "$password" "$keychain"
-          security set-keychain-settings -lut 21600 "$keychain"
-          security unlock-keychain -p "$password" "$keychain"
-          (umask 077 && printf '%s' "$MACOS_CERTIFICATE_P12" | base64 --decode > "$RUNNER_TEMP/certificate.p12")
-          security import "$RUNNER_TEMP/certificate.p12" -P "$MACOS_CERTIFICATE_PASSWORD" -f pkcs12 -k "$keychain" -T /usr/bin/codesign
-          rm -f "$RUNNER_TEMP/certificate.p12"
-          security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$keychain" > /dev/null
-          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
-          identity="$(security find-identity -v -p codesigning "$keychain" | sed -n 's/.*"\(Developer ID Application: .*\)"/\1/p' | head -1)"
-          [[ -n "$identity" ]] || { echo "::error::MACOS_CERTIFICATE_P12 contains no Developer ID Application identity."; exit 1; }
-          echo "SIGNING_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
-          echo "MACOS_SIGNING_IDENTITY=$identity" >> "$GITHUB_ENV"
-          if [[ -n "$NOTARY_KEY_ID" && -n "$NOTARY_ISSUER_ID" && -n "$NOTARY_KEY" ]]; then
-            echo "notarized=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning::Developer ID signing without notarization: set NOTARY_KEY_ID, NOTARY_ISSUER_ID, and NOTARY_KEY."
-            echo "notarized=false" >> "$GITHUB_OUTPUT"
-          fi
-      - run: ./scripts/build.sh "$VERSION"
-        working-directory: macos
-        env:
-          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
-          NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
-          NOTARY_KEY: ${{ secrets.NOTARY_KEY }}
-      - name: Checksums
-        working-directory: macos/dist
-        run: for f in ContextSnap-*; do shasum -a 256 "$f" > "$f.sha256"; done
+          [[ "$(publish/linux/contextsnap --version)" == "ContextSnap $VERSION" ]]
+          publish/linux/contextsnap --print | grep -q "^# Context Snapshot"
+      - name: Package
+        run: |
+          dir="contextsnap-$VERSION-linux-x64"
+          mkdir "$dir"
+          cp publish/linux/contextsnap LICENSE "$dir/"
+          tar -czf "ContextSnap-$VERSION-linux-x64.tar.gz" "$dir"
+          sha256sum "ContextSnap-$VERSION-linux-x64.tar.gz" > "ContextSnap-$VERSION-linux-x64.tar.gz.sha256"
       - uses: actions/upload-artifact@v4
         with:
-          name: macos
-          path: macos/dist/ContextSnap-*
-      - name: Remove signing keychain
-        if: always() && env.SIGNING_KEYCHAIN != ''
-        run: security delete-keychain "$SIGNING_KEYCHAIN"
+          name: linux
+          path: ContextSnap-*-linux-x64.tar.gz*
 
   publish:
-    needs: [version, windows, macos]
+    needs: [version, windows, linux]
     env:
       VERSION: ${{ needs.version.outputs.version }}
     runs-on: ubuntu-latest
@@ -143,17 +115,17 @@ jobs:
           GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
         run: |
           [[ -n "$GH_TOKEN" ]] || { echo "::error::Secret RELEASES_TOKEN is not set. See docs/RELEASING.md."; exit 1; }
-          files=(artifacts/windows/* artifacts/macos/*)
+          files=(artifacts/windows/* artifacts/linux/*)
           if gh release view "v$VERSION" --repo "$RELEASES_REPO" > /dev/null 2>&1; then
             gh release upload "v$VERSION" "${files[@]}" --repo "$RELEASES_REPO" --clobber
           else
             gh release create "v$VERSION" "${files[@]}" --repo "$RELEASES_REPO" --title "ContextSnap $VERSION" \
-              --notes "Windows: framework-dependent build (requires the .NET 10 Desktop Runtime), not code-signed. macOS: universal build, ad-hoc signed and not notarized. Verify downloads with the .sha256 files."
+              --notes "Windows: framework-dependent build (requires the .NET 10 Desktop Runtime), not code-signed. Linux: self-contained x64 command-line app (needs wl-clipboard or xclip; wmctrl to list windows). Verify downloads with the .sha256 files."
           fi
       - name: Verify public downloads
         run: |
           # Anonymous downloads (no token) prove the assets are public; checksums prove they are these files.
-          for f in "ContextSnap-$VERSION-windows-x64.zip" "ContextSnap-$VERSION-macos-universal.dmg"; do
+          for f in "ContextSnap-$VERSION-windows-x64.zip" "ContextSnap-$VERSION-linux-x64.tar.gz"; do
             local_file=$(ls artifacts/*/"$f")
             url="https://github.com/$RELEASES_REPO/releases/download/v$VERSION/$f"
             curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors -o "/tmp/$f" "$url"
@@ -162,7 +134,7 @@ jobs:
           done
 
   update-website:
-    needs: [version, macos, publish]
+    needs: [version, publish]
     env:
       VERSION: ${{ needs.version.outputs.version }}
     runs-on: ubuntu-latest
@@ -177,8 +149,6 @@ jobs:
         with:
           path: artifacts
       - name: Update downloads.json
-        env:
-          MACOS_NOTARIZED: ${{ needs.macos.outputs.notarized }}
         run: |
           node -e '
             const fs = require("fs"), path = require("path"), crypto = require("crypto");
@@ -187,10 +157,7 @@ jobs:
             const m = JSON.parse(fs.readFileSync("website/downloads.json"));
             m.version = v;
             Object.assign(m.platforms.windows, info("windows", `ContextSnap-${v}-windows-x64.zip`));
-            Object.assign(m.platforms.macos, info("macos", `ContextSnap-${v}-macos-universal.dmg`));
-            // Builds without Apple notarization need one extra confirmation on first launch.
-            if (process.env.MACOS_NOTARIZED === "true") delete m.platforms.macos.note;
-            else m.platforms.macos.note = "Not notarized by Apple yet. The first time you open it, click Done, then go to System Settings → Privacy & Security and click Open Anyway.";
+            m.platforms.linux = Object.assign(m.platforms.linux || { label: "Linux" }, info("linux", `ContextSnap-${v}-linux-x64.tar.gz`));
             fs.writeFileSync("website/downloads.json", JSON.stringify(m, null, 2) + "\n");'
           git diff --stat
       - name: Open a pull request

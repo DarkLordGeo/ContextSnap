@@ -33,7 +33,17 @@
 - [x] Redaction regexes are linear on adversarial input (about 24 s → 4 ms for 50,000 characters of "a.a.a…"); performance-bound tests on both platforms
 - [x] Integration tests that cannot run (no Git, no desktop, no OCR) are reported as skipped
 
-## macOS (built and unit-tested in CI; not yet tried by hand on a Mac)
+## Linux command-line app (verified 2026-10-15 on Ubuntu 24.04 under Xvfb + Openbox; not tried on a real GNOME/KDE desktop)
+- [x] `contextsnap` captures, redacts, copies, and notifies; `--print`, `--help`, `--version`
+- [x] Open windows via wmctrl/xprop (active first, stacking order, UTF-8 titles, host dropped, exclusions) — exercised with xterm windows, password-manager title excluded, token and email in titles redacted
+- [x] Clipboard via wl-copy / xclip / xsel on stdin — xclip round trip tested (also in CI under xvfb-run); `$(contextsnap)` does not hang
+- [x] Developer tools from /proc (names and executable paths only), Git (same safety rules, shared Git tests pass on Linux), Desktop items, system summary (os-release, kernel, desktop session, memory)
+- [x] Self-contained single-file `linux-x64` build runs without .NET installed; release job, CI job, website card
+- [ ] Try on GNOME and KDE (X11 and Wayland), with wl-copy and notify-send on a real session
+- [ ] Wayland-native window listing (no common protocol; only XWayland apps are listed)
+- [ ] linux-arm64 build
+
+## macOS (built and unit-tested in CI; not released until notarized; not yet tried by hand on a Mac)
 - [x] `swift test` and `./scripts/build.sh` run in CI on macOS 15
 - [ ] Try the review window and Accessibility/OCR capture on a real Mac
 - [ ] Verify the new window-title exclusions (InPrivate, Incognito, Private Browsing, Password by default) skip private browser windows
@@ -45,7 +55,7 @@
 - [ ] Installer/MSIX packaging and an application icon
 - [ ] Automated UI smoke test
 - [ ] One-time release setup (public `ContextSnap-Releases` repo, `RELEASES_TOKEN` secret, allow Actions to open PRs) and the first release; see docs/RELEASING.md. The release workflow and website handling are implemented but have not run against a real release yet
-- [ ] Code signing (Windows) and Developer ID signing + notarization (macOS)
+- [ ] Code signing (Windows) and Developer ID signing + notarization (macOS), then release macOS again (docs/RELEASING.md)
 
 ## Known limitations
 - Terminal working directories are not collected (no documented, safe Windows API).

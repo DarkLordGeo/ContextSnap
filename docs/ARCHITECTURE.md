@@ -1,6 +1,6 @@
 # Architecture
 
-ContextSnap is two projects plus tests:
+ContextSnap for Windows is two projects plus tests; the Linux command-line app reuses the platform-neutral Core sources:
 
 ```
 src/ContextSnap.Core/      Class library: everything except the window
@@ -20,7 +20,16 @@ src/ContextSnap.Core/      Class library: everything except the window
 src/ContextSnap/           WPF executable: Program (entry, GUI vs. command line), MainWindow, styles,
                            Notifications/ (ToastWindow, WpfCopyNotifier, palette, reduced-motion check)
 tests/ContextSnap.Tests/   xUnit tests against Core
+src/ContextSnap.Linux/     Linux command-line app (net10.0): compiles the platform-neutral Core files
+                           (Model, Configuration, Privacy, Formatting, Git, SnapshotService, HeadlessRunner,
+                           CopyService, notification content) and adds X11WindowSource (wmctrl/xprop),
+                           LinuxProcessSource (/proc), LinuxSystemSummaryCollector (os-release, meminfo),
+                           LinuxClipboardWriter (wl-copy/xclip/xsel), NotifySendNotifier
+tests/ContextSnap.Linux.Tests/  Linux collector tests plus the shared formatting, redaction, spec and Git tests
+macos/                     SwiftUI menu-bar app (built and tested by CI, not released)
 ```
+
+**Linux.** Core targets `net10.0-windows` (WPF, WinRT OCR), so the Linux project links its platform-neutral files with `<Compile Include=… Link=…>` instead of referencing it. Files it links must not use Windows APIs; Windows-only pieces live in separate files (`CollectorSet.Windows.cs`, `Win32WindowSource.cs`, `SystemProcessSource.cs`, `ClipboardWriter.cs`). Screen text, browser tabs, and Explorer are turned off after settings load (`LinuxCommandLine.ApplyPlatformLimits`) and reported as not collected. Every tool is resolved from absolute `PATH` entries and run with an argument list (no shell); the snapshot is passed to the clipboard tool on standard input, never as an argument. `wmctrl` runs with `LC_ALL=C.UTF-8` so non-ASCII titles are not replaced by "N/A"; the host column it prints is discarded.
 
 ## Data flow
 
@@ -51,7 +60,7 @@ tests/ContextSnap.Tests/   xUnit tests against Core
 - **Redaction at the formatter boundary.** The formatter routes every captured string through `Text()`, `Code()`, or `Url()`, each of which calls the `Redactor` first. A new section cannot forget to redact. Exclusions (dropping whole items) happen earlier, in collectors, so excluded items never enter the snapshot.
 - **Windows.** `EnumWindows` + Alt+Tab-style filtering (visible, titled, not cloaked, not tool windows, not owned popups, not shell surfaces, not ContextSnap itself). Process names come from `QueryFullProcessImageName` with `PROCESS_QUERY_LIMITED_INFORMATION`.
 - **Explorer.** The documented `Shell.Application` → `ShellWindows` automation object, read on a dedicated STA thread with a timeout. Only windows hosted by `explorer.exe` count; virtual locations are counted, not listed. Every COM object is released.
-- **Git safety.** `git.exe` is resolved to an absolute path from absolute `PATH` entries only (never the current directory). Arguments go through `ProcessStartInfo.ArgumentList` (no shell). Every call adds `--no-pager --no-optional-locks -c core.fsmonitor=false -c log.showSignature=false -c color.ui=false -C <root>`, sets `GIT_OPTIONAL_LOCKS=0` and `GIT_TERMINAL_PROMPT=0`, and removes inherited `GIT_DIR`-style variables. Only `status --porcelain=v2 -z` and `log -3 --format=…` are run; output is bounded (512 KB), each command times out after 5 s and its process tree is killed. Git's `safe.directory` check is respected, not bypassed. Before each command, the configured filter drivers are listed (`git config -z --get-regexp '^filter\..+\.(clean|smudge|process|required)$'`; reading config runs nothing) and each is overridden with `-c filter.<name>.clean= -c filter.<name>.smudge= -c filter.<name>.process= -c filter.<name>.required=false`, so no filter command from the repository (or from the user's own config) runs. If a filter name cannot be written as a `-c` option, or the list is incomplete, Git is not run for that repository. `git status` uses `--ignore-submodules=all`, so submodules and their config are never entered. Same rules in the macOS app (`GitRunner`).
+- **Git safety.** Git (`git.exe` on Windows, `git` on Linux) is resolved to an absolute path from absolute `PATH` entries only (never the current directory). Arguments go through `ProcessStartInfo.ArgumentList` (no shell). Every call adds `--no-pager --no-optional-locks -c core.fsmonitor=false -c log.showSignature=false -c color.ui=false -C <root>`, sets `GIT_OPTIONAL_LOCKS=0` and `GIT_TERMINAL_PROMPT=0`, and removes inherited `GIT_DIR`-style variables. Only `status --porcelain=v2 -z` and `log -3 --format=…` are run; output is bounded (512 KB), each command times out after 5 s and its process tree is killed. Git's `safe.directory` check is respected, not bypassed. Before each command, the configured filter drivers are listed (`git config -z --get-regexp '^filter\..+\.(clean|smudge|process|required)$'`; reading config runs nothing) and each is overridden with `-c filter.<name>.clean= -c filter.<name>.smudge= -c filter.<name>.process= -c filter.<name>.required=false`, so no filter command from the repository (or from the user's own config) runs. If a filter name cannot be written as a `-c` option, or the list is incomplete, Git is not run for that repository. `git status` uses `--ignore-submodules=all`, so submodules and their config are never entered. Same rules in the macOS app (`GitRunner`).
 - **Browser tabs.** UI Automation walk of the browser window that skips `Document` subtrees, so page content is never read and page widgets are not mistaken for tabs. No profiles, history, or remote-debugging ports. Opt-in.
 - **Clipboard.** Direct `CF_UNICODETEXT` write with retry, CRLF line endings, optional `CanIncludeInClipboardHistory=0` / `CanUploadToCloudClipboard=0`. Replaces the prototype's PowerShell-based copy, which exposed the snapshot on a command line.
 - **UI.** WPF (ships with the .NET SDK on Windows, no extra workloads or NuGet packages). Code-behind with routed commands; settings bind directly to `AppSettings` and save on change. The global hotkey uses `RegisterHotKey` on the main window and only reacts to that one key combination.

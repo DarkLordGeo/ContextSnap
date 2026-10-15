@@ -4,7 +4,7 @@ A small, local-only Windows app that captures a compact Markdown snapshot of wha
 
 ContextSnap has no AI integration, network access, telemetry, or accounts. A snapshot only leaves the app when you copy it to your clipboard.
 
-This README describes the Windows app. A macOS menu-bar app with the same privacy model (on-demand capture, local redaction, no network access) lives in [`macos/`](macos/); it reads the active window through Accessibility, uses on-device OCR (Apple Vision) only when Screen Recording is granted, and adds running apps, Git, and system context. Downloads for both are published as [GitHub Releases](https://github.com/DarkLordGeo/ContextSnap-Releases/releases) (see [docs/RELEASING.md](docs/RELEASING.md)); the static website is in [`website/`](website/).
+This README describes the Windows app. A Linux command-line version is described in [Linux](#linux). Downloads for both are published as [GitHub Releases](https://github.com/DarkLordGeo/ContextSnap-Releases/releases) (see [docs/RELEASING.md](docs/RELEASING.md)), and the static website is in [`website/`](website/). A macOS menu-bar app with the same privacy model lives in [`macos/`](macos/). CI builds and tests it, but it is not released yet because it is not notarized by Apple.
 
 ## Features
 
@@ -65,6 +65,50 @@ ContextSnap.exe --help
 ```
 
 In command-line modes the current directory is also checked for a Git repository. ContextSnap is a GUI executable, so when run from PowerShell without redirection the output can appear after the next prompt; piping (`ContextSnap.exe --print | Out-File snap.md`) waits for completion.
+
+## Linux
+
+`contextsnap` is a command-line app for 64-bit Linux. Each time it runs, it captures a snapshot, redacts it, copies the Markdown to the clipboard, shows a desktop notification, and exits. It has no window and runs nothing in the background. To use it like the Windows shortcut, bind the command to a key combination in your desktop's keyboard settings (for example GNOME Settings → Keyboard → Custom Shortcuts, or KDE System Settings → Shortcuts).
+
+```sh
+tar -xzf ContextSnap-<version>-linux-x64.tar.gz
+install -m 755 contextsnap-<version>-linux-x64/contextsnap ~/.local/bin/
+contextsnap            # capture, copy, notify (exit 0 = ok, 1 = failed, 2 = bad option)
+contextsnap --print    # write the Markdown to standard output; the clipboard is not touched
+```
+
+The download is a self-contained single file, so you don't need to install .NET.
+
+| Needs | For |
+|---|---|
+| `wl-clipboard` (Wayland) or `xclip` / `xsel` (X11) | Copying to the clipboard |
+| `wmctrl` (and `xprop`, usually installed) | The open-windows list |
+| `notify-send` (libnotify) | Copy notifications (optional) |
+| `git` | The Git collector (optional) |
+
+What it collects:
+- open windows, with the active window first;
+- running developer tools;
+- Git repositories in the current directory and in the configured project folders;
+- Desktop items;
+- a system summary (distribution, kernel, desktop session, CPU count, memory).
+
+It uses the same exclusions, redaction, limits and Markdown as the Windows app.
+
+What is Windows-only:
+- **Visible screen text, browser tabs and File Explorer folders.** These are listed as not collected.
+- **Clipboard-history exclusion.** A clipboard manager you run may keep a copy.
+
+On Wayland, there is no common way for an app to list other apps' windows, so only X11 apps running through XWayland are listed. The snapshot says so.
+
+Settings are read from `~/.config/ContextSnap/settings.json` (or from `$XDG_CONFIG_HOME`). It uses the same format as the Windows `settings.json`. Copy that file over or edit it by hand.
+
+Build and test from source with the .NET 10 SDK:
+
+```sh
+dotnet test tests/ContextSnap.Linux.Tests
+dotnet publish src/ContextSnap.Linux -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -o publish/linux
+```
 
 ## Start with Windows
 

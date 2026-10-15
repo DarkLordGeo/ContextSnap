@@ -52,7 +52,15 @@ public sealed record CommandLineOptions(RunMode Mode, string? Error = null, bool
 
 /// <summary>Command-line capture without a window. Exit codes: 0 success, 1 failure, 2 usage error.</summary>
 /// <param name="notifier">Receives the copy notification in <c>--capture</c> mode; null when notifications must not be shown (for example, redirected output).</param>
-public sealed class HeadlessRunner(SnapshotService service, SettingsStore store, IClipboardWriter clipboard, ICopyNotifier? notifier = null)
+/// <param name="usage">Help text; defaults to <see cref="CommandLineOptions.Usage"/>.</param>
+/// <param name="applyPlatformLimits">Turns off, after settings are loaded, collectors this platform does not have.</param>
+public sealed class HeadlessRunner(
+    SnapshotService service,
+    SettingsStore store,
+    IClipboardWriter clipboard,
+    ICopyNotifier? notifier = null,
+    string? usage = null,
+    Action<AppSettings>? applyPlatformLimits = null)
 {
     public async Task<int> RunAsync(CommandLineOptions options, TextWriter output, TextWriter error, string currentDirectory)
     {
@@ -60,7 +68,7 @@ public sealed class HeadlessRunner(SnapshotService service, SettingsStore store,
         {
             if (options.Error is not null)
                 await error.WriteLineAsync(options.Error);
-            await output.WriteLineAsync(CommandLineOptions.Usage);
+            await output.WriteLineAsync(usage ?? CommandLineOptions.Usage);
             return options.Error is null ? 0 : 2;
         }
 
@@ -68,6 +76,7 @@ public sealed class HeadlessRunner(SnapshotService service, SettingsStore store,
         if (loaded.Error is not null)
             await error.WriteLineAsync($"Warning: {loaded.Error}");
 
+        applyPlatformLimits?.Invoke(loaded.Settings);
         var result = await service.CaptureAsync(loaded.Settings, new CaptureOptions([currentDirectory]));
 
         if (options.Mode == RunMode.Print)

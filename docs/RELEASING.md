@@ -13,8 +13,8 @@ with a version such as `1.0.0`).
 |---|---|---|---|
 | `version` | Ubuntu | read | Validates the version (`1.2.3` or `1.2.3-beta.1`). |
 | `windows` | Windows | read | `dotnet test`, `dotnet publish`, packages `ContextSnap-<v>-windows-x64.zip` + `.sha256`. |
-| `macos` | macOS 15 | read | `swift test`, `scripts/build.sh`, packages `ContextSnap-<v>-macos-universal.dmg` and `.zip` + `.sha256`. |
-| `publish` | Ubuntu | none (uses `RELEASES_TOKEN`) | Creates release `v<v>` in the releases repository with all packages and checksums (or replaces the assets if it exists), then downloads the ZIP and DMG **anonymously** from their public URLs and compares SHA-256 with the built files. Fails if either is not publicly downloadable or differs. |
+| `linux` | Ubuntu | read | `dotnet test` of the Linux tests under a virtual X display, self-contained single-file `dotnet publish` for `linux-x64`, a smoke test of the binary, packages `ContextSnap-<v>-linux-x64.tar.gz` + `.sha256`. |
+| `publish` | Ubuntu | none (uses `RELEASES_TOKEN`) | Creates release `v<v>` in the releases repository with all packages and checksums (or replaces the assets if it exists), then downloads the ZIP and the tar.gz **anonymously** from their public URLs and compares SHA-256 with the built files. Fails if either is not publicly downloadable or differs. |
 | `update-website` | Ubuntu | `contents: write`, `pull-requests: write` on this repository | Writes the verified asset URLs, sizes, and SHA-256 into `website/downloads.json` on branch `release/v<v>-downloads` and opens a pull request. Nothing is pushed to the default branch. |
 
 Merging that pull request deploys the website through the Vercel Git integration. Until then, and
@@ -48,7 +48,7 @@ enables a button for an `https://github.com/<owner>/<repo>/releases/download/<ta
    or push a tag: `git tag v1.0.0 && git push origin v1.0.0`.
 3. Wait for `publish` to pass; its log lists each verified public URL.
 4. Review and merge the pull request "Website downloads: ContextSnap <version>".
-5. On the deployed site, check that both buttons are enabled and download the files.
+5. On the deployed site, check that the Windows and Linux buttons are enabled and download the files.
 
 Re-running the workflow for an existing version replaces that release's assets and opens or updates
 the same pull request branch.
@@ -57,45 +57,25 @@ the same pull request branch.
 
 - Pull requests opened with `GITHUB_TOKEN` do not trigger other workflows such as CI. The Vercel
   preview still builds. The packages were already tested in the same Release run.
-- Windows builds are framework-dependent (.NET 10 Desktop Runtime) and not code-signed. macOS builds
-  are ad-hoc signed and not notarized until the secrets below are set.
+- Windows builds are framework-dependent (.NET 10 Desktop Runtime) and not code-signed. Linux builds
+  are self-contained (no .NET install needed).
 
-## macOS signing and notarization (optional)
+## macOS (not released)
 
-macOS opens downloaded apps without warnings only when they are signed with a **Developer ID**
-certificate and **notarized** by Apple. Without that, the app still downloads and runs, but on first
-launch macOS says it "could not verify" the app; users click **Done**, then **Open Anyway** in
-System Settings → Privacy & Security. The website shows these steps on the macOS download card for
-builds that are not notarized and hides them for notarized builds. Ad-hoc signed builds also lose
-their Accessibility and Screen Recording permissions after each update, because macOS ties those
-permissions to the signature; Developer ID builds keep them.
+The macOS app in `macos/` is built and tested by CI, but releases don't include it. macOS warns
+before opening a downloaded app unless it is signed with a **Developer ID** certificate and
+**notarized** by Apple. Both need the Apple Developer Program (US$99 per year).
 
-The Release workflow signs and notarizes automatically once these repository secrets exist
-(Settings → Secrets and variables → Actions):
+To release it again:
+1. Join the program.
+2. Restore the `macos` job, its `publish` and `update-website` entries, and the website's macOS
+   card. All of them are in commit `396d8cb`, the last commit before macOS was removed.
+3. Add the repository secrets:
+   - `MACOS_CERTIFICATE_P12`: the "Developer ID Application" certificate exported as .p12, then
+     base64-encoded;
+   - `MACOS_CERTIFICATE_PASSWORD`: the password chosen when exporting it;
+   - `NOTARY_KEY_ID`, `NOTARY_ISSUER_ID` and `NOTARY_KEY`: an App Store Connect API key with
+     Developer access. `NOTARY_KEY` holds the contents of the `.p8` file.
 
-| Secret | What it is |
-|---|---|
-| `MACOS_CERTIFICATE_P12` | Your "Developer ID Application" certificate and private key, exported as .p12, base64-encoded |
-| `MACOS_CERTIFICATE_PASSWORD` | The password chosen when exporting the .p12 |
-| `NOTARY_KEY_ID` | App Store Connect API key ID |
-| `NOTARY_ISSUER_ID` | App Store Connect issuer ID |
-| `NOTARY_KEY` | Contents of the downloaded `AuthKey_<id>.p8` file |
-
-1. Join the **Apple Developer Program** (developer.apple.com/programs, US$99 per year; an individual
-   membership is enough).
-2. Create the certificate on a Mac: Xcode → Settings → Accounts → select your team → Manage
-   Certificates → **+** → **Developer ID Application** (only the Account Holder can create it).
-3. Export it: Keychain Access → My Certificates → right-click "Developer ID Application: …" →
-   Export → .p12 with a password. Then `base64 -i Certificates.p12 | pbcopy` and paste the result as
-   `MACOS_CERTIFICATE_P12`; the password goes into `MACOS_CERTIFICATE_PASSWORD`.
-4. Create a notary key: App Store Connect → Users and Access → Integrations → App Store Connect API →
-   Team Keys → **+**, access **Developer**. Download the .p8 (it can be downloaded only once). Its Key ID
-   goes into `NOTARY_KEY_ID`, the Issuer ID shown above the list into `NOTARY_ISSUER_ID`, and the file's
-   full contents into `NOTARY_KEY`.
-5. Run the Release workflow. The macOS job imports the certificate into a temporary keychain (deleted
-   when the job ends), `scripts/build.sh` signs with the hardened runtime, notarizes and staples the
-   app and the DMG, and checks both with `spctl` (the same assessment Gatekeeper makes). The website
-   pull request then drops the "Open Anyway" note.
-
-Locally, the same script signs and notarizes when `MACOS_SIGNING_IDENTITY`, `NOTARY_KEY_ID`,
-`NOTARY_ISSUER_ID`, and `NOTARY_KEY` are set in the environment.
+`macos/scripts/build.sh` still signs, notarizes and staples when `MACOS_SIGNING_IDENTITY`,
+`NOTARY_KEY_ID`, `NOTARY_ISSUER_ID` and `NOTARY_KEY` are set.
