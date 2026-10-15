@@ -83,10 +83,10 @@ public sealed class AppSettings
     public bool ShowNotificationAreaIcon { get; set; }
 
     /// <summary>
-    /// When false (default), a shortcut capture that includes visible screen text opens the preview for
-    /// review instead of copying. When true, the shortcut always captures and copies in one step.
+    /// Always true: the global shortcut captures and copies in one step, with no review window. Kept so
+    /// settings files from earlier versions (which could set it to false) still load; it is migrated to true.
     /// </summary>
-    public bool HotkeyCopiesImmediately { get; set; }
+    public bool HotkeyCopiesImmediately { get; set; } = true;
 
     public bool CopyAfterCapture { get; set; }
 
@@ -135,6 +135,7 @@ public sealed class AppSettings
     public void Normalize()
     {
         Hotkey = Platform.HotkeyGesture.Parse(Hotkey)?.DisplayText ?? Platform.HotkeyGesture.DefaultText;
+        HotkeyCopiesImmediately = true; // Migration: the review-before-copy option was removed.
         MaxOutputCharacters = Math.Clamp(MaxOutputCharacters, MinOutputCharacters, MaxOutputCharactersLimit);
         MaxItemsPerSection = Math.Clamp(MaxItemsPerSection, 1, 500);
         MaxDesktopItems = Math.Clamp(MaxDesktopItems, 1, 500);

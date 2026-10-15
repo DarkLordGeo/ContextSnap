@@ -9,7 +9,7 @@ This README describes the Windows app. A Linux command-line version is described
 ## Features
 
 - **Capture → review → copy.** One button (or `F5` / `Ctrl+Enter`) collects context and shows an editable Markdown preview. `Ctrl+Shift+C` copies it.
-- **Global shortcut.** `Ctrl+Alt+Shift+C` captures from any application while ContextSnap is open (can be turned off). A snapshot that includes visible screen text opens in the preview for review before anything is copied; snapshots without screen text are copied in one step. **Settings → Behavior → Shortcut copies immediately, without review** restores one-step copying for every snapshot.
+- **Global shortcut.** `Ctrl+Alt+Shift+C` (configurable) works from any application while ContextSnap runs in the background. It always captures and copies the complete Markdown snapshot straight to the clipboard, with no window or review step; redaction and output limits still apply.
 - **Copy notifications** (on by default). After every copy, a small animated notice appears in the bottom-right corner: "Context copied to clipboard" with character, word, and size counts, a warning when the snapshot was truncated, or "Copy failed" with the reason. See [Copy notifications](#copy-notifications).
 - **Runs silently in the background** (on by default). At sign-in ContextSnap starts with no window, taskbar button, notification-area icon, console, or startup notification. It just waits for its configurable shortcut (default Ctrl+Alt+Shift+C). Opening ContextSnap again shows its window; closing the window returns it to the background. Only one copy ever runs. See [Background operation](#background-operation).
 - **Visible screen text** (on by default, focused window only). The text you can currently see in the window you are working in, such as a ChatGPT or Claude conversation, a document, or a dialog, read through Windows UI Automation with an on-device Windows OCR fallback. See [Visible screen text](#visible-screen-text).
@@ -157,8 +157,9 @@ After sign-in ContextSnap is a quiet background process (`ContextSnap.exe` in Ta
 
 - **Nothing visible at startup:** no window (only a hidden window handle that receives the shortcut), no taskbar button, no console (it is a Windows-subsystem app), no notification-area icon unless you turn on **Settings → Behavior → Show a ContextSnap icon in the notification area**, and no splash screen or startup toast.
 - **Shortcut:** **Settings → Behavior → Shortcut** (default `Ctrl+Alt+Shift+C`; Ctrl, Alt, or Win, optionally Shift, plus a letter, digit, or F1–F24). It works while any other application is focused. If another app already owns the combination, the setting says so and you can pick another.
-- **On demand only:** context is collected only when you press the shortcut (or click Capture). Between presses the process is idle: it has no timers or polling, and it writes nothing to disk except your settings when you change them.
-- **What the shortcut does:** it captures and copies the Markdown, and shows the small copy notification if that is on. When the snapshot includes visible screen text and **Shortcut copies immediately, without review** is off (the default), the ContextSnap window opens with the snapshot for review instead. That window is the only UI the shortcut can open.
+- **On demand only:** context is collected only when you press the shortcut (or click Capture). Between presses the process is idle: it waits on Windows messages and two named events (no timers or polling), registers its shortcut once, and writes nothing to disk except your settings when you change them and the diagnostics log on errors. After each shortcut capture it returns the capture's temporary memory to Windows.
+- **What the shortcut does:** it captures and copies the complete Markdown (the same document the preview shows, after redaction and output limits) and shows the small copy notification if that is on. It never opens a window, dialog, or review step, including when visible screen text is captured. The window's preview is updated in the background, so opening ContextSnap afterwards shows the last snapshot.
+- **When something fails:** the shortcut still opens nothing. A capture or clipboard failure shows the small error notification (if notifications are on), appears in the window's status line the next time you open it, and is written to `%LOCALAPPDATA%\ContextSnap\logs\contextsnap.log`. That log is written only on errors, holds error types and messages (secrets redacted, never snapshot contents), and is capped at about 256 KB plus one previous file. **Open diagnostics log** in Settings opens its folder. Pressing the shortcut again while a capture is still running is ignored.
 - **Window:** opening ContextSnap (Start menu, the `.exe`) shows the window of the running copy; closing it returns ContextSnap to the background while the shortcut is on. If the shortcut is off or unavailable (and no icon is shown), closing the window quits instead.
 
 **Controls**
@@ -172,7 +173,16 @@ After sign-in ContextSnap is a quiet background process (`ContextSnap.exe` in Ta
 
 The process is never hidden from Task Manager. Quitting (or signing out) unregisters the shortcut and removes the optional icon. A second launch never creates a duplicate: `--startup` exits silently, and a normal launch shows the existing window.
 
-**Verified on this PC (Windows 11, published Release build):** a `--startup` launch had no visible top-level window, no console host, and no taskbar or notification-area button; a second `--startup` left one process. The shortcut, pressed while Chrome was focused, opened the review window when screen text was included, and with one-step copying on it put the snapshot on the clipboard with no window. Closing the window kept the process running hidden. `--exit` ended it and the shortcut became free again, and `--disable-startup` / `--enable-startup` removed and recreated the Startup shortcut. **Not verified:** an actual sign-out/sign-in cycle (the Startup-folder shortcut was launched directly instead), and a Windows restart.
+**Verified on this PC (Windows 11, published Release build):** a `--startup` launch had no visible top-level window, no console host, and no taskbar or notification-area button; a second `--startup` left one process. The shortcut, pressed while another app was focused, put the complete snapshot (visible text and system context) on the clipboard with no window, also for three rapid presses. Closing the window kept the process running hidden. `--exit` ended it and the shortcut became free again, and `--disable-startup` / `--enable-startup` removed and recreated the Startup shortcut. **Not verified:** an actual sign-out/sign-in cycle (the Startup-folder shortcut was launched directly instead), a Windows restart, and a capture failure on a real desktop (the error path is covered by unit tests).
+
+**Measured idle cost** (published Release build, Windows 11, 12 logical processors; `--startup` launch, 8 s settle, then 60 s of idle measured with the process's total CPU time, working set, private bytes, thread and handle counts):
+
+| State | CPU in 60 s idle | Working set | Private bytes | Threads | Handles |
+|---|---|---|---|---|---|
+| Just started, never captured | 0–16 ms (≤ 0.002% of all cores) | 98 MB | 55 MB | 10 | 602 |
+| After 15 shortcut captures | 0 ms | 147 MB | 109 MB | 15 | 711 |
+
+Before this change, 15 shortcut captures left 126 MB private bytes (and the old review flow 99 MB private plus 906 ms of CPU per idle minute, because its review window stayed open). Further rounds of 15 captures raised private bytes to 122, 132, and 137 MB with a stable handle count (about 710–770) and GDI/USER objects (26/21), so the growth slows; it has not been shown to stop completely. Most of the memory is the .NET/WPF runtime, UI Automation, and the Windows OCR engine that is loaded on first use.
 
 **Manual check after installing:** sign out and back in; confirm there is no ContextSnap window, taskbar button, or icon, and that Task Manager shows one `ContextSnap.exe`. Then focus another app, press the shortcut, and paste.
 
@@ -271,7 +281,7 @@ _Not collected (turned off): Browser tabs._
 
 **Never collected:** files read from disk, Git diffs, process command-line arguments, environment-variable values, password fields, cookies, browser history or profiles, clipboard contents or history.
 
-**Visible screen text** (on by default for the focused window) can include anything shown in that window: messages, code, documents, or numbers. It is read only when you capture, kept in memory only for that snapshot, redacted like everything else, and shown in the preview before you copy. Turn it off, switch to focused-only, or add apps and window-title keywords under **Never read text from these apps or windows**. Password managers and private/incognito windows are excluded by default.
+**Visible screen text** (on by default for the focused window) can include anything shown in that window: messages, code, documents, or numbers. It is read only when you capture, kept in memory only for that snapshot, and redacted like everything else. The shortcut copies it immediately; capturing from the window shows it in the preview first. Turn it off, switch to focused-only, or add apps and window-title keywords under **Never read text from these apps or windows**. Password managers and private/incognito windows are excluded by default.
 
 **Collected only as described above**, and then:
 
@@ -321,7 +331,7 @@ ContextSnap makes no network requests. The only files it writes are its settings
 | Git section says "Unavailable: Git was not found on PATH" | Install Git for Windows or add it to `PATH`, then restart ContextSnap. |
 | Git section says "No Git repositories found" | Open the project folder in File Explorer, or add it under **Settings → Project folders for Git**. |
 | A repository shows "owned by another user (safe.directory)" | Git's own safety check refused the repository. ContextSnap intentionally does not override it; mark it safe yourself with `git config --global --add safe.directory <path>` if you trust it. |
-| "Shortcut unavailable: another application is already using this shortcut" | Another app registered `Ctrl+Alt+Shift+C`. Use the Capture button, or close the other app and toggle the setting off and on. |
+| "Shortcut unavailable: another application is already using this shortcut" | Another app registered the same combination. Choose a different one under **Settings → Behavior → Shortcut**, or close the other app and toggle the shortcut off and on. |
 | `F5` does nothing | Another program owns F5 system-wide. Use `Ctrl+Enter` or the button. |
 | "Copy failed: The clipboard is being used by another application" | A clipboard manager or remote-desktop tool holds the clipboard. Wait a moment and click Copy again. |
 | Browser tabs section is empty | Make sure the browser window is open (not only in the tray) and the window title is not matched by an excluded keyword. |

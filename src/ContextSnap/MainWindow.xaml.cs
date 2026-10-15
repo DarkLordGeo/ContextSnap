@@ -26,6 +26,8 @@ public partial class MainWindow : Window
     private readonly SettingsStore _store;
     private readonly SnapshotService _service;
     private readonly CopyService _copy;
+    private readonly HotkeyCaptureWorkflow _hotkeyCapture;
+    private readonly DiagnosticsLog _diagnostics = DiagnosticsLog.CreateDefault();
     private readonly StartupRegistration _startup;
 
     private AppSettings _settings;
@@ -45,6 +47,7 @@ public partial class MainWindow : Window
         _store = store;
         _service = service;
         _copy = new CopyService(clipboard, notifier);
+        _hotkeyCapture = new HotkeyCaptureWorkflow(settings => _service.CaptureAsync(settings), _copy, notifier, _diagnostics);
         _startup = startup;
         notifier.Failed += error =>
             SetStatus(StatusKind.Warning, $"Copied, but the notification could not be shown ({error}).");
@@ -165,7 +168,7 @@ public partial class MainWindow : Window
         if (message == GlobalHotkey.WmHotkey && wParam == GlobalHotkey.Id)
         {
             handled = true;
-            _ = CaptureAsync(fromHotkey: true);
+            _ = HotkeyCaptureAsync();
             return 0;
         }
 
@@ -177,8 +180,8 @@ public partial class MainWindow : Window
                 BringToFront();
                 break;
             case TrayCommand.Capture:
-                // Same as the shortcut, including review before copying visible screen text.
-                _ = CaptureAsync(fromHotkey: true);
+                // Same as the shortcut: capture and copy, no window.
+                _ = HotkeyCaptureAsync();
                 break;
             case TrayCommand.Exit:
                 Dispatcher.BeginInvoke(ExitApplication);
@@ -191,14 +194,14 @@ public partial class MainWindow : Window
     private void OnCaptureCanExecute(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = !_isCapturing;
 
     private void OnCaptureExecuted(object sender, ExecutedRoutedEventArgs e) =>
-        _ = CaptureAsync(fromHotkey: false);
+        _ = CaptureAsync();
 
     private void OnCopyCanExecute(object sender, CanExecuteRoutedEventArgs e) =>
         e.CanExecute = !_isCapturing && PreviewBox is { Text.Length: > 0 }; // Null while XAML is loading.
 
     private void OnCopyExecuted(object sender, ExecutedRoutedEventArgs e) => CopyPreview();
 
-    private async Task CaptureAsync(bool fromHotkey)
+    private async Task CaptureAsync()
     {
         if (_isCapturing)
             return;
@@ -215,28 +218,10 @@ public partial class MainWindow : Window
             _lastResult = result;
             ShowPreview(result);
 
-            var copy = fromHotkey
-                ? HotkeyBehavior.CopiesImmediately(_settings.HotkeyCopiesImmediately, result.Snapshot.ScreenText)
-                : _settings.CopyAfterCapture;
-            if (copy)
-            {
+            if (_settings.CopyAfterCapture)
                 CopyPreview();
-            }
-            else if (fromHotkey)
-            {
-                // Visible screen text can contain anything that was on screen, so it is reviewed before copying.
-                SetStatus(StatusKind.Success, "Snapshot includes visible screen text. Review or edit it below, then copy it (Ctrl+Shift+C).");
-                BringToFront();
-                return;
-            }
             else
-            {
                 SetStatus(StatusKind.Success, "Snapshot captured. Review or edit it below, then copy it.");
-            }
-
-            // The copy notification already confirms hotkey captures; flash only when notifications are off.
-            if (fromHotkey && !IsActive && !_settings.ShowCopyNotifications)
-                WindowAttention.Flash(new WindowInteropHelper(this).Handle);
         }
         catch (Exception ex)
         {
@@ -249,6 +234,60 @@ public partial class MainWindow : Window
             CaptureButton.Content = CaptureLabel;
             CommandManager.InvalidateRequerySuggested();
         }
+    }
+
+    /// <summary>
+    /// The global shortcut (and the optional icon's Capture): capture and copy the complete Markdown with no
+    /// window, dialog, or review. The hidden window's preview is updated so opening ContextSnap shows it.
+    /// </summary>
+    private async Task HotkeyCaptureAsync()
+    {
+        if (IsVisible)
+            CommitPendingSettingsEdit();
+
+        HotkeyCaptureOutcome outcome;
+        try
+        {
+            outcome = await _hotkeyCapture.RunAsync(_settings.Clone());
+        }
+        catch (Exception ex)
+        {
+            // Defensive: the workflow already handles capture and copy failures.
+            _diagnostics.Error("Shortcut workflow failed", ex);
+            SetStatus(StatusKind.Error, $"Shortcut capture failed: {ex.Message}. See {_diagnostics.FilePath}.");
+            return;
+        }
+
+        if (outcome.Capture is { } capture)
+        {
+            _lastResult = capture;
+            ShowPreview(capture);
+        }
+
+        // Return the capture's temporary memory to Windows now, rather than holding it until the next capture.
+        if (outcome.Status != HotkeyCaptureStatus.Busy)
+            _ = Task.Run(MemoryRelief.ReleaseCaptureMemory);
+
+        var time = DateTime.Now.ToString("T", CultureInfo.CurrentCulture);
+        switch (outcome.Status)
+        {
+            case HotkeyCaptureStatus.Copied:
+                SetStatus(StatusKind.Success, $"Shortcut copied {outcome.Capture!.Markdown.Length:N0} characters at {time}.");
+                break;
+            case HotkeyCaptureStatus.CopyFailed:
+                SetStatus(StatusKind.Error, $"Shortcut capture at {time} could not be copied: {outcome.Error}");
+                break;
+            case HotkeyCaptureStatus.CaptureFailed:
+                SetStatus(StatusKind.Error, $"Shortcut capture at {time} failed: {outcome.Error}. Details: {_diagnostics.FilePath}");
+                break;
+        }
+    }
+
+    private void OnOpenDiagnostics(object sender, RoutedEventArgs e)
+    {
+        var folder = System.IO.Path.GetDirectoryName(_diagnostics.FilePath)!;
+        System.IO.Directory.CreateDirectory(folder);
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe") { ArgumentList = { folder }, UseShellExecute = false });
     }
 
     private void ShowPreview(CaptureResult result)
@@ -429,9 +468,7 @@ public partial class MainWindow : Window
         if (_hotkey.Register(gesture))
         {
             HotkeyStatusText.Text = $"Active: {gesture.DisplayText} works in any application while ContextSnap runs in the background, also after this window is closed.";
-            HotkeyHint.Text = _settings.HotkeyCopiesImmediately
-                ? $"Tip: press {gesture.DisplayText} in any application to capture and copy in one step."
-                : $"Tip: press {gesture.DisplayText} in any application to capture. Snapshots with visible screen text open here for review before copying.";
+            HotkeyHint.Text = $"Tip: press {gesture.DisplayText} in any application to capture and copy in one step.";
         }
         else
         {
