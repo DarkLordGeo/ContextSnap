@@ -41,6 +41,8 @@ public struct MarkdownFormatter {
     }
 
     /// Cuts at a line boundary when possible and appends a visible notice. UTF-16 based, matching Windows.
+    /// When the cut falls inside a fenced code block (such as visible screen text), the block is closed
+    /// first, so the notice is never part of captured content and the result never has an unbalanced fence.
     public static func limitOutput(_ markdown: String, maxCharacters: Int = defaultMaxCharacters) -> String {
         precondition(maxCharacters > 0, "maxCharacters must be positive")
         let ns = markdown as NSString
@@ -51,7 +53,36 @@ public struct MarkdownFormatter {
             return notice.substring(to: maxCharacters)
         }
 
-        var cut = maxCharacters - notice.length
+        var budget = maxCharacters - notice.length
+        while true {
+            let head = Self.head(ns, budget: budget)
+            let headNS = head as NSString
+            guard let open = openFence(headNS) else { return head + truncationNotice }
+
+            // Nothing of the block would remain: end before its opening line instead of leaving it empty.
+            let rest = NSRange(location: open.lineStart, length: headNS.length - open.lineStart)
+            if headNS.range(of: "\n", options: [], range: rest).location == NSNotFound {
+                return trimmedEnd(ns.substring(to: open.lineStart)) + truncationNotice
+            }
+
+            let closing = "\n" + open.fence
+            let closingLength = (closing as NSString).length
+            if headNS.length + closingLength + notice.length <= maxCharacters {
+                return head + closing + truncationNotice
+            }
+
+            // Make room for the closing fence. If even that is not possible, end before the open block.
+            let smaller = maxCharacters - notice.length - closingLength
+            if smaller <= 0 || smaller >= budget {
+                return trimmedEnd(ns.substring(to: open.lineStart)) + truncationNotice
+            }
+            budget = smaller
+        }
+    }
+
+    /// The first `budget` UTF-16 units, cut back to a line break in the second half when there is one.
+    private static func head(_ ns: NSString, budget: Int) -> String {
+        var cut = budget
         let newline = ns.range(of: "\n", options: .backwards, range: NSRange(location: 0, length: cut))
         if newline.location != NSNotFound && newline.location > cut / 2 {
             cut = newline.location
@@ -59,12 +90,39 @@ public struct MarkdownFormatter {
         if cut > 0 && CFStringIsSurrogateHighCharacter(ns.character(at: cut - 1)) {
             cut -= 1
         }
+        return trimmedEnd(ns.substring(to: cut))
+    }
 
-        var head = ns.substring(to: cut)
-        while let last = head.unicodeScalars.last, CharacterSet.whitespacesAndNewlines.contains(last) {
-            head.unicodeScalars.removeLast()
+    private static func trimmedEnd(_ text: String) -> String {
+        var text = text
+        while let last = text.unicodeScalars.last, CharacterSet.whitespacesAndNewlines.contains(last) {
+            text.unicodeScalars.removeLast()
         }
-        return head + truncationNotice
+        return text
+    }
+
+    /// The backtick fence of a code block left open at the end of `text`, and the UTF-16 offset where its
+    /// line starts; nil when every block is closed. Fences start at the beginning of a line, as the formatter writes them.
+    static func openFence(_ text: NSString) -> (fence: String, lineStart: Int)? {
+        var open: (fence: String, lineStart: Int)?
+        var lineStart = 0
+        while lineStart <= text.length {
+            let newline = text.range(of: "\n", options: [], range: NSRange(location: lineStart, length: text.length - lineStart))
+            let lineEnd = newline.location == NSNotFound ? text.length : newline.location
+            var line = text.substring(with: NSRange(location: lineStart, length: lineEnd - lineStart))
+            while line.hasSuffix("\r") { line.removeLast() }
+            let run = line.prefix { $0 == "`" }.count
+
+            if let current = open {
+                if run >= current.fence.count && line.dropFirst(run).trimmingCharacters(in: .whitespaces).isEmpty {
+                    open = nil
+                }
+            } else if run >= 3 {
+                open = (String(repeating: "`", count: run), lineStart)
+            }
+            lineStart = lineEnd + 1
+        }
+        return open
     }
 
     /// Binary units with one decimal below 10, matching Windows ("8.2 KB", "157 MB").

@@ -110,7 +110,7 @@ public partial class MainWindow : Window
         if (message == GlobalHotkey.WmHotkey && wParam == GlobalHotkey.Id)
         {
             handled = true;
-            _ = CaptureAsync(copyAfterCapture: true, fromHotkey: true);
+            _ = CaptureAsync(fromHotkey: true);
         }
 
         return 0;
@@ -119,14 +119,14 @@ public partial class MainWindow : Window
     private void OnCaptureCanExecute(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = !_isCapturing;
 
     private void OnCaptureExecuted(object sender, ExecutedRoutedEventArgs e) =>
-        _ = CaptureAsync(copyAfterCapture: false, fromHotkey: false);
+        _ = CaptureAsync(fromHotkey: false);
 
     private void OnCopyCanExecute(object sender, CanExecuteRoutedEventArgs e) =>
         e.CanExecute = !_isCapturing && PreviewBox is { Text.Length: > 0 }; // Null while XAML is loading.
 
     private void OnCopyExecuted(object sender, ExecutedRoutedEventArgs e) => CopyPreview();
 
-    private async Task CaptureAsync(bool copyAfterCapture, bool fromHotkey)
+    private async Task CaptureAsync(bool fromHotkey)
     {
         if (_isCapturing)
             return;
@@ -143,10 +143,24 @@ public partial class MainWindow : Window
             _lastResult = result;
             ShowPreview(result);
 
-            if (copyAfterCapture || _settings.CopyAfterCapture)
+            var copy = fromHotkey
+                ? HotkeyBehavior.CopiesImmediately(_settings.HotkeyCopiesImmediately, result.Snapshot.ScreenText)
+                : _settings.CopyAfterCapture;
+            if (copy)
+            {
                 CopyPreview();
+            }
+            else if (fromHotkey)
+            {
+                // Visible screen text can contain anything that was on screen, so it is reviewed before copying.
+                SetStatus(StatusKind.Success, "Snapshot includes visible screen text. Review or edit it below, then copy it (Ctrl+Shift+C).");
+                BringToFront();
+                return;
+            }
             else
+            {
                 SetStatus(StatusKind.Success, "Snapshot captured. Review or edit it below, then copy it.");
+            }
 
             // The copy notification already confirms hotkey captures; flash only when notifications are off.
             if (fromHotkey && !IsActive && !_settings.ShowCopyNotifications)
@@ -332,7 +346,9 @@ public partial class MainWindow : Window
         if (_hotkey.Register())
         {
             HotkeyStatusText.Text = "Active while this window is open (including when minimized).";
-            HotkeyHint.Text = $"Tip: press {GlobalHotkey.DisplayText} in any application to capture and copy in one step.";
+            HotkeyHint.Text = _settings.HotkeyCopiesImmediately
+                ? $"Tip: press {GlobalHotkey.DisplayText} in any application to capture and copy in one step."
+                : $"Tip: press {GlobalHotkey.DisplayText} in any application to capture. Snapshots with visible screen text open here for review before copying.";
         }
         else
         {

@@ -26,8 +26,16 @@
 - [x] Release workflow publishes packages to the public releases repository, verifies anonymous downloads by SHA-256, and opens a PR that updates `website/downloads.json`; the website enables a button only for a GitHub Release asset URL (checked in headless Chromium with generated, empty, and invalid metadata)
 - [x] Website redesign (static HTML/CSS/JS, green accents, entrance/scroll fade-ins, reduced motion, skip link, focus styles, accurate privacy page) — served locally and checked in headless Chromium at 1280/820/375 px: no console errors, no horizontal overflow, all links resolve, download buttons stay disabled while `downloads.json` lists no files
 
-## macOS (not built or tested; needs a Mac)
-- [ ] Run `swift test` and `./scripts/build.sh` on macOS 14+
+- [x] Git: repository filter drivers are disabled for every Git command and submodules are never entered (malicious-repository regression test, Windows and macOS)
+- [x] Browser tabs honor excluded programs (never read) and share one browser list with visible text
+- [x] Shortcut shows snapshots with visible screen text for review before copying (one-step copy is an explicit option; macOS gets a review window)
+- [x] Truncation closes an open code fence before the notice (shared fixtures + property tests on both platforms)
+- [x] Redaction regexes are linear on adversarial input (about 24 s → 4 ms for 50,000 characters of "a.a.a…"); performance-bound tests on both platforms
+- [x] Integration tests that cannot run (no Git, no desktop, no OCR) are reported as skipped
+
+## macOS (built and unit-tested in CI; not yet tried by hand on a Mac)
+- [x] `swift test` and `./scripts/build.sh` run in CI on macOS 15
+- [ ] Try the review window and Accessibility/OCR capture on a real Mac
 - [ ] Verify the new window-title exclusions (InPrivate, Incognito, Private Browsing, Password by default) skip private browser windows
 
 ## Next
@@ -48,6 +56,5 @@
 - Start with Windows follows the most recently opened copy, so running from source re-points it at the build output.
 - Visible screen text not verified with AnyDesk, a VS Code editor/terminal pane, high-DPI, or multiple monitors; Windows OCR projection adds ~25 MB.
 - Copy notifications not yet tried on multi-monitor, non-100% scaling, or non-bottom taskbars; real clipboard-lock failure not reproducible here.
-- When the output limit cuts inside a visible-text code block, the block is left unclosed and the truncation notice appears inside it.
 - Website: the Vercel project's Root Directory must be set to `website` in the dashboard (not verifiable from the repository).
 - Bringing the existing window forward can be blocked by Windows focus rules; the taskbar button flashes instead.

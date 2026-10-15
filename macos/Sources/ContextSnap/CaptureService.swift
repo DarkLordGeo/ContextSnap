@@ -5,13 +5,14 @@ import SwiftUI
 /// SwiftUI also declares `Section`; this file means the snapshot section from ContextSnapCore.
 private typealias Section<Item: Sendable> = ContextSnapCore.Section<Item>
 
-/// Runs one capture when the user asks for it: collect, redact, format, copy, notify.
-/// Nothing runs in the background and nothing captured is stored.
+/// Runs one capture when the user asks for it: collect, redact, format, review (when it includes
+/// visible screen text), copy, notify. Nothing runs in the background and nothing captured is stored.
 final class CaptureService: ObservableObject {
     @Published private(set) var lastStatus = "No snapshot yet."
     @Published private(set) var isCapturing = false
 
     private let toast = ToastPresenter()
+    private let preview = PreviewPresenter()
 
     func captureAndCopy() {
         guard !isCapturing else { return }
@@ -21,7 +22,7 @@ final class CaptureService: ObservableObject {
         let front = NSWorkspace.shared.frontmostApplication
         let target = front.flatMap { $0.bundleIdentifier == Bundle.main.bundleIdentifier ? nil : CaptureTarget($0) } ?? LastActiveApp.shared.target
 
-        Task.detached(priority: .userInitiated) { [weak self] in
+        Task.detached(priority: .userInitiated) { [self] in
             let snapshot = await SnapshotBuilder.build(target: target, preferences: preferences)
             let redactor = Redactor(options: RedactionOptions(
                 redactSecrets: true,
@@ -32,13 +33,25 @@ final class CaptureService: ObservableObject {
                 hostName: Host.current().localizedName))
             let markdown = MarkdownFormatter.limitOutput(
                 MarkdownFormatter(redactor: redactor).format(snapshot), maxCharacters: preferences.maxOutputCharacters)
-            await MainActor.run { self?.finish(markdown: markdown, snapshot: snapshot, preferences: preferences) }
+            await MainActor.run { self.finish(markdown: markdown, snapshot: snapshot, preferences: preferences) }
         }
     }
 
     private func finish(markdown: String, snapshot: Snapshot, preferences: Preferences) {
         defer { isCapturing = false }
 
+        guard CopyBehavior.copiesImmediately(copyWithoutReview: preferences.copyWithoutReview, visibleText: snapshot.visibleText) else {
+            // Visible screen text can contain anything that was on screen, so it is reviewed before copying.
+            lastStatus = "Review the snapshot, then copy it."
+            preview.show(markdown: markdown) { [weak self] reviewed in
+                self?.copy(reviewed, snapshot: snapshot, preferences: preferences)
+            }
+            return
+        }
+        copy(markdown, snapshot: snapshot, preferences: preferences)
+    }
+
+    private func copy(_ markdown: String, snapshot: Snapshot, preferences: Preferences) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         var types: [NSPasteboard.PasteboardType] = [.string]
@@ -201,6 +214,72 @@ enum SnapshotBuilder {
             architecture: architecture,
             logicalProcessors: ProcessInfo.processInfo.processorCount,
             memoryBytes: ProcessInfo.processInfo.physicalMemory)
+    }
+}
+
+/// A window that shows a snapshot for review and editing before it is copied. Closing it releases the text.
+final class PreviewPresenter {
+    private var window: NSWindow?
+
+    func show(markdown: String, onCopy: @escaping (String) -> Void) {
+        let model = PreviewModel(text: markdown)
+        let window = self.window ?? makeWindow()
+        self.window = window
+        window.contentView = NSHostingView(rootView: PreviewView(
+            model: model,
+            copy: { [weak self] in
+                onCopy(model.text)
+                self?.close()
+            },
+            cancel: { [weak self] in self?.close() }))
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func close() {
+        window?.orderOut(nil)
+        window?.contentView = nil
+    }
+
+    private func makeWindow() -> NSWindow {
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 640, height: 520),
+                              styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: true)
+        window.title = "Review snapshot"
+        window.isReleasedWhenClosed = false
+        return window
+    }
+}
+
+final class PreviewModel: ObservableObject {
+    @Published var text: String
+
+    init(text: String) {
+        self.text = text
+    }
+}
+
+struct PreviewView: View {
+    @ObservedObject var model: PreviewModel
+    var copy: () -> Void
+    var cancel: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("This snapshot includes visible text from your screen. Review or edit it, then copy it.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            TextEditor(text: $model.text)
+                .font(.system(.body, design: .monospaced))
+                .frame(minHeight: 320)
+            HStack {
+                Spacer()
+                Button("Cancel", action: cancel).keyboardShortcut(.cancelAction)
+                Button("Copy to Clipboard", action: copy).keyboardShortcut(.return, modifiers: .command)
+            }
+        }
+        .padding(16)
+        .frame(minWidth: 560, minHeight: 420)
     }
 }
 

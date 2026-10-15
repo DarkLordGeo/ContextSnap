@@ -18,19 +18,14 @@ namespace ContextSnap.Tests;
 /// </summary>
 public class ScreenTextIntegrationTests
 {
-    private static bool CanRun => Environment.UserInteractive && Environment.GetEnvironmentVariable("CI") is null;
-
     private sealed class SingleWindow(RawWindow window) : IWindowSource
     {
         public IReadOnlyList<RawWindow> GetWindows() => [window];
     }
 
-    [Fact]
+    [InteractiveDesktopFact]
     public void ReadsRealWindowTextThroughUiAutomationAndSkipsPasswords()
     {
-        if (!CanRun)
-            return;
-
         var output = WithWindow(() => new StackPanel
         {
             Children =
@@ -50,12 +45,9 @@ public class ScreenTextIntegrationTests
         Assert.DoesNotContain("hunter2", window.Text);
     }
 
-    [Fact]
+    [InteractiveDesktopFact(RequiresOcr = true)]
     public void FallsBackToWindowsOcrForTextDrawnAsPixels()
     {
-        if (!CanRun || new WindowsOcrReader().UnavailableReason is not null)
-            return;
-
         var output = WithWindow(() => new Image { Source = RenderText("Quarterly revenue grew fifteen percent"), Stretch = Stretch.None },
             settings: new AppSettings());
 

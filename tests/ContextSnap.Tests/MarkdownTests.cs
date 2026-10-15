@@ -255,3 +255,34 @@ public class MarkdownFormatterTests
         Assert.Equal(expected, MarkdownFormatter.FormatSize(bytes));
     }
 }
+
+public class LimitOutputFenceTests
+{
+    private static readonly string ScreenTextSnapshot =
+        "# Context Snapshot\n\n## Visible text\n\n### Active window: Chat\n\n````text\nuse ```code``` here\n" +
+        string.Join("\n", Enumerable.Range(0, 80).Select(i => $"visible line {i}")) +
+        "\n````\n\n## System context\n\n" + string.Join("\n", Enumerable.Range(0, 40).Select(i => $"- item {i}")) + "\n";
+
+    [Fact]
+    public void Truncation_NeverLeavesAnOpenFenceOrPutsTheNoticeInsideContent()
+    {
+        for (var max = 50; max <= 1_200; max++)
+        {
+            var output = MarkdownFormatter.LimitOutput(ScreenTextSnapshot, max);
+
+            Assert.True(output.Length <= max, $"max {max}: {output.Length} characters");
+            Assert.EndsWith(MarkdownFormatter.TruncationNotice, output);
+            var body = output[..^MarkdownFormatter.TruncationNotice.Length];
+            Assert.Null(MarkdownFormatter.OpenFence(body).Fence);
+        }
+    }
+
+    [Theory]
+    [InlineData("```text\nopen", "```")]
+    [InlineData("````text\n```\nstill open", "````")]
+    [InlineData("```text\nclosed\n```", null)]
+    [InlineData("````\na\n```\n````", null)]
+    [InlineData("no fences here", null)]
+    public void OpenFence_TracksFenceLength(string text, string? expected) =>
+        Assert.Equal(expected, MarkdownFormatter.OpenFence(text).Fence);
+}

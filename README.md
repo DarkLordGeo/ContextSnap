@@ -9,7 +9,7 @@ This README describes the Windows app. A macOS menu-bar app with the same privac
 ## Features
 
 - **Capture → review → copy.** One button (or `F5` / `Ctrl+Enter`) collects context and shows an editable Markdown preview. `Ctrl+Shift+C` copies it.
-- **Global shortcut.** `Ctrl+Alt+Shift+C` captures and copies in one step from any application while ContextSnap is open (can be turned off).
+- **Global shortcut.** `Ctrl+Alt+Shift+C` captures from any application while ContextSnap is open (can be turned off). A snapshot that includes visible screen text opens in the preview for review before anything is copied; snapshots without screen text are copied in one step. **Settings → Behavior → Shortcut copies immediately, without review** restores one-step copying for every snapshot.
 - **Copy notifications** (on by default). After every copy, a small animated notice appears in the bottom-right corner: "Context copied to clipboard" with character, word, and size counts, a warning when the snapshot was truncated, or "Copy failed" with the reason. See [Copy notifications](#copy-notifications).
 - **Start with Windows** (on by default). ContextSnap opens minimized when you sign in, so the shortcut is ready. Only one copy ever runs: launching it again brings the existing window forward. See [Start with Windows](#start-with-windows).
 - **Visible screen text** (on by default, focused window only). The text you can currently see in the window you are working in, such as a ChatGPT or Claude conversation, a document, or a dialog, read through Windows UI Automation with an on-device Windows OCR fallback. See [Visible screen text](#visible-screen-text).
@@ -22,7 +22,7 @@ This README describes the Windows app. A macOS menu-bar app with the same privac
   | Developer tools | IDEs, terminals, runtimes from an editable list, with PIDs and executable paths | On |
   | Desktop items | Names and sizes of non-hidden Desktop entries, newest first | On |
   | System summary | Windows version, architecture, CPU count, memory | On |
-  | Browser tabs | Tab titles from Chrome, Edge, Brave, Vivaldi, Opera, Firefox; optionally the active tab's address | **Off** |
+  | Browser tabs | Tab titles from Chrome, Edge, Brave, Vivaldi, Opera, Firefox, Arc, Thorium; optionally the active tab's address. Browsers listed under excluded programs are never read | **Off** |
 - **Privacy controls:** secret and email redaction, user-identity hiding, URL query stripping, excluded programs / title keywords / folders, custom redaction words, item and output limits.
 - **Clear status:** each collector reports a count, "none", "off", "unavailable", or "failed" (hover a chip in the status bar for details). One failing collector never blocks the rest.
 - **Command line:** `ContextSnap --capture` (capture + copy + summary) and `ContextSnap --print` (Markdown to stdout).
@@ -106,7 +106,7 @@ ContextSnap reads the text that is on screen **only when you capture** (button, 
 
 **How text is read** (per window, each with its own timeout, default 5 s):
 1. **UI Automation**, the Windows accessibility interface used by screen readers. ContextSnap walks the window's accessible elements and keeps those that are on screen (not reported as off-screen, inside the window, larger than 2 px), in reading order. Fragments on the same line are joined, container labels are dropped when their children carry the text, and consecutive duplicates are removed. Text controls without child elements (for example, Notepad or Word) are read through their *visible ranges*, which is exactly what is scrolled into view.
-   - **Browsers** (Chrome, Edge, Brave, Vivaldi, Opera, Firefox) and **Chromium/Electron apps** (VS Code, Claude, Slack, …): only the page document is read, never tabs, the address bar, bookmarks, or extensions. Inside pages, button and region labels are skipped because they are usually invisible accessibility labels ("Copy message").
+   - **Browsers** (Chrome, Edge, Brave, Vivaldi, Opera, Firefox, Arc, Thorium) and **Chromium/Electron apps** (VS Code, Claude, Slack, …): only the page document is read, never tabs, the address bar, bookmarks, or extensions. Inside pages, button and region labels are skipped because they are usually invisible accessibility labels ("Copy message").
    - **Skipped everywhere:** password fields (and their children), title-bar caption buttons, and tab titles (which name other files or pages).
 2. **On-device OCR** (Windows.Media.Ocr, built into Windows) when an app exposes too little text: fewer than about 200 characters per megapixel of window (at least 20, at most 200). The window is rendered off-screen with `PrintWindow`, so text from overlapping windows is not mixed in. For browsers only the page area is captured. OCR lines are read column by column (a sidebar and a conversation do not interleave), and lines already read through UI Automation are not repeated. Pixel buffers are zeroed and released immediately after recognition.
    - OCR uses the OCR languages installed with Windows for your display languages. If none is installed, the snapshot says so and UI Automation text is still used.
@@ -216,6 +216,7 @@ ContextSnap makes no network requests. The only files it writes are its settings
 - **Terminal working directories are not collected.** Windows offers no documented, safe way to read another process's current directory, so ContextSnap does not try. Git context comes from open File Explorer folders, the "Project folders for Git" setting, and (command-line modes only) the current directory.
 - **Editor/IDE project paths** are not read from IDE internals; the window title (for example `file - folder - Visual Studio Code`) is the signal.
 - **Browser tabs** (opt-in) are read through UI Automation from each browser's tab strip. Only the *active* tab's address is available, and only when "Include the active tab's address" is on. Titles of tabs in minimized windows and some browser layouts may be missing. Tab-name status suffixes Chromium adds in English (memory usage, audio playing) are removed; other languages may keep them.
+- **Git status** is read with every Git filter disabled (so a repository cannot run commands through filters) and without entering submodules. Files that rely on a filter, such as Git LFS files, can therefore show as modified when their timestamps changed, and changes inside submodules are not reported.
 - **Explorer folders** showing virtual locations (Home, This PC, Recycle Bin) are counted but not listed.
 - **Elevated processes** (run as administrator) may show without executable paths, and their windows still appear by title.
 - The **global shortcut** works only while ContextSnap is running (the window may be minimized). There is no tray icon; at sign-in the app sits minimized on the taskbar. It never captures anything on its own; there is no background monitoring.

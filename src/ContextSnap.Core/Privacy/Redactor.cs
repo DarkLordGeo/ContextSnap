@@ -116,7 +116,7 @@ public sealed partial class Redactor
         result = AuthorizationHeader().Replace(result, "$1" + Redacted);
         result = BearerToken().Replace(result, "$1 " + Redacted);
         result = BasicCredentials().Replace(result, "$1 " + Redacted);
-        result = JsonWebToken().Replace(result, RedactedToken);
+        result = JsonWebToken().Replace(result, "${prefix}" + RedactedToken);
         result = KnownTokenFormat().Replace(result, RedactedToken);
         result = ConnectionStringSecret().Replace(result, "$1=" + Redacted);
         result = SensitiveQueryParameter().Replace(result, "$1" + Redacted);
@@ -187,7 +187,9 @@ public sealed partial class Redactor
     [GeneratedRegex(@"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z0-9 ]*PRIVATE KEY-----|$)")]
     private static partial Regex PrivateKeyBlock();
 
-    [GeneratedRegex(@"(?i)\b([a-z][a-z0-9+.-]*://)[^/\s:@]+:[^/\s@]+@")]
+    // Anchored on "://" with the scheme checked behind it. Starting at every word boundary of the scheme made
+    // dotted text such as "a.b.c.d…" quadratic.
+    [GeneratedRegex(@"(?i)(://)(?<=[a-z][a-z0-9+.-]{0,255}://)[^/\s:@]+:[^/\s@]+@")]
     private static partial Regex UrlCredentials();
 
     [GeneratedRegex(@"(?i)\b(authorization\s*[:=]\s*[""']?(?:bearer|basic|token|digest)\s+)(?!\[REDACTED)[^\s""']+")]
@@ -199,7 +201,10 @@ public sealed partial class Redactor
     [GeneratedRegex(@"(?i)\b(basic)\s+[A-Za-z0-9+/]{16,}={0,2}")]
     private static partial Regex BasicCredentials();
 
-    [GeneratedRegex(@"\beyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}")]
+    // Within one run of token characters every candidate start reaches the same run end, so only the first
+    // word-boundary "eyJ" can match. Matching from the run start and committing to that first "eyJ" (atomic
+    // group) finds the same tokens as "\beyJ…" in linear time; the skipped prefix is kept by the replacement.
+    [GeneratedRegex(@"(?<![A-Za-z0-9_-])(?>(?<prefix>[A-Za-z0-9_-]*?)\beyJ)[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}")]
     private static partial Regex JsonWebToken();
 
     [GeneratedRegex(
@@ -221,8 +226,11 @@ public sealed partial class Redactor
     [GeneratedRegex(@"(?i)([?&](?:access_token|refresh_token|id_token|token|key|api_key|apikey|sig|signature|code|password|secret|auth|session|sid)=)[^&#\s]+")]
     private static partial Regex SensitiveQueryParameter();
 
+    // The key starts where a run of key characters starts. Starting at every word boundary inside such a run
+    // made text like "a.a.a…" or "a-a-a…" quadratic; the matches and replacements are the same, because the
+    // key's lazy prefix covers the rest of the run.
     [GeneratedRegex(
-        @"(?i)\b(?<key>[a-z0-9_.-]*?(?:api[_-]?key|apikey|access[_-]?key|secret|token|password|passwd|pwd|passphrase|credentials?|private[_-]?key|client[_-]?secret|account[_-]?key|session[_-]?id|sessionid|auth[_-]?token|authorization))" +
+        @"(?i)(?<![a-z0-9_.-])(?<key>[a-z0-9_.-]*?(?:api[_-]?key|apikey|access[_-]?key|secret|token|password|passwd|pwd|passphrase|credentials?|private[_-]?key|client[_-]?secret|account[_-]?key|session[_-]?id|sessionid|auth[_-]?token|authorization))" +
         @"(?<sep>\s*[:=]\s*)(?<quote>[""']?)(?!\[REDACTED|(?:bearer|basic|token|digest)\s)(?<value>[^\s""'&;,]+)")]
     private static partial Regex SecretAssignment();
 

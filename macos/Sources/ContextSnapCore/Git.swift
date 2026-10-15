@@ -127,7 +127,45 @@ public struct GitRunner: Sendable {
         ["--no-pager", "--no-optional-locks", "-c", "core.fsmonitor=false", "-c", "log.showSignature=false", "-c", "color.ui=false", "-C", root] + arguments
     }
 
+    /// Config keys of filter drivers, which Git runs as shell commands while reading working-tree files.
+    public static let filterKeyPattern = #"^filter\..+\.(clean|smudge|process|required)$"#
+
+    public static let unsafeFilterMessage = "This repository defines a Git filter that ContextSnap cannot disable safely, so Git was not run."
+
+    /// `-c` options that replace each configured filter driver with an empty command, which Git treats
+    /// as "no filter". Nil when a filter name cannot be written as a `-c key=value` option.
+    public static func filterOverrides(configOutput: String) -> [String]? {
+        let prefix = "filter."
+        var names = Set<String>()
+        for entry in configOutput.split(separator: "\0") {
+            let key = String(entry.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: false).first ?? "")
+            guard key.lowercased().hasPrefix(prefix), let lastDot = key.lastIndex(of: "."),
+                  key.distance(from: key.startIndex, to: lastDot) > prefix.count else { continue }
+            let name = String(key[key.index(key.startIndex, offsetBy: prefix.count)..<lastDot])
+            if name.contains("=") { return nil }
+            names.insert(name)
+        }
+        return names.sorted().flatMap { name in
+            ["-c", "filter.\(name).clean=", "-c", "filter.\(name).smudge=", "-c", "filter.\(name).process=", "-c", "filter.\(name).required=false"]
+        }
+    }
+
+    /// Runs one Git command with every configured filter driver disabled. A repository's own config can
+    /// define `filter.<name>.clean`, `smudge`, or `process` commands that Git runs whenever it re-reads a
+    /// file (for example during `git status`), so an untrusted repository could otherwise execute commands
+    /// when a snapshot is captured. Reading config runs nothing.
     public func run(root: String, _ arguments: [String], timeout: TimeInterval = 5, maxOutput: Int = 512 * 1024) -> (status: Int32, output: String, error: String, timedOut: Bool) {
+        // Exit code 1 means no filter is configured. Output at the limit may hide a filter, so it is refused.
+        let configLimit = 4 * 1024 * 1024
+        let filters = execute(root: root, ["config", "-z", "--get-regexp", Self.filterKeyPattern], timeout: timeout, maxOutput: configLimit)
+        if filters.timedOut || !(filters.status == 0 || filters.status == 1) { return filters }
+        guard filters.output.utf8.count < configLimit, let overrides = Self.filterOverrides(configOutput: filters.output) else {
+            return (-1, "", Self.unsafeFilterMessage, false)
+        }
+        return execute(root: root, overrides + arguments, timeout: timeout, maxOutput: maxOutput)
+    }
+
+    private func execute(root: String, _ arguments: [String], timeout: TimeInterval, maxOutput: Int) -> (status: Int32, output: String, error: String, timedOut: Bool) {
         guard let executable else { return (-1, "", "Git was not found.", false) }
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executable)
@@ -180,7 +218,7 @@ public struct GitRunner: Sendable {
 
     /// Status and recent commits for one repository.
     public func read(root: String, maxChanges: Int) -> GitRepository {
-        let status = run(root: root, ["status", "--porcelain=v2", "--branch", "-z", "--untracked-files=normal", "--ignore-submodules=dirty"])
+        let status = run(root: root, ["status", "--porcelain=v2", "--branch", "-z", "--untracked-files=normal", "--ignore-submodules=all"])
         if status.timedOut {
             var failed = GitRepository(root: root)
             failed.error = "git status timed out after 5 seconds."
@@ -190,7 +228,7 @@ public struct GitRunner: Sendable {
             var failed = GitRepository(root: root)
             failed.error = status.error.contains("dubious ownership") || status.error.contains("safe.directory")
                 ? "Git refused to read this repository because it is owned by another user (safe.directory)."
-                : "git status exited with code \(status.status)."
+                : status.error == Self.unsafeFilterMessage ? status.error : "git status exited with code \(status.status)."
             return failed
         }
         var repo = GitStatusParser.parse(root: root, output: status.output, maxListedChanges: maxChanges)
