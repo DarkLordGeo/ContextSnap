@@ -27,10 +27,12 @@ public sealed class GitProcessRunner : IGitRunner
     public const int MaxOutputCharacters = 512 * 1024;
     private const int MaxErrorCharacters = 4 * 1024;
 
-    private static readonly string[] FallbackLocations =
-    [
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Git", "cmd", "git.exe"),
-    ];
+    private static readonly string ExecutableName = OperatingSystem.IsWindows() ? "git.exe" : "git";
+
+    // Only on Windows: elsewhere ProgramFiles is empty and the path would be relative to the current directory.
+    private static readonly string[] FallbackLocations = OperatingSystem.IsWindows()
+        ? [Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Git", "cmd", "git.exe")]
+        : [];
 
     private static readonly string[] InheritedVariablesToRemove =
     [
@@ -43,7 +45,7 @@ public sealed class GitProcessRunner : IGitRunner
 
     public GitProcessRunner(string? gitPath = null)
     {
-        _gitPath = new Lazy<string?>(() => gitPath ?? ExecutableLocator.FindOnPath("git.exe", fallbackLocations: FallbackLocations));
+        _gitPath = new Lazy<string?>(() => gitPath ?? ExecutableLocator.FindOnPath(ExecutableName, fallbackLocations: FallbackLocations));
     }
 
     public bool IsAvailable => _gitPath.Value is not null;

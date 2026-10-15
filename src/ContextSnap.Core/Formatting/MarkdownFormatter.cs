@@ -475,10 +475,11 @@ public sealed class MarkdownFormatter(Redactor redactor)
             : $"{value.ToString(value >= 10 ? "0" : "0.#", Culture)} {units[unit]}";
     }
 
+    /// <summary>Splits on both separators on every platform, so the Linux app formats the same as Windows.</summary>
     private static string LastSegment(string path)
     {
         var trimmed = path.TrimEnd('\\', '/');
-        var name = Path.GetFileName(trimmed);
+        var name = trimmed[(trimmed.LastIndexOfAny(['\\', '/']) + 1)..];
         return string.IsNullOrEmpty(name) ? trimmed : name;
     }
 

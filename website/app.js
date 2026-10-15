@@ -21,7 +21,7 @@ fetch("downloads.json", { cache: "no-store" })
       const button = card.querySelector(".button");
       const parts = [data.version ? `Version ${data.version}` : null, platform.size, platform.sha256 ? `SHA-256 ${platform.sha256}` : null];
       card.querySelector(".meta").textContent = parts.filter(Boolean).join(" · ");
-      // Set by the release workflow, for example how to open a macOS build that is not notarized yet.
+      // Set by the release workflow, for example how to set up the Linux command.
       card.querySelector(".install-note").textContent = typeof platform.note === "string" ? platform.note : "";
       button.href = platform.file;
       button.textContent = `Download for ${platform.label}`;

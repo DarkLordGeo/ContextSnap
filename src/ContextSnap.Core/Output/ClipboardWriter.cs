@@ -3,16 +3,6 @@ using ContextSnap.Platform;
 
 namespace ContextSnap.Output;
 
-public sealed record ClipboardResult(bool Success, string? Error)
-{
-    public static ClipboardResult Ok { get; } = new(true, null);
-}
-
-public interface IClipboardWriter
-{
-    ClipboardResult SetText(string text, bool excludeFromHistory);
-}
-
 /// <summary>
 /// Writes Unicode text directly through the Win32 clipboard API (CF_UNICODETEXT). Retries while
 /// another application holds the clipboard, and can mark the content as excluded from Windows

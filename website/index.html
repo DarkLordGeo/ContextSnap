@@ -6,7 +6,7 @@
 <script src="gtag.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ContextSnap — Capture your context. Paste it anywhere.</title>
-<meta name="description" content="ContextSnap turns what you are working on into a redacted Markdown snapshot, only when you press its shortcut. Processed locally on Windows and macOS.">
+<meta name="description" content="ContextSnap turns what you are working on into a redacted Markdown snapshot, only when you press its shortcut. Processed locally on Windows and Linux.">
 <meta name="theme-color" content="#f7faf8">
 <meta property="og:title" content="ContextSnap">
 <meta property="og:description" content="One shortcut. A useful Markdown snapshot of your current context. Processed on your machine.">
@@ -33,7 +33,7 @@
 <main id="main">
   <section class="wrap hero" aria-labelledby="hero-title">
     <div class="hero-copy">
-      <p class="eyebrow">For Windows and macOS</p>
+      <p class="eyebrow">For Windows and Linux</p>
       <h1 id="hero-title">Capture your context.<br>Paste it anywhere.</h1>
       <p class="lead">Press one shortcut and ContextSnap turns what you are working on into a short, redacted Markdown snapshot on your clipboard. Paste it into ChatGPT, Claude, or any other assistant.</p>
       <div class="actions">
@@ -66,12 +66,12 @@ api_key = <mark>[REDACTED]</mark>
       <li class="card">
         <span class="step-number" aria-hidden="true">1</span>
         <h3>Press the shortcut</h3>
-        <p><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> on Windows, <kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>C</kbd> on macOS by default. Nothing is read before you do.</p>
+        <p><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> on Windows by default. On Linux, bind the <code>contextsnap</code> command to any shortcut. Nothing is read before you do.</p>
       </li>
       <li class="card">
         <span class="step-number" aria-hidden="true">2</span>
         <h3>Context is collected and redacted</h3>
-        <p>Visible text of the window you are using, open apps, Git state, and system basics. Secrets, tokens, and email addresses are redacted on your machine.</p>
+        <p>Open apps, Git state, system basics, and on Windows the visible text of the window you are using. Secrets, tokens, and email addresses are redacted on your machine.</p>
       </li>
       <li class="card">
         <span class="step-number" aria-hidden="true">3</span>
@@ -85,10 +85,10 @@ api_key = <mark>[REDACTED]</mark>
     <h2 id="captures-title">What a snapshot can include</h2>
     <p class="section-lead">Each source can be turned off. Size limits keep the result short enough to be useful.</p>
     <ul class="features">
-      <li class="card"><h3>Visible text</h3><p>Text on screen in the focused window, read through accessibility APIs with on-device OCR as a fallback. Password fields are skipped.</p></li>
-      <li class="card"><h3>Apps and windows</h3><p>Names and titles of open apps. Password managers and private browsing windows are excluded by default.</p></li>
+      <li class="card"><h3>Visible text</h3><p>On Windows, text on screen in the focused window, read through accessibility APIs with on-device OCR as a fallback. Password fields are skipped.</p></li>
+      <li class="card"><h3>Apps and windows</h3><p>Names and titles of open apps (on Linux, X11 and XWayland apps). Password managers and private browsing windows are excluded by default.</p></li>
       <li class="card"><h3>Git state</h3><p>Branch, upstream, changed file names, and recent commit subjects. Git is run read-only; diffs and file contents are never read.</p></li>
-      <li class="card"><h3>System basics</h3><p>Operating system, architecture, CPU count, and memory. On Windows also Explorer folders, developer tools, and Desktop items.</p></li>
+      <li class="card"><h3>System basics</h3><p>Operating system, architecture, CPU count, and memory, plus running developer tools and Desktop items. On Windows also File Explorer folders.</p></li>
     </ul>
   </section>
 
@@ -110,7 +110,7 @@ api_key = <mark>[REDACTED]</mark>
 
   <section class="wrap section" id="download" aria-labelledby="download-title" data-reveal>
     <h2 id="download-title">Download</h2>
-    <p class="section-lead">Builds for both platforms are published here when a release is available.</p>
+    <p class="section-lead">Builds are published here when a release is available.</p>
     <div class="downloads">
       <article class="card download" data-platform="windows" aria-labelledby="dl-windows">
         <h3 id="dl-windows">Windows</h3>
@@ -119,15 +119,15 @@ api_key = <mark>[REDACTED]</mark>
         <p class="install-note"></p>
         <a class="button primary" aria-disabled="true">Download not yet available</a>
       </article>
-      <article class="card download" data-platform="macos" aria-labelledby="dl-macos">
-        <h3 id="dl-macos">macOS</h3>
-        <p class="detail">macOS 14 or later · Apple silicon and Intel</p>
+      <article class="card download" data-platform="linux" aria-labelledby="dl-linux">
+        <h3 id="dl-linux">Linux</h3>
+        <p class="detail">64-bit (x64) · command-line app for X11 and Wayland · no .NET install needed</p>
         <p class="meta"></p>
         <p class="install-note"></p>
         <a class="button primary" aria-disabled="true">Download not yet available</a>
       </article>
     </div>
-    <p class="fine">Current builds are not code-signed or notarized, so Windows SmartScreen and macOS Gatekeeper may ask you to confirm the first launch. Each download lists its SHA-256 checksum.</p>
+    <p class="fine">Current builds are not code-signed, so Windows SmartScreen may ask you to confirm the first launch. Each download lists its SHA-256 checksum.</p>
     <p class="fine">ContextSnap is open source under the MIT license. <a href="https://github.com/DarkLordGeo/ContextSnap" rel="noopener">View the source code on GitHub</a>.</p>
   </section>
 </main>

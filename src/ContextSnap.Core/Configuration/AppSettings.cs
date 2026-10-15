@@ -114,6 +114,9 @@ public sealed class AppSettings
         "docker", "Docker Desktop", "ollama", "claude",
         // Creative tools
         "blender", "Unity", "Unity Hub", "UnrealEditor", "Godot",
+        // Linux names of editors, terminals, and runtimes not listed above
+        "codium", "idea", "pycharm", "webstorm", "clion", "goland", "rider", "gnome-terminal-server",
+        "konsole", "kitty", "alacritty", "wezterm-gui", "xfce4-terminal", "tilix", "zsh", "fish", "tmux", "python3",
     ];
 
     public AppSettings Clone()

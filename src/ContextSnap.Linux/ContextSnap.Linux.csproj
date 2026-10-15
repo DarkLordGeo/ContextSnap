@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The Linux command-line app. It compiles the platform-neutral parts of ContextSnap.Core
+       (models, privacy, formatting, Git, capture) from source, plus the Linux collectors here. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>ContextSnap</RootNamespace>
+    <AssemblyName>contextsnap</AssemblyName>
+    <!-- No ICU dependency: output is formatted with the invariant culture. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ContextSnap.Linux.Tests" />
+    <Using Include="System.IO" />
+  </ItemGroup>
+
+  <ItemGroup Label="Platform-neutral ContextSnap.Core sources">
+    <Compile Include="..\ContextSnap.Core\Model\*.cs" LinkBase="Core\Model" />
+    <Compile Include="..\ContextSnap.Core\Configuration\*.cs" LinkBase="Core\Configuration" />
+    <Compile Include="..\ContextSnap.Core\Privacy\*.cs" LinkBase="Core\Privacy" />
+    <Compile Include="..\ContextSnap.Core\Formatting\*.cs" LinkBase="Core\Formatting" />
+    <Compile Include="..\ContextSnap.Core\Collectors\Git\*.cs" LinkBase="Core\Collectors\Git" />
+    <Compile Include="..\ContextSnap.Core\Collectors\ICollector.cs;..\ContextSnap.Core\Collectors\WindowCollector.cs;..\ContextSnap.Core\Collectors\ProcessCollector.cs;..\ContextSnap.Core\Collectors\DesktopCollector.cs" LinkBase="Core\Collectors" />
+    <Compile Include="..\ContextSnap.Core\Collectors\ScreenText\ScreenTextSummary.cs" LinkBase="Core\Collectors\ScreenText" />
+    <Compile Include="..\ContextSnap.Core\Capture\SnapshotService.cs;..\ContextSnap.Core\Capture\HeadlessRunner.cs" LinkBase="Core\Capture" />
+    <Compile Include="..\ContextSnap.Core\Output\CopyService.cs;..\ContextSnap.Core\Output\IClipboardWriter.cs" LinkBase="Core\Output" />
+    <Compile Include="..\ContextSnap.Core\Notifications\CopyNotification.cs" LinkBase="Core\Notifications" />
+    <Compile Include="..\ContextSnap.Core\Platform\ExecutableLocator.cs" LinkBase="Core\Platform" />
+  </ItemGroup>
+
+</Project>

@@ -368,7 +368,7 @@ public class GitProcessRunnerTests
 
     private static (int ExitCode, string Output) StartGit(string directory, string[] args)
     {
-        var start = new ProcessStartInfo(ExecutableLocator.FindOnPath("git.exe")!)
+        var start = new ProcessStartInfo(ExecutableLocator.FindOnPath(OperatingSystem.IsWindows() ? "git.exe" : "git")!)
         {
             WorkingDirectory = directory, UseShellExecute = false, CreateNoWindow = true,
             RedirectStandardOutput = true, RedirectStandardError = true,

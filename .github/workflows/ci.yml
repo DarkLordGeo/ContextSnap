@@ -21,6 +21,21 @@ jobs:
         env:
           CI: "true"
 
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - name: Install X11 test tools
+        run: sudo apt-get update -q && sudo apt-get install -y -q xvfb xclip
+      # Under a virtual X display, so the clipboard test copies through xclip for real.
+      - run: xvfb-run -a dotnet test tests/ContextSnap.Linux.Tests -c Release
+        env:
+          CI: "true"
+
+  # The macOS app is not released yet (it needs Apple notarization); CI keeps it building.
   macos:
     runs-on: macos-15
     steps:

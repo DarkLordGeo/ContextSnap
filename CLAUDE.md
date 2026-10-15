@@ -31,6 +31,7 @@ Global hotkey -> Collect context -> Redact sensitive information -> Generate Mar
   - `Configuration/`, `Output/` (clipboard), `Platform/` (Windows APIs, hotkeys).
 - `src/ContextSnap/`: WPF app; `Program.cs` chooses GUI or command-line mode.
 - `tests/ContextSnap.Tests/`: Unit tests.
+- `src/ContextSnap.Linux/` + `tests/ContextSnap.Linux.Tests/`: Linux command-line app that links the platform-neutral Core files.
 - See `docs/ARCHITECTURE.md`.
 
 Keep collection, formatting, and platform integration separate. Use abstractions only when they improve testing or extensibility.
@@ -51,7 +52,7 @@ Keep collection, formatting, and platform integration separate. Use abstractions
 - Handle collector failures gracefully and report meaningful errors.
 - Keep output concise and useful to LLMs.
 - No AI APIs, cloud services, telemetry, accounts, or database.
-- No cross-platform support in the Windows MVP.
+- Core files linked by the Linux app must stay free of Windows APIs; put Windows-only code in separate files.
 - Do not implement unrelated features or perform unnecessary refactors.
 
 ## Commands

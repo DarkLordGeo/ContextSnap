@@ -9,7 +9,8 @@ using ContextSnap.Privacy;
 
 namespace ContextSnap.Capture;
 
-public sealed class CollectorSet
+/// <summary>The collectors used for one capture. Windows creates them in CollectorSet.Windows.cs.</summary>
+public sealed partial class CollectorSet
 {
     public required ICollector<WindowInfo> Windows { get; init; }
     public required ICollector<ProcessGroup> Processes { get; init; }
@@ -19,22 +20,6 @@ public sealed class CollectorSet
     public required ICollector<BrowserTab> BrowserTabs { get; init; }
     public required ICollector<SystemSummary> SystemInfo { get; init; }
     public required ICollector<WindowText> ScreenText { get; init; }
-
-    public static CollectorSet CreateDefault()
-    {
-        var windowSource = new Win32WindowSource();
-        return new CollectorSet
-        {
-            Windows = new WindowCollector(windowSource, Environment.ProcessId),
-            Processes = new ProcessCollector(new SystemProcessSource()),
-            Explorer = new ExplorerCollector(new ShellComWindowSource()),
-            Git = new GitCollector(new GitProcessRunner()),
-            Desktop = DesktopCollector.CreateDefault(),
-            BrowserTabs = new BrowserTabCollector(new UiAutomationBrowserTabSource(windowSource)),
-            SystemInfo = new SystemSummaryCollector(),
-            ScreenText = new ScreenTextCollector(windowSource, new UiaTextReader(), new WindowsOcrReader(), Environment.ProcessId),
-        };
-    }
 }
 
 /// <param name="ExtraProjectFolders">Additional folders to check for Git repositories, such as the CLI's working directory.</param>
