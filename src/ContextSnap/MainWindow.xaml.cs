@@ -73,15 +73,30 @@ public partial class MainWindow : Window
         _hwndSource = HwndSource.FromHwnd(handle);
         _hwndSource?.AddHook(WndProc);
         _hotkey = new GlobalHotkey(handle);
-        _trayIcon = new NotificationAreaIcon(handle, $"ContextSnap — {GlobalHotkey.DisplayText} to capture");
-        _trayIcon.Add();
         ApplyHotkeySetting();
+        ApplyTrayIconSetting();
         ApplyStartupSetting();
     }
 
-    public bool HasTrayIcon => _trayIcon is { IsAdded: true };
+    private string HotkeyText => HotkeyGesture.Parse(_settings.Hotkey)?.DisplayText ?? HotkeyGesture.DefaultText;
 
-    /// <summary>Quits for real (tray menu Exit, or Windows signing out), instead of hiding to the notification area.</summary>
+    /// <summary>The notification-area icon is opt-in; by default ContextSnap runs with no icon at all.</summary>
+    private void ApplyTrayIconSetting()
+    {
+        var handle = new WindowInteropHelper(this).Handle;
+        if (_settings.ShowNotificationAreaIcon && _trayIcon is not { IsAdded: true } && handle != 0)
+        {
+            _trayIcon = new NotificationAreaIcon(handle, $"ContextSnap — {HotkeyText} to capture");
+            _trayIcon.Add();
+        }
+        else if (!_settings.ShowNotificationAreaIcon && _trayIcon is not null)
+        {
+            _trayIcon.Dispose();
+            _trayIcon = null;
+        }
+    }
+
+    /// <summary>Quits for real (Quit button, tray menu Exit, <c>--exit</c>, or Windows signing out).</summary>
     public void ExitApplication()
     {
         if (_exiting)
@@ -93,21 +108,28 @@ public partial class MainWindow : Window
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
-        // Like other background apps, closing the window keeps ContextSnap (and its shortcut) running in the
-        // notification area. Without a notification-area icon there would be no way back, so it exits then.
-        if (!_exiting && _trayIcon is { IsAdded: true })
+        // Closing hides the window and keeps ContextSnap running in the background while its shortcut works
+        // (or its optional icon is shown). Opening ContextSnap again shows this window; Quit or --exit ends it.
+        if (BackgroundPolicy.KeepRunningAfterClose(_exiting, _hotkey is { IsRegistered: true }, _trayIcon is { IsAdded: true }))
         {
             e.Cancel = true;
             CommitPendingSettingsEdit();
             Hide();
-            if (!_closeHintShown)
+            if (!_closeHintShown && _trayIcon is { IsAdded: true })
             {
                 _closeHintShown = true;
                 _trayIcon.ShowInfo("ContextSnap is still running",
-                    $"Press {GlobalHotkey.DisplayText} to capture. To quit, right-click the ContextSnap icon and choose Exit.");
+                    $"Press {HotkeyText} to capture. To quit, right-click the ContextSnap icon and choose Exit.");
             }
 
             return;
+        }
+
+        if (!_exiting)
+        {
+            // Nothing would keep working in the background (shortcut off or unavailable), so closing quits.
+            _exiting = true;
+            Dispatcher.BeginInvoke(() => Application.Current?.Shutdown());
         }
 
         base.OnClosing(e);
@@ -147,7 +169,7 @@ public partial class MainWindow : Window
             return 0;
         }
 
-        var command = _trayIcon?.HandleMessage(message, wParam, lParam, $"&Capture snapshot\t{GlobalHotkey.DisplayText}", out handled)
+        var command = _trayIcon?.HandleMessage(message, wParam, lParam, $"&Capture snapshot\t{HotkeyText}", out handled)
             ?? TrayCommand.None;
         switch (command)
         {
@@ -324,6 +346,12 @@ public partial class MainWindow : Window
             SaveSettings();
     }
 
+    private void OnQuit(object sender, RoutedEventArgs e)
+    {
+        CommitPendingSettingsEdit();
+        ExitApplication();
+    }
+
     private void OnRestoreDefaults(object sender, RoutedEventArgs e)
     {
         var answer = MessageBox.Show(this,
@@ -347,6 +375,7 @@ public partial class MainWindow : Window
 
     private void SaveSettings()
     {
+        var invalidHotkey = HotkeyGesture.Parse(_settings.Hotkey) is null ? _settings.Hotkey : null;
         var before = Serialize(_settings);
         _settings.Normalize();
         var after = Serialize(_settings);
@@ -354,6 +383,9 @@ public partial class MainWindow : Window
             RebindSettings(); // Show clamped values.
 
         ApplyHotkeySetting();
+        if (invalidHotkey is not null)
+            SetStatus(StatusKind.Warning, $"\"{invalidHotkey}\" is not a valid shortcut, so the previous default was restored. Use Ctrl, Alt, or Win (optionally Shift) plus a letter, digit, or F1–F24.");
+        ApplyTrayIconSetting();
         if (_settings.StartWithWindows != _appliedStartWithWindows)
             ApplyStartupSetting();
         UpdateEnabledCollectorsText();
@@ -393,16 +425,17 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (_hotkey.Register())
+        var gesture = HotkeyGesture.Parse(_settings.Hotkey) ?? HotkeyGesture.Default;
+        if (_hotkey.Register(gesture))
         {
-            HotkeyStatusText.Text = "Active while ContextSnap is running, including when this window is closed to the notification area.";
+            HotkeyStatusText.Text = $"Active: {gesture.DisplayText} works in any application while ContextSnap runs in the background, also after this window is closed.";
             HotkeyHint.Text = _settings.HotkeyCopiesImmediately
-                ? $"Tip: press {GlobalHotkey.DisplayText} in any application to capture and copy in one step."
-                : $"Tip: press {GlobalHotkey.DisplayText} in any application to capture. Snapshots with visible screen text open here for review before copying.";
+                ? $"Tip: press {gesture.DisplayText} in any application to capture and copy in one step."
+                : $"Tip: press {gesture.DisplayText} in any application to capture. Snapshots with visible screen text open here for review before copying.";
         }
         else
         {
-            HotkeyStatusText.Text = "Unavailable: another application is already using this shortcut.";
+            HotkeyStatusText.Text = $"Unavailable: another application is already using {gesture.DisplayText}. Choose another shortcut.";
             HotkeyHint.Text = string.Empty;
         }
     }

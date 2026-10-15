@@ -150,7 +150,7 @@ public sealed class StartupRegistration(
         if (existing is null || !Matches(existing, desired))
             store.Write(path, desired);
 
-        var message = $"ContextSnap starts minimized when you sign in. Shortcut: {path} → {target.FileName}";
+        var message = $"ContextSnap starts in the background when you sign in (no window, taskbar button, or icon). Shortcut: {path} → {target.FileName}";
         var needsAttention = false;
         if (target.IsDevelopmentBuild)
         {
