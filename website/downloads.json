@@ -11,7 +11,7 @@
     "linux": {
       "label": "Linux",
       "detail": "64-bit (x64) · command-line app for X11 and Wayland · no .NET install needed",
-      "note": "Extract it, put contextsnap on your PATH, and bind it to a keyboard shortcut. Copying needs wl-clipboard (Wayland) or xclip (X11); listing windows needs wmctrl."
+      "note": "Extract it and run ./contextsnap --install once: Ctrl+Alt+Shift+C then works from every login. Copying needs wl-clipboard (Wayland) or xclip (X11); listing windows needs wmctrl."
     }
   }
 }

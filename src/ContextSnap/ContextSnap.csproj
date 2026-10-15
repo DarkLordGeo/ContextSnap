@@ -8,11 +8,16 @@
     <UseWPF>true</UseWPF>
     <StartupObject>ContextSnap.Program</StartupObject>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>ContextSnap.ico</ApplicationIcon>
     <AssemblyName>ContextSnap</AssemblyName>
     <Product>ContextSnap</Product>
     <Version>1.0.0</Version>
     <Description>Captures a local Markdown snapshot of your desktop context for pasting into an AI assistant.</Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="ContextSnap.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ContextSnap.Core\ContextSnap.Core.csproj" />

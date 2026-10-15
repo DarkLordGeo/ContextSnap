@@ -32,7 +32,8 @@ public static class Program
 
         var store = SettingsStore.CreateDefault();
         var service = new SnapshotService(CollectorSet.CreateDefault());
-        var app = new Application { ShutdownMode = ShutdownMode.OnMainWindowClose };
+        // The window can be hidden to the notification area, so the app ends only on Exit or sign-out.
+        var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
         app.DispatcherUnhandledException += (_, e) =>
         {
             // Last-resort boundary: report instead of terminating; the user can retry or close.
@@ -51,9 +52,24 @@ public static class Program
         }
 
         var notifier = new WpfCopyNotifier(app.Dispatcher);
-        var window = new MainWindow(store, service, new Win32ClipboardWriter(), notifier, StartupRegistration.CreateDefault(), startMinimized);
+        var window = new MainWindow(store, service, new Win32ClipboardWriter(), notifier, StartupRegistration.CreateDefault());
         instance.ListenForActivation(() => window.Dispatcher.BeginInvoke(window.BringToFront));
-        return app.Run(window);
+        app.SessionEnding += (_, _) => window.ExitApplication();
+
+        if (startMinimized)
+        {
+            // Started at sign-in: only the notification-area icon and the shortcut, no window. Creating the
+            // handle registers both.
+            new System.Windows.Interop.WindowInteropHelper(window).EnsureHandle();
+            if (!window.HasTrayIcon)
+                window.Show(); // No notification area (Explorer not running): stay reachable.
+        }
+        else
+        {
+            window.Show();
+        }
+
+        return app.Run();
     }
 
     private static int RunHeadless(CommandLineOptions options)

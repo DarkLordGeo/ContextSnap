@@ -24,8 +24,14 @@ public static class Program
 
         try
         {
-            return runner.RunAsync(LinuxCommandLine.Parse(args), Console.Out, Console.Error, Environment.CurrentDirectory)
-                .GetAwaiter().GetResult();
+            return args switch
+            {
+                ["--background"] => BackgroundMode.Run(runner, Console.Out, Console.Error),
+                ["--install"] => new LinuxSetup(Console.Out).Install(Environment.ProcessPath!),
+                ["--uninstall"] => new LinuxSetup(Console.Out).Uninstall(),
+                _ => runner.RunAsync(LinuxCommandLine.Parse(args), Console.Out, Console.Error, Environment.CurrentDirectory)
+                    .GetAwaiter().GetResult(),
+            };
         }
         catch (Exception ex)
         {

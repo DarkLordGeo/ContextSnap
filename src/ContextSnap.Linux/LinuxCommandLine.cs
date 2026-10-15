@@ -12,10 +12,14 @@ public static class LinuxCommandLine
         Usage:
           contextsnap             Capture, copy to the clipboard, show a notification, and exit.
           contextsnap --print     Capture and write the Markdown to standard output (no clipboard).
+          contextsnap --install   Copy contextsnap to ~/.local/bin and make Ctrl+Alt+Shift+C work from login:
+                                  a GNOME keyboard shortcut, or on other X11 desktops a background
+                                  instance that starts when you log in.
+          contextsnap --uninstall Undo --install (settings are kept).
+          contextsnap --background
+                                  Stay running and capture on Ctrl+Alt+Shift+C (X11 only; --install sets this up).
           contextsnap --version   Show the version.
           contextsnap --help      Show this help.
-
-        Bind contextsnap to a keyboard shortcut in your desktop's keyboard settings.
 
         Collected: open windows (X11 and XWayland apps; needs wmctrl), running developer tools,
         Git repositories (the current directory and configured project folders), Desktop items,

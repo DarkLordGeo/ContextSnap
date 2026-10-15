@@ -35,9 +35,12 @@ public partial class MainWindow : Window
     private GlobalHotkey? _hotkey;
     private HwndSource? _hwndSource;
     private bool? _appliedStartWithWindows;
+    private NotificationAreaIcon? _trayIcon;
+    private bool _exiting;
+    private bool _closeHintShown;
 
     public MainWindow(SettingsStore store, SnapshotService service, IClipboardWriter clipboard, WpfCopyNotifier notifier,
-        StartupRegistration startup, bool startMinimized)
+        StartupRegistration startup)
     {
         _store = store;
         _service = service;
@@ -47,13 +50,6 @@ public partial class MainWindow : Window
             SetStatus(StatusKind.Warning, $"Copied, but the notification could not be shown ({error}).");
 
         InitializeComponent();
-
-        if (startMinimized)
-        {
-            // Launched at sign-in: stay out of the way; the hotkey and taskbar button remain available.
-            WindowState = WindowState.Minimized;
-            ShowActivated = false;
-        }
 
         var loaded = store.Load();
         _settings = loaded.Settings;
@@ -77,8 +73,44 @@ public partial class MainWindow : Window
         _hwndSource = HwndSource.FromHwnd(handle);
         _hwndSource?.AddHook(WndProc);
         _hotkey = new GlobalHotkey(handle);
+        _trayIcon = new NotificationAreaIcon(handle, $"ContextSnap — {GlobalHotkey.DisplayText} to capture");
+        _trayIcon.Add();
         ApplyHotkeySetting();
         ApplyStartupSetting();
+    }
+
+    public bool HasTrayIcon => _trayIcon is { IsAdded: true };
+
+    /// <summary>Quits for real (tray menu Exit, or Windows signing out), instead of hiding to the notification area.</summary>
+    public void ExitApplication()
+    {
+        if (_exiting)
+            return;
+        _exiting = true;
+        Close();
+        Application.Current?.Shutdown();
+    }
+
+    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+    {
+        // Like other background apps, closing the window keeps ContextSnap (and its shortcut) running in the
+        // notification area. Without a notification-area icon there would be no way back, so it exits then.
+        if (!_exiting && _trayIcon is { IsAdded: true })
+        {
+            e.Cancel = true;
+            CommitPendingSettingsEdit();
+            Hide();
+            if (!_closeHintShown)
+            {
+                _closeHintShown = true;
+                _trayIcon.ShowInfo("ContextSnap is still running",
+                    $"Press {GlobalHotkey.DisplayText} to capture. To quit, right-click the ContextSnap icon and choose Exit.");
+            }
+
+            return;
+        }
+
+        base.OnClosing(e);
     }
 
     /// <summary>Called when another launch of ContextSnap asks this instance to show itself.</summary>
@@ -101,6 +133,7 @@ public partial class MainWindow : Window
     {
         CommitPendingSettingsEdit();
         _hotkey?.Dispose();
+        _trayIcon?.Dispose();
         _hwndSource?.RemoveHook(WndProc);
         base.OnClosed(e);
     }
@@ -111,6 +144,23 @@ public partial class MainWindow : Window
         {
             handled = true;
             _ = CaptureAsync(fromHotkey: true);
+            return 0;
+        }
+
+        var command = _trayIcon?.HandleMessage(message, wParam, lParam, $"&Capture snapshot\t{GlobalHotkey.DisplayText}", out handled)
+            ?? TrayCommand.None;
+        switch (command)
+        {
+            case TrayCommand.Open:
+                BringToFront();
+                break;
+            case TrayCommand.Capture:
+                // Same as the shortcut, including review before copying visible screen text.
+                _ = CaptureAsync(fromHotkey: true);
+                break;
+            case TrayCommand.Exit:
+                Dispatcher.BeginInvoke(ExitApplication);
+                break;
         }
 
         return 0;
@@ -345,7 +395,7 @@ public partial class MainWindow : Window
 
         if (_hotkey.Register())
         {
-            HotkeyStatusText.Text = "Active while this window is open (including when minimized).";
+            HotkeyStatusText.Text = "Active while ContextSnap is running, including when this window is closed to the notification area.";
             HotkeyHint.Text = _settings.HotkeyCopiesImmediately
                 ? $"Tip: press {GlobalHotkey.DisplayText} in any application to capture and copy in one step."
                 : $"Tip: press {GlobalHotkey.DisplayText} in any application to capture. Snapshots with visible screen text open here for review before copying.";

@@ -18,7 +18,8 @@
 - [x] Settings file with normalization; written only when changed
 - [x] Release build and framework-dependent publish (`publish/ContextSnap`)
 - [x] README and docs/ARCHITECTURE.md
-- [x] Start with Windows (Startup-folder shortcut, on by default, `--startup` opens minimized) — enable/disable/repair and shortcut launch verified; actual sign-in not performed
+- [x] Start with Windows (Startup-folder shortcut, on by default) — enable/disable/repair and shortcut launch verified; actual sign-in not performed
+- [ ] Notification-area icon (Open / Capture snapshot / Exit), `--startup` starts hidden there, closing the window hides it — implemented, builds and unit-tested in CI; NOT yet tried on a real Windows desktop
 - [x] Animated copy notifications (bottom-right toast for button, auto-copy, hotkey, and `--capture`; success/truncated/empty/failure; reduced motion; light/dark) — verified on one 100% DPI monitor
 - [x] Visible screen text (focused or all visible windows; UI Automation with on-device OCR fallback; browsers read page only; password/tab/title-bar skipping; limits, timeouts, exclusions) — verified on Chrome (ChatGPT, YouTube), Claude app, Notepad, message box, VS Code first-run screen (OCR), two-window capture
 - [x] Single instance per session (second launch activates the first; `--startup` duplicate exits silently) — verified
@@ -39,7 +40,8 @@
 - [x] Clipboard via wl-copy / xclip / xsel on stdin — xclip round trip tested (also in CI under xvfb-run); `$(contextsnap)` does not hang
 - [x] Developer tools from /proc (names and executable paths only), Git (same safety rules, shared Git tests pass on Linux), Desktop items, system summary (os-release, kernel, desktop session, memory)
 - [x] Self-contained single-file `linux-x64` build runs without .NET installed; release job, CI job, website card
-- [ ] Try on GNOME and KDE (X11 and Wayland), with wl-copy and notify-send on a real session
+- [x] Start at login: `--install` / `--uninstall` (GNOME custom shortcut via gsettings; other X11 desktops: XDG autostart + `--background` with an X11 key grab, one instance per user) — background shortcut capture tested under Xvfb with xdotool; install/uninstall tested in a temp home (path with a space) and with the GNOME schema on the gsettings keyfile backend
+- [ ] Try on GNOME and KDE (X11 and Wayland), with wl-copy and notify-send on a real session, including that GNOME picks up the new shortcut without logging out
 - [ ] Wayland-native window listing (no common protocol; only XWayland apps are listed)
 - [ ] linux-arm64 build
 
@@ -49,7 +51,6 @@
 - [ ] Verify the new window-title exclusions (InPrivate, Incognito, Private Browsing, Password by default) skip private browser windows
 
 ## Next
-- [ ] Tray icon
 - [ ] Configurable hotkey
 - [ ] Dark theme
 - [ ] Installer/MSIX packaging and an application icon
