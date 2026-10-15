@@ -452,7 +452,7 @@ public class LinuxSetupTests
         Assert.Equal(expected, Setup(new() { ["XDG_CURRENT_DESKTOP"] = desktop }).IsGnome);
     }
 
-    [Fact]
+    [LinuxFact] // Linux paths: "/cfg" is not an absolute path on Windows.
     public void AutostartFile_HonorsAnAbsoluteXdgConfigHome()
     {
         Assert.Equal("/cfg/autostart/contextsnap.desktop", Setup(new() { ["XDG_CONFIG_HOME"] = "/cfg" }).AutostartFile);

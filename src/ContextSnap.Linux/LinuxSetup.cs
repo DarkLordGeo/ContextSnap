@@ -228,7 +228,7 @@ public sealed partial class LinuxSetup(TextWriter output, Func<string, string?>?
         NoDisplay=true
         X-GNOME-Autostart-enabled=true
 
-        """;
+        """.ReplaceLineEndings("\n"); // LF even when the source was checked out with CRLF.
 
     /// <summary>Double-quotes a path for a desktop Exec line or a GNOME shortcut command.</summary>
     public static string Quote(string path)
