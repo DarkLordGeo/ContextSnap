@@ -33,8 +33,8 @@
 
   <h2>When it captures</h2>
   <ul>
-    <li>Only when you press its shortcut, click Capture, or run <code>ContextSnap --capture</code> / <code>--print</code> on Windows, or when you run <code>contextsnap</code> on Linux (usually from a keyboard shortcut you set up).</li>
-    <li>It never monitors activity, records the screen continuously, or captures in the background.</li>
+    <li>Only when you press its shortcut, click Capture or choose Capture in its notification-area menu, or run <code>ContextSnap --capture</code> / <code>--print</code> on Windows, or when you run <code>contextsnap</code> on Linux (usually through its shortcut).</li>
+    <li>It starts with your computer and waits in the background for the shortcut, but it never monitors activity, records the screen continuously, or captures on its own. On Linux X11 desktops, the background instance receives only its own key combination, not other keystrokes.</li>
   </ul>
 
   <h2>What a snapshot can include</h2>
@@ -61,7 +61,7 @@
   <h2>Permissions</h2>
   <ul>
     <li>Windows: no administrator rights. The optional Start with Windows setting adds a shortcut to your Startup folder.</li>
-    <li>Linux: no root access. Windows are listed with <code>wmctrl</code> and <code>xprop</code>, copying uses <code>wl-copy</code>, <code>xclip</code>, or <code>xsel</code>, and only process names and executable paths are read from <code>/proc</code>.</li>
+    <li>Linux: no root access. <code>contextsnap --install</code> copies the app to <code>~/.local/bin</code> and adds either a GNOME keyboard shortcut or an autostart entry; <code>--uninstall</code> removes them. Windows are listed with <code>wmctrl</code> and <code>xprop</code>, copying uses <code>wl-copy</code>, <code>xclip</code>, or <code>xsel</code>, and only process names and executable paths are read from <code>/proc</code>.</li>
   </ul>
 
   <h2>This website</h2>

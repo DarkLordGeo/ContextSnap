@@ -355,3 +355,114 @@ public class NotifySendTests
         Assert.Contains("--icon=dialog-warning", arguments);
     }
 }
+
+/// <summary>A fact that needs an X11 display, for example under xvfb-run. Skipped otherwise.</summary>
+public sealed class X11FactAttribute : FactAttribute
+{
+    public X11FactAttribute()
+    {
+        if (!OperatingSystem.IsLinux() || string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY")))
+            Skip = "Needs an X11 display (DISPLAY is not set).";
+    }
+}
+
+public class X11HotkeyTests
+{
+    [Fact]
+    public void Modifiers_CoverCapsLockAndNumLock()
+    {
+        Assert.Equal(4, X11Hotkey.Modifiers.Distinct().Count());
+        Assert.All(X11Hotkey.Modifiers, m => Assert.Equal(4u | 8u | 1u, m & (4u | 8u | 1u))); // Control, Alt, Shift always.
+    }
+
+    [X11Fact]
+    public void Register_IsExclusive()
+    {
+        var (first, error) = X11Hotkey.Register();
+        Assert.True(first is not null, error);
+        using (first)
+        {
+            var (second, secondError) = X11Hotkey.Register();
+            second?.Dispose();
+
+            Assert.Null(second);
+            Assert.Contains("already used", secondError, StringComparison.Ordinal);
+        }
+
+        // Released on dispose, so it can be registered again.
+        var (again, againError) = X11Hotkey.Register();
+        Assert.True(again is not null, againError);
+        again.Dispose();
+    }
+}
+
+public class LinuxSetupTests
+{
+    private static LinuxSetup Setup(Dictionary<string, string> environment) => new(TextWriter.Null, environment.GetValueOrDefault);
+
+    [Theory]
+    [InlineData("@as []", new string[0])]
+    [InlineData("['/a/custom0/']", new[] { "/a/custom0/" })]
+    [InlineData("['/a/', '/b/it\\'s/']", new[] { "/a/", "/b/it's/" })]
+    public void ParseStringArray_ReadsGsettingsOutput(string output, string[] expected)
+    {
+        Assert.Equal(expected, LinuxSetup.ParseStringArray(output));
+    }
+
+    [Fact]
+    public void FormatStringArray_RoundTrips()
+    {
+        string[] items = ["/a/", "/b/it's/", @"/c\d/"];
+
+        Assert.Equal("@as []", LinuxSetup.FormatStringArray([]));
+        Assert.Equal(items, LinuxSetup.ParseStringArray(LinuxSetup.FormatStringArray(items)));
+    }
+
+    [Fact]
+    public void Quote_EscapesShellSpecialCharacters()
+    {
+        Assert.Equal("\"/home/a b/.local/bin/contextsnap\"", LinuxSetup.Quote("/home/a b/.local/bin/contextsnap"));
+        Assert.Equal("\"/x/\\$HOME\\`id\\`\\\"\\\\/c\"", LinuxSetup.Quote("/x/$HOME`id`\"\\/c"));
+        Assert.Throws<ArgumentException>(() => LinuxSetup.Quote("/x\n/y"));
+    }
+
+    [Fact]
+    public void DesktopEntry_StartsTheBackgroundInstance()
+    {
+        var entry = LinuxSetup.DesktopEntry("/home/a b/100%/contextsnap");
+
+        Assert.StartsWith("[Desktop Entry]\n", entry, StringComparison.Ordinal);
+        Assert.Contains("\nExec=\"/home/a b/100%%/contextsnap\" --background\n", entry, StringComparison.Ordinal);
+        Assert.Contains("\nType=Application\n", entry, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void DesktopEntry_DoublesBackslashesForTheDesktopFileFormat()
+    {
+        Assert.Contains("Exec=\"/x/\\\\$y\" --background", LinuxSetup.DesktopEntry("/x/$y"), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("ubuntu:GNOME", true)]
+    [InlineData("GNOME", true)]
+    [InlineData("KDE", false)]
+    [InlineData("GNOME-Flashback:Unity", false)]
+    public void IsGnome_MatchesTheDesktopName(string desktop, bool expected)
+    {
+        Assert.Equal(expected, Setup(new() { ["XDG_CURRENT_DESKTOP"] = desktop }).IsGnome);
+    }
+
+    [Fact]
+    public void AutostartFile_HonorsAnAbsoluteXdgConfigHome()
+    {
+        Assert.Equal("/cfg/autostart/contextsnap.desktop", Setup(new() { ["XDG_CONFIG_HOME"] = "/cfg" }).AutostartFile);
+        Assert.EndsWith("/.config/autostart/contextsnap.desktop", Setup(new() { ["XDG_CONFIG_HOME"] = "relative" }).AutostartFile, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Usage_DescribesInstall()
+    {
+        Assert.Contains("contextsnap --install", LinuxCommandLine.Usage, StringComparison.Ordinal);
+        Assert.Contains("contextsnap --uninstall", LinuxCommandLine.Usage, StringComparison.Ordinal);
+    }
+}

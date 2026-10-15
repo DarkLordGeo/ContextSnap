@@ -11,7 +11,7 @@ This README describes the Windows app. A Linux command-line version is described
 - **Capture → review → copy.** One button (or `F5` / `Ctrl+Enter`) collects context and shows an editable Markdown preview. `Ctrl+Shift+C` copies it.
 - **Global shortcut.** `Ctrl+Alt+Shift+C` captures from any application while ContextSnap is open (can be turned off). A snapshot that includes visible screen text opens in the preview for review before anything is copied; snapshots without screen text are copied in one step. **Settings → Behavior → Shortcut copies immediately, without review** restores one-step copying for every snapshot.
 - **Copy notifications** (on by default). After every copy, a small animated notice appears in the bottom-right corner: "Context copied to clipboard" with character, word, and size counts, a warning when the snapshot was truncated, or "Copy failed" with the reason. See [Copy notifications](#copy-notifications).
-- **Start with Windows** (on by default). ContextSnap opens minimized when you sign in, so the shortcut is ready. Only one copy ever runs: launching it again brings the existing window forward. See [Start with Windows](#start-with-windows).
+- **Runs in the background** (on by default). ContextSnap starts in the notification area when you sign in, with no window, so the shortcut is always ready. Closing the window keeps it running there; right-click its icon for Open, Capture snapshot, and Exit. Only one copy ever runs: launching it again brings the existing window forward. See [Start with Windows](#start-with-windows).
 - **Visible screen text** (on by default, focused window only). The text you can currently see in the window you are working in, such as a ChatGPT or Claude conversation, a document, or a dialog, read through Windows UI Automation with an on-device Windows OCR fallback. See [Visible screen text](#visible-screen-text).
 - **Collectors** (each can be turned on or off):
   | Collector | What it records | Default |
@@ -68,14 +68,25 @@ In command-line modes the current directory is also checked for a Git repository
 
 ## Linux
 
-`contextsnap` is a command-line app for 64-bit Linux. Each time it runs, it captures a snapshot, redacts it, copies the Markdown to the clipboard, shows a desktop notification, and exits. It has no window and runs nothing in the background. To use it like the Windows shortcut, bind the command to a key combination in your desktop's keyboard settings (for example GNOME Settings → Keyboard → Custom Shortcuts, or KDE System Settings → Shortcuts).
+`contextsnap` is a command-line app for 64-bit Linux. Each capture redacts the snapshot, copies the Markdown to the clipboard and shows a desktop notification. It has no window.
 
 ```sh
 tar -xzf ContextSnap-<version>-linux-x64.tar.gz
-install -m 755 contextsnap-<version>-linux-x64/contextsnap ~/.local/bin/
+./contextsnap-<version>-linux-x64/contextsnap --install   # once: Ctrl+Alt+Shift+C then works from every login
 contextsnap            # capture, copy, notify (exit 0 = ok, 1 = failed, 2 = bad option)
 contextsnap --print    # write the Markdown to standard output; the clipboard is not touched
+contextsnap --uninstall
 ```
+
+`--install` copies `contextsnap` to `~/.local/bin` and sets up Ctrl+Alt+Shift+C to work from every login:
+
+| Desktop | What `--install` does |
+|---|---|
+| GNOME (X11 or Wayland) | Adds a custom keyboard shortcut named ContextSnap (Settings → Keyboard → Custom Shortcuts). GNOME listens for the key itself, so nothing has to keep running. Your other shortcuts are kept. |
+| Other X11 desktops (KDE, Xfce, Cinnamon, MATE, …) | Adds `~/.config/autostart/contextsnap.desktop` and starts `contextsnap --background` now. At each login the desktop starts it again. It waits for the key with an X11 key grab, so it receives only that key combination and no other keyboard input. One instance runs per user. |
+| Other Wayland desktops (KDE Plasma, Sway, Hyprland, …) | Wayland does not let apps register a global shortcut. `--install` prints the command to add as a shortcut in your desktop's keyboard settings. |
+
+`--uninstall` stops the background instance and removes the shortcut, the autostart entry, and `~/.local/bin/contextsnap`. Your settings are kept. Run `--install` again after downloading a new version.
 
 The download is a self-contained single file, so you don't need to install .NET.
 
@@ -112,7 +123,7 @@ dotnet publish src/ContextSnap.Linux -c Release -r linux-x64 --self-contained -p
 
 ## Start with Windows
 
-The **Settings → Behavior → Start ContextSnap minimized when I sign in to Windows** option (on by default) manages a single shortcut:
+The **Settings → Behavior → Start ContextSnap in the background when I sign in to Windows** option (on by default) manages a single shortcut:
 
 ```
 %APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\ContextSnap.lnk
@@ -124,7 +135,7 @@ The **Settings → Behavior → Start ContextSnap minimized when I sign in to Wi
 
 - It is created or removed when you change the setting, and re-checked every time the window opens, so moving the app folder repairs the shortcut on the next launch. The status line under the option shows the exact shortcut path and target, or the reason it failed.
 - No administrator rights, registry Run keys, scheduled tasks, or services are used. ContextSnap only creates, updates, or deletes a `ContextSnap.lnk` that points to ContextSnap; a same-named shortcut for another program is left alone and reported.
-- `--startup` opens the window minimized without taking focus. If ContextSnap is already running, a `--startup` launch exits silently; a normal launch brings the existing window to the front (or flashes its taskbar button when Windows blocks focus changes).
+- `--startup` starts ContextSnap in the notification area without opening its window (if the notification area is unavailable, the window opens instead). If ContextSnap is already running, a `--startup` launch exits silently; a normal launch brings the existing window to the front (or flashes its taskbar button when Windows blocks focus changes).
 - If you turn the item off in **Windows Settings → Apps → Startup** (or Task Manager → Startup apps), Windows' choice wins. ContextSnap reads that switch (without changing it) and tells you when the item is turned off there.
 - Command-line modes (`--capture`, `--print`) never change startup registration.
 
@@ -263,7 +274,7 @@ ContextSnap makes no network requests. The only files it writes are its settings
 - **Git status** is read with every Git filter disabled (so a repository cannot run commands through filters) and without entering submodules. Files that rely on a filter, such as Git LFS files, can therefore show as modified when their timestamps changed, and changes inside submodules are not reported.
 - **Explorer folders** showing virtual locations (Home, This PC, Recycle Bin) are counted but not listed.
 - **Elevated processes** (run as administrator) may show without executable paths, and their windows still appear by title.
-- The **global shortcut** works only while ContextSnap is running (the window may be minimized). There is no tray icon; at sign-in the app sits minimized on the taskbar. It never captures anything on its own; there is no background monitoring.
+- The **global shortcut** works only while ContextSnap is running, including when its window is closed to the notification area. Running in the background never captures anything on its own; there is no monitoring. The notification-area icon and close-to-background behavior have not been tried on a real Windows desktop yet (they compile and are unit-tested in CI).
 - **Visible screen text:**
   - Apps that expose little through UI Automation (games, canvas-rendered UIs, remote-desktop viewers such as AnyDesk or RDP, many video players) rely on OCR, which can misread small or stylized text and does not know reading order beyond column layout.
   - UI Automation cannot tell when a window is covered by another window, so in all-windows mode a partly covered window can contribute text that is hidden behind another window (OCR does not have this problem).
@@ -292,7 +303,8 @@ ContextSnap makes no network requests. The only files it writes are its settings
 | A collector shows "failed" or "timed out" | Hover the chip in the status bar for details. Each collector has an 8-second limit (Git gets more). |
 | "Could not create the startup shortcut …" | Shown under the option and in the status bar with the Windows error. Check that `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup` exists and is writable (some managed PCs block it), then toggle the option off and on. |
 | ContextSnap does not open at sign-in | Check the option's status line. If it says Windows has the item turned off, enable **ContextSnap** under Settings → Apps → Startup. If the shortcut points to a build folder that no longer exists, open the published copy once. |
-| Double-clicking ContextSnap shows nothing new | It is already running (possibly minimized from sign-in). The existing window is brought forward or its taskbar button flashes. |
+| Double-clicking ContextSnap shows nothing new | It is already running (in the notification area after sign-in or after you closed the window). The existing window is brought forward or its taskbar button flashes. |
+| I want ContextSnap to quit, not keep running | Right-click its icon in the notification area (you may need to open the ^ overflow) and choose **Exit**. |
 | Visible text is empty or says "UI Automation could not open this window" | The app does not expose accessible text. Make sure OCR is on; if the note says no OCR language is installed, add one under Settings → Time & language → Language & region. |
 | A browser page's text is missing | Capture again: Chromium enables its accessibility tree after the first request. Private/incognito windows are excluded on purpose. |
 | Too much unrelated text | Use **Focused window only**, lower the per-window character limit, or add the app to **Never read text from these apps or windows**. |

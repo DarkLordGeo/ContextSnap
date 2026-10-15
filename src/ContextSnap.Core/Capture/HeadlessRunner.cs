@@ -15,7 +15,7 @@ public enum RunMode
     Help,
 }
 
-/// <param name="StartMinimized">Set by <c>--startup</c> (used by the sign-in shortcut): open minimized and stay quiet if already running.</param>
+/// <param name="StartMinimized">Set by <c>--startup</c> (used by the sign-in shortcut): start in the notification area without a window and stay quiet if already running.</param>
 public sealed record CommandLineOptions(RunMode Mode, string? Error = null, bool StartMinimized = false)
 {
     public const string Usage = """
@@ -25,7 +25,7 @@ public sealed record CommandLineOptions(RunMode Mode, string? Error = null, bool
           ContextSnap                Open the application window.
           ContextSnap --capture      Capture, copy to the clipboard, print a summary, and exit.
           ContextSnap --print        Capture and write the Markdown to standard output (no clipboard).
-          ContextSnap --startup      Open the window minimized (used by the Start with Windows shortcut).
+          ContextSnap --startup      Start in the notification area without a window (used at sign-in).
           ContextSnap --help         Show this help.
 
         Settings are read from %APPDATA%\ContextSnap\settings.json. In --capture and --print modes,
@@ -62,7 +62,8 @@ public sealed class HeadlessRunner(
     string? usage = null,
     Action<AppSettings>? applyPlatformLimits = null)
 {
-    public async Task<int> RunAsync(CommandLineOptions options, TextWriter output, TextWriter error, string currentDirectory)
+    /// <param name="currentDirectory">Also checked for a Git repository; null for shortcut captures, which have no meaningful one.</param>
+    public async Task<int> RunAsync(CommandLineOptions options, TextWriter output, TextWriter error, string? currentDirectory)
     {
         if (options.Mode is RunMode.Help or RunMode.Gui)
         {
@@ -77,7 +78,7 @@ public sealed class HeadlessRunner(
             await error.WriteLineAsync($"Warning: {loaded.Error}");
 
         applyPlatformLimits?.Invoke(loaded.Settings);
-        var result = await service.CaptureAsync(loaded.Settings, new CaptureOptions([currentDirectory]));
+        var result = await service.CaptureAsync(loaded.Settings, currentDirectory is null ? CaptureOptions.Default : new CaptureOptions([currentDirectory]));
 
         if (options.Mode == RunMode.Print)
         {
