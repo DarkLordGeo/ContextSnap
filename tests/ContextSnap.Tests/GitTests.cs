@@ -227,14 +227,95 @@ public class GitProcessRunnerTests
         }
     }
 
-    /// <summary>Integration test against a throwaway repository; skipped when Git is not installed.</summary>
     [Fact]
+    public void FilterOverrides_DisablesEveryConfiguredFilter()
+    {
+        var overrides = GitProcessRunner.FilterOverrides(
+            "filter.evil.clean\necho x; cat\0filter.lfs.process\ngit-lfs filter-process\0filter.My Name.required\ntrue\0filter.evil.smudge\ncat\0")!;
+
+        foreach (var name in new[] { "evil", "lfs", "My Name" })
+        {
+            Assert.Contains($"filter.{name}.clean=", overrides);
+            Assert.Contains($"filter.{name}.smudge=", overrides);
+            Assert.Contains($"filter.{name}.process=", overrides);
+            Assert.Contains($"filter.{name}.required=false", overrides);
+        }
+        Assert.Equal(3 * 8, overrides.Count);
+        Assert.All(overrides.Where((_, i) => i % 2 == 0), option => Assert.Equal("-c", option));
+    }
+
+    [Fact]
+    public void FilterOverrides_HandlesNoFiltersAndRefusesNamesThatCannotBeOverridden()
+    {
+        Assert.Empty(GitProcessRunner.FilterOverrides(string.Empty)!);
+        Assert.Null(GitProcessRunner.FilterOverrides("filter.a=b.clean\necho x\0"));
+    }
+
+    /// <summary>
+    /// A repository's own config can define filter drivers that Git runs as shell commands while reading
+    /// files. Capturing context from such a repository must not run them, including inside submodules.
+    /// </summary>
+    [GitFact]
+    public void Collect_DoesNotRunRepositoryFiltersOrEnterSubmodules()
+    {
+        var directory = Directory.CreateTempSubdirectory("ContextSnapMaliciousGit").FullName;
+        var marker = Path.Combine(directory, "filter-ran.marker");
+        try
+        {
+            var sub = Path.Combine(directory, "sub");
+            Directory.CreateDirectory(sub);
+            RunGit(sub, "init", "--quiet", "--initial-branch=main");
+            File.WriteAllText(Path.Combine(sub, "s.txt"), "s");
+            File.WriteAllText(Path.Combine(sub, ".gitattributes"), "* filter=subevil\n");
+            RunGit(sub, "add", ".");
+            Commit(sub, "Submodule");
+
+            RunGit(directory, "init", "--quiet", "--initial-branch=main");
+            File.WriteAllText(Path.Combine(directory, "a.txt"), "a");
+            File.WriteAllText(Path.Combine(directory, "b.txt"), "b");
+            File.WriteAllText(Path.Combine(directory, ".gitattributes"), "a.txt filter=evil\n");
+            RunGit(directory, "add", ".gitattributes", "a.txt", "b.txt");
+            Commit(directory, "First commit");
+            RunGit(directory, "update-index", "--add", "--cacheinfo", $"160000,{RunGitOutput(sub, "rev-parse", "HEAD").Trim()},sub");
+            File.WriteAllText(Path.Combine(directory, ".gitmodules"), "[submodule \"sub\"]\n\tpath = sub\n\turl = ./sub\n");
+            RunGit(directory, "add", ".gitmodules");
+            Commit(directory, "Add submodule");
+
+            // Malicious configuration, added after the commits: filters in .git/config, .git/info/attributes,
+            // and the submodule's own config, each appending to the marker file when Git runs it.
+            RunGit(directory, "config", "filter.evil.clean", "echo clean >> filter-ran.marker; cat");
+            RunGit(directory, "config", "filter.evil.required", "true");
+            Directory.CreateDirectory(Path.Combine(directory, ".git", "info"));
+            File.WriteAllText(Path.Combine(directory, ".git", "info", "attributes"), "b.txt filter=proc\n");
+            RunGit(directory, "config", "filter.proc.process", "sh -c \"echo process >> filter-ran.marker; exit 1\"");
+            RunGit(sub, "config", "filter.subevil.clean", "echo submodule >> ../filter-ran.marker; cat");
+            // Newer timestamps make the files stat-dirty, so Git has to re-read (and filter) their contents.
+            foreach (var file in new[] { "a.txt", "b.txt", Path.Combine("sub", "s.txt") })
+                File.SetLastWriteTimeUtc(Path.Combine(directory, file), DateTime.UtcNow.AddMinutes(5));
+
+            var output = new GitCollector(new GitProcessRunner()).Collect(new CollectorContext(new AppSettings(), [directory]), CancellationToken.None);
+
+            Assert.False(File.Exists(marker), "A repository filter ran during capture: " + (File.Exists(marker) ? File.ReadAllText(marker) : ""));
+            var repo = Assert.Single(output.Items);
+            Assert.Null(repo.Error);
+            Assert.Equal("main", repo.Branch);
+            Assert.Equal("Add submodule", repo.RecentCommits[0].Subject);
+
+            // Control: a plain `git status` does run the repository's filter, so the fixture is really malicious.
+            RunGitUnchecked(directory, "status");
+            Assert.True(File.Exists(marker));
+        }
+        finally
+        {
+            DeleteDirectory(directory);
+        }
+    }
+
+    /// <summary>Integration test against a throwaway repository; skipped when Git is not installed.</summary>
+    [GitFact]
     public void Collect_ReadsRealTemporaryRepository()
     {
         var runner = new GitProcessRunner();
-        if (!runner.IsAvailable)
-            return;
-
         var directory = Directory.CreateTempSubdirectory("ContextSnapRealGit").FullName;
         try
         {
@@ -259,19 +340,45 @@ public class GitProcessRunnerTests
         }
         finally
         {
-            foreach (var file in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
-                File.SetAttributes(file, FileAttributes.Normal);
-            Directory.Delete(directory, recursive: true);
+            DeleteDirectory(directory);
         }
     }
 
-    private static void RunGit(string directory, params string[] args)
+    private static void DeleteDirectory(string directory)
     {
-        var start = new ProcessStartInfo(ExecutableLocator.FindOnPath("git.exe")!) { WorkingDirectory = directory, UseShellExecute = false, CreateNoWindow = true };
+        foreach (var file in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
+            File.SetAttributes(file, FileAttributes.Normal);
+        Directory.Delete(directory, recursive: true);
+    }
+
+    private static void Commit(string directory, string message) =>
+        RunGit(directory, "-c", "user.name=Test", "-c", "user.email=test@example.invalid", "-c", "commit.gpgsign=false",
+            "commit", "--quiet", "-m", message);
+
+    private static void RunGit(string directory, params string[] args) => Assert.Equal(0, StartGit(directory, args).ExitCode);
+
+    private static string RunGitOutput(string directory, params string[] args)
+    {
+        var (exitCode, output) = StartGit(directory, args);
+        Assert.Equal(0, exitCode);
+        return output;
+    }
+
+    private static void RunGitUnchecked(string directory, params string[] args) => StartGit(directory, args);
+
+    private static (int ExitCode, string Output) StartGit(string directory, string[] args)
+    {
+        var start = new ProcessStartInfo(ExecutableLocator.FindOnPath("git.exe")!)
+        {
+            WorkingDirectory = directory, UseShellExecute = false, CreateNoWindow = true,
+            RedirectStandardOutput = true, RedirectStandardError = true,
+        };
         foreach (var arg in args)
             start.ArgumentList.Add(arg);
         using var process = Process.Start(start)!;
+        var output = process.StandardOutput.ReadToEndAsync();
+        _ = process.StandardError.ReadToEndAsync();
         process.WaitForExit();
-        Assert.Equal(0, process.ExitCode);
+        return (process.ExitCode, output.GetAwaiter().GetResult());
     }
 }

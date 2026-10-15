@@ -19,8 +19,8 @@ public interface IGitRunner
 
 /// <summary>
 /// Runs read-only Git commands. Arguments are passed as an argument list (no shell), the executable
-/// is resolved to an absolute path, optional index locks and fsmonitor hooks are disabled, output is
-/// bounded, and the process tree is killed on timeout.
+/// is resolved to an absolute path, optional index locks, fsmonitor hooks, and every configured filter
+/// driver are disabled, output is bounded, and the process tree is killed on timeout.
 /// </summary>
 public sealed class GitProcessRunner : IGitRunner
 {
@@ -60,10 +60,65 @@ public sealed class GitProcessRunner : IGitRunner
         .. arguments,
     ];
 
+    /// <summary>Config keys of filter drivers, which Git runs as shell commands while reading working-tree files.</summary>
+    internal const string FilterKeyPattern = @"^filter\..+\.(clean|smudge|process|required)$";
+
+    internal const string UnsafeFilterMessage =
+        "This repository defines a Git filter that ContextSnap cannot disable safely, so Git was not run.";
+
+    /// <summary>
+    /// Runs one Git command with every configured filter driver disabled. A repository's own config can
+    /// define <c>filter.&lt;name&gt;.clean</c>, <c>smudge</c>, or <c>process</c> commands that Git runs
+    /// whenever it re-reads a file (for example during <c>git status</c>), so an untrusted repository could
+    /// otherwise execute commands when a snapshot is captured. Reading config runs nothing.
+    /// </summary>
     public GitCommandResult Run(string repositoryRoot, IReadOnlyList<string> arguments, TimeSpan timeout)
     {
         var gitPath = _gitPath.Value ?? throw new CollectorUnavailableException("Git was not found on PATH.");
 
+        // Exit code 1 means no filter is configured. Truncated output may hide a filter, so it is refused.
+        var filters = Execute(gitPath, repositoryRoot, ["config", "-z", "--get-regexp", FilterKeyPattern], timeout);
+        if (filters.TimedOut || filters.ExitCode is not (0 or 1))
+            return filters;
+
+        var overrides = filters.OutputTruncated ? null : FilterOverrides(filters.Output);
+        if (overrides is null)
+            return new GitCommandResult(-1, string.Empty, UnsafeFilterMessage, TimedOut: false);
+
+        return Execute(gitPath, repositoryRoot, [.. overrides, .. arguments], timeout);
+    }
+
+    /// <summary>
+    /// <c>-c</c> options that replace each configured filter driver with an empty command, which Git treats
+    /// as "no filter". Returns null when a filter name cannot be written as a <c>-c key=value</c> option.
+    /// </summary>
+    internal static IReadOnlyList<string>? FilterOverrides(string configOutput)
+    {
+        const string prefix = "filter.";
+        var names = new SortedSet<string>(StringComparer.Ordinal);
+        foreach (var entry in configOutput.Split('\0', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var key = entry.Split('\n', 2)[0];
+            var lastDot = key.LastIndexOf('.');
+            if (!key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) || lastDot <= prefix.Length)
+                continue;
+            var name = key[prefix.Length..lastDot];
+            if (name.Contains('='))
+                return null;
+            names.Add(name);
+        }
+
+        return names.SelectMany(name => new[]
+        {
+            "-c", $"filter.{name}.clean=",
+            "-c", $"filter.{name}.smudge=",
+            "-c", $"filter.{name}.process=",
+            "-c", $"filter.{name}.required=false",
+        }).ToArray();
+    }
+
+    private static GitCommandResult Execute(string gitPath, string repositoryRoot, IReadOnlyList<string> arguments, TimeSpan timeout)
+    {
         var startInfo = new ProcessStartInfo(gitPath)
         {
             UseShellExecute = false,

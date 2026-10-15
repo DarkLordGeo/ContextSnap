@@ -82,7 +82,7 @@ public sealed class GitCollector(IGitRunner runner) : ICollector<GitRepositoryIn
     {
         var status = runner.Run(
             root,
-            ["status", "--porcelain=v2", "--branch", "-z", "--untracked-files=normal", "--ignore-submodules=dirty"],
+            ["status", "--porcelain=v2", "--branch", "-z", "--untracked-files=normal", "--ignore-submodules=all"],
             CommandTimeout);
         if (!status.Succeeded)
             return new GitRepositoryInfo(root) { Error = DescribeFailure("git status", status) };
