@@ -235,29 +235,3 @@ public sealed class HeadlessRunnerTests : IDisposable
         Assert.Equal(2, exit);
     }
 }
-
-public class HotkeyBehaviorTests
-{
-    private static CollectorResult<WindowText> ScreenText(params WindowText[] windows) =>
-        new("Visible screen text", windows.Length > 0 ? CollectorStatus.Ok : CollectorStatus.Empty, windows);
-
-    private static readonly WindowText Chat =
-        new("chrome", "Chat", true, ScreenTextSource.UiAutomation, "Visible conversation", 20, 0, false, [], TimeSpan.Zero);
-
-    [Fact]
-    public void ScreenTextIsReviewedBeforeCopyingByDefault() =>
-        Assert.False(HotkeyBehavior.CopiesImmediately(new AppSettings().HotkeyCopiesImmediately, ScreenText(Chat)));
-
-    [Fact]
-    public void SnapshotsWithoutScreenTextAreCopiedImmediately()
-    {
-        Assert.True(HotkeyBehavior.CopiesImmediately(false, ScreenText()));
-        Assert.True(HotkeyBehavior.CopiesImmediately(false, CollectorResult<WindowText>.Disabled("Visible screen text")));
-        Assert.True(HotkeyBehavior.CopiesImmediately(false,
-            CollectorResult<WindowText>.FromFailure("Visible screen text", CollectorStatus.Failed, "Timed out")));
-    }
-
-    [Fact]
-    public void OneStepCopyingIsAnExplicitOption() =>
-        Assert.True(HotkeyBehavior.CopiesImmediately(hotkeyCopiesImmediately: true, ScreenText(Chat)));
-}

@@ -299,26 +299,36 @@
                             <StackPanel>
                                 <TextBlock Style="{DynamicResource SectionTitle}" Text="Behavior" />
                                 <CheckBox x:Name="HotkeyCheck" IsChecked="{Binding EnableGlobalHotkey}">
-                                    <TextBlock x:Name="HotkeyCheckText" Text="Global shortcut Ctrl+Alt+Shift+C: capture while ContextSnap is running" TextWrapping="Wrap" />
+                                    <TextBlock x:Name="HotkeyCheckText" Text="Global shortcut: capture while ContextSnap runs in the background" TextWrapping="Wrap" />
                                 </CheckBox>
+                                <StackPanel Orientation="Horizontal" Margin="24,2,0,4" IsEnabled="{Binding IsChecked, ElementName=HotkeyCheck}">
+                                    <Label Target="{Binding ElementName=HotkeyBox}" Content="Shortc_ut" Padding="0,0,8,0" VerticalAlignment="Center" />
+                                    <TextBox x:Name="HotkeyBox" Width="180" Text="{Binding Hotkey}"
+                                             ToolTip="For example Ctrl+Alt+Shift+C or Ctrl+Win+F9: Ctrl, Alt, or Win (optionally Shift) plus a letter, digit, or F1–F24."
+                                             AutomationProperties.Name="Global shortcut" />
+                                </StackPanel>
                                 <TextBlock x:Name="HotkeyStatusText" Style="{DynamicResource MutedText}" Margin="24,0,0,4" FontSize="12" />
-                                <CheckBox Margin="24,0,0,4" IsChecked="{Binding HotkeyCopiesImmediately}" IsEnabled="{Binding EnableGlobalHotkey}"
-                                          AutomationProperties.HelpText="Off by default: when a snapshot includes visible screen text, the shortcut opens it here for review instead of copying it.">
-                                    <TextBlock Text="Shortcut copies immediately, without review (also when visible screen text is included)" TextWrapping="Wrap" />
-                                </CheckBox>
+                                <TextBlock Style="{DynamicResource MutedText}" Margin="24,0,0,4" FontSize="12" TextWrapping="Wrap"
+                                           Text="The shortcut always captures and copies the full Markdown snapshot directly, with no window or review. Redaction and output limits still apply." />
                                 <CheckBox Content="Copy to clipboard automatically after Capture" IsChecked="{Binding CopyAfterCapture}" />
                                 <CheckBox Content="Show a notification when a snapshot is copied" IsChecked="{Binding ShowCopyNotifications}"
                                           AutomationProperties.HelpText="A small, non-intrusive notice in the bottom-right corner with character, word, and size counts. It never shows snapshot contents." />
                                 <CheckBox Content="Start ContextSnap in the background when I sign in to Windows" IsChecked="{Binding StartWithWindows}"
-                                          AutomationProperties.HelpText="Adds or removes a ContextSnap shortcut in your Startup folder. At sign-in ContextSnap starts in the notification area, ready for the shortcut. No administrator rights are needed." />
+                                          AutomationProperties.HelpText="Adds or removes a ContextSnap shortcut in your Startup folder. At sign-in ContextSnap starts in the background with no window, taskbar button, or icon, ready for the shortcut. No administrator rights are needed." />
+                                <CheckBox Content="Show a ContextSnap icon in the notification area" IsChecked="{Binding ShowNotificationAreaIcon}"
+                                          AutomationProperties.HelpText="Off by default. When on, the icon offers Open, Capture, and Exit." />
                                 <TextBlock Style="{DynamicResource MutedText}" Margin="24,0,0,4" FontSize="12" TextWrapping="Wrap"
-                                           Text="Closing this window keeps ContextSnap running in the notification area so the shortcut keeps working. To quit, right-click its icon there and choose Exit." />
+                                           Text="Closing this window keeps ContextSnap running in the background while the shortcut is on. Open ContextSnap again to show this window. To stop it: Quit ContextSnap below, run ContextSnap --exit, or end it in Task Manager." />
                                 <TextBlock x:Name="StartupStatusText" Style="{DynamicResource MutedText}" Margin="24,0,0,4" FontSize="12" />
                             </StackPanel>
                         </Border>
 
                         <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
                             <Button Content="Restore _defaults" Click="OnRestoreDefaults" />
+                            <Button Content="Open diagnostics _log" Click="OnOpenDiagnostics" Margin="8,0,0,0"
+                                    ToolTip="Opens the folder with ContextSnap's local diagnostics log (errors only, never snapshot contents)." />
+                            <Button Content="_Quit ContextSnap" Click="OnQuit" Margin="8,0,0,0"
+                                    ToolTip="Stops the background process and unregisters the shortcut until ContextSnap is started again." />
                             <TextBlock x:Name="SettingsPathText" Style="{DynamicResource MutedText}" VerticalAlignment="Center" Margin="12,0,0,0" FontSize="12" />
                         </StackPanel>
                     </StackPanel>

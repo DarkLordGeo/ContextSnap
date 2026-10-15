@@ -14,9 +14,22 @@ public static class Program
     public static int Main(string[] args)
     {
         var options = CommandLineOptions.Parse(args);
+        if (options.Mode is RunMode.Exit or RunMode.EnableStartup or RunMode.DisableStartup)
+            return RunBackgroundCommand(options.Mode);
         return options.Mode == RunMode.Gui && options.Error is null
             ? RunGui(options.StartMinimized)
             : RunHeadless(options);
+    }
+
+    /// <summary><c>--exit</c>, <c>--enable-startup</c>, <c>--disable-startup</c>: no window; output goes to the parent console, if any.</summary>
+    private static int RunBackgroundCommand(RunMode mode)
+    {
+        ConsoleAttachment.AttachToParentIfNeeded();
+        Console.OutputEncoding = new UTF8Encoding(false);
+        using var instance = mode == RunMode.Exit ? SingleInstance.Acquire() : null;
+        var commands = new BackgroundCommands(SettingsStore.CreateDefault(), StartupRegistration.CreateDefault(),
+            () => instance?.RequestExitOfFirstInstance() ?? false);
+        return commands.Run(mode, Console.Out, Console.Error);
     }
 
     private static int RunGui(bool startMinimized)
@@ -54,20 +67,14 @@ public static class Program
         var notifier = new WpfCopyNotifier(app.Dispatcher);
         var window = new MainWindow(store, service, new Win32ClipboardWriter(), notifier, StartupRegistration.CreateDefault());
         instance.ListenForActivation(() => window.Dispatcher.BeginInvoke(window.BringToFront));
+        instance.ListenForExit(() => window.Dispatcher.BeginInvoke(window.ExitApplication));
         app.SessionEnding += (_, _) => window.ExitApplication();
 
-        if (startMinimized)
-        {
-            // Started at sign-in: only the notification-area icon and the shortcut, no window. Creating the
-            // handle registers both.
-            new System.Windows.Interop.WindowInteropHelper(window).EnsureHandle();
-            if (!window.HasTrayIcon)
-                window.Show(); // No notification area (Explorer not running): stay reachable.
-        }
-        else
-        {
+        // Creating the handle registers the shortcut (and the optional icon) without showing anything, so a
+        // sign-in launch has no window, taskbar button, or console. Opening ContextSnap again shows the window.
+        new System.Windows.Interop.WindowInteropHelper(window).EnsureHandle();
+        if (BackgroundPolicy.ShowWindowAtLaunch(startMinimized))
             window.Show();
-        }
 
         return app.Run();
     }

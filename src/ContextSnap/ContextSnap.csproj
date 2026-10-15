@@ -12,6 +12,8 @@
     <AssemblyName>ContextSnap</AssemblyName>
     <Product>ContextSnap</Product>
     <Version>1.0.0</Version>
+    <!-- Idle utility: no background GC thread needed. -->
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
     <Description>Captures a local Markdown snapshot of your desktop context for pasting into an AI assistant.</Description>
   </PropertyGroup>
 

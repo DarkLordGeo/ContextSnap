@@ -13,13 +13,14 @@
 - [x] Redaction (secrets, tokens, emails, identity, custom terms) and exclusions (programs, title keywords, folders)
 - [x] Win32 clipboard writer (Unicode, CRLF, retry, excluded from clipboard history) — exercised, read back
 - [x] WPF UI: capture, editable preview, copy, status chips, settings (auto-save), privacy tab, restore defaults — exercised
-- [x] Global hotkey Ctrl+Alt+Shift+C (capture + copy, taskbar flash) — exercised
+- [x] Global hotkey, default Ctrl+Alt+Shift+C and configurable (capture + copy, no window) — exercised
 - [x] Command line: `--capture`, `--print`, `--help` — exercised
 - [x] Settings file with normalization; written only when changed
 - [x] Release build and framework-dependent publish (`publish/ContextSnap`)
 - [x] README and docs/ARCHITECTURE.md
 - [x] Start with Windows (Startup-folder shortcut, on by default) — enable/disable/repair and shortcut launch verified; actual sign-in not performed
-- [ ] Notification-area icon (Open / Capture snapshot / Exit), `--startup` starts hidden there, closing the window hides it — implemented, builds and unit-tested in CI; NOT yet tried on a real Windows desktop
+- [x] Silent background mode: `--startup` shows no window, taskbar button, console, or icon; closing the window keeps the process running; `--exit`, `--enable-startup`, `--disable-startup` — verified on Windows 11 (actual sign-in not performed)
+- [ ] Optional notification-area icon (off by default; Open / Capture snapshot / Exit) — implemented and unit-tested; NOT yet tried on a real Windows desktop
 - [x] Animated copy notifications (bottom-right toast for button, auto-copy, hotkey, and `--capture`; success/truncated/empty/failure; reduced motion; light/dark) — verified on one 100% DPI monitor
 - [x] Visible screen text (focused or all visible windows; UI Automation with on-device OCR fallback; browsers read page only; password/tab/title-bar skipping; limits, timeouts, exclusions) — verified on Chrome (ChatGPT, YouTube), Claude app, Notepad, message box, VS Code first-run screen (OCR), two-window capture
 - [x] Single instance per session (second launch activates the first; `--startup` duplicate exits silently) — verified
@@ -29,7 +30,8 @@
 
 - [x] Git: repository filter drivers are disabled for every Git command and submodules are never entered (malicious-repository regression test, Windows and macOS)
 - [x] Browser tabs honor excluded programs (never read) and share one browser list with visible text
-- [x] Shortcut shows snapshots with visible screen text for review before copying (one-step copy is an explicit option; macOS gets a review window)
+- [x] Windows shortcut always copies the complete Markdown directly, never opens a window; older review settings are migrated; errors go to the notification and `%LOCALAPPDATA%\ContextSnap\logs\contextsnap.log` (capture failure covered by unit tests only). macOS keeps its review window.
+- [x] Idle cost: no timers or polling, non-concurrent GC, memory released after each shortcut capture — measured 0 ms CPU per idle minute; private bytes 109 MB after 15 captures (126 MB before). Growth over repeated captures slows but is not proven to stop.
 - [x] Truncation closes an open code fence before the notice (shared fixtures + property tests on both platforms)
 - [x] Redaction regexes are linear on adversarial input (about 24 s → 4 ms for 50,000 characters of "a.a.a…"); performance-bound tests on both platforms
 - [x] Integration tests that cannot run (no Git, no desktop, no OCR) are reported as skipped
