@@ -61,7 +61,11 @@ public sealed class MarkdownFormatter(Redactor redactor)
         return md.ToString();
     }
 
-    /// <summary>Truncates at a line boundary when possible and appends a visible notice.</summary>
+    /// <summary>
+    /// Truncates at a line boundary when possible and appends a visible notice. When the cut falls inside
+    /// a fenced code block (such as visible screen text), the block is closed first, so the notice is never
+    /// part of captured content and the result never has an unbalanced fence.
+    /// </summary>
     public static string LimitOutput(string markdown, int maxCharacters = DefaultMaxCharacters)
     {
         ArgumentNullException.ThrowIfNull(markdown);
@@ -73,14 +77,78 @@ public sealed class MarkdownFormatter(Redactor redactor)
         if (maxCharacters <= TruncationNotice.Length)
             return TruncationNotice[..maxCharacters];
 
-        var cut = maxCharacters - TruncationNotice.Length;
+        var budget = maxCharacters - TruncationNotice.Length;
+        while (true)
+        {
+            var head = Head(markdown, budget);
+            var (fence, fenceLineStart) = OpenFence(head);
+            if (fence is null)
+                return head + TruncationNotice;
+
+            // Nothing of the block would remain: end before its opening line instead of leaving it empty.
+            if (head.IndexOf('\n', fenceLineStart) < 0)
+                return markdown[..fenceLineStart].TrimEnd() + TruncationNotice;
+
+            var closing = "\n" + fence;
+            if (head.Length + closing.Length + TruncationNotice.Length <= maxCharacters)
+                return head + closing + TruncationNotice;
+
+            // Make room for the closing fence. If even that is not possible, end before the open block.
+            var smaller = maxCharacters - TruncationNotice.Length - closing.Length;
+            if (smaller <= 0 || smaller >= budget)
+                return markdown[..fenceLineStart].TrimEnd() + TruncationNotice;
+            budget = smaller;
+        }
+    }
+
+    /// <summary>The first <paramref name="budget"/> characters, cut back to a line break in the second half when there is one.</summary>
+    private static string Head(string markdown, int budget)
+    {
+        var cut = budget;
         var lastNewline = markdown.LastIndexOf('\n', cut - 1);
         if (lastNewline > cut / 2)
             cut = lastNewline;
         if (char.IsHighSurrogate(markdown[cut - 1]))
             cut--;
+        return markdown[..cut].TrimEnd();
+    }
 
-        return markdown[..cut].TrimEnd() + TruncationNotice;
+    /// <summary>
+    /// The backtick fence of a code block left open at the end of <paramref name="text"/>, and where its line
+    /// starts; null when every block is closed. Fences start at the beginning of a line, as the formatter writes them.
+    /// </summary>
+    internal static (string? Fence, int LineStart) OpenFence(string text)
+    {
+        string? open = null;
+        var openLineStart = 0;
+        var lineStart = 0;
+        while (lineStart <= text.Length)
+        {
+            var lineEnd = text.IndexOf('\n', lineStart);
+            if (lineEnd < 0)
+                lineEnd = text.Length;
+            var line = text.AsSpan(lineStart, lineEnd - lineStart).TrimEnd('\r');
+            var run = 0;
+            while (run < line.Length && line[run] == '`')
+                run++;
+
+            if (open is null)
+            {
+                if (run >= 3)
+                {
+                    open = new string('`', run);
+                    openLineStart = lineStart;
+                }
+            }
+            else if (run >= open.Length && line[run..].Trim().IsEmpty)
+            {
+                open = null;
+            }
+
+            lineStart = lineEnd + 1;
+        }
+
+        return (open, openLineStart);
     }
 
     /// <summary>Visible text goes first because it is usually the most useful context.</summary>

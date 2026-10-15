@@ -137,4 +137,17 @@ final class SharedSpecTests: XCTestCase {
         XCTAssertTrue(CopyBehavior.copiesImmediately(copyWithoutReview: false, visibleText: .disabled("Visible screen text")))
         XCTAssertTrue(CopyBehavior.copiesImmediately(copyWithoutReview: false, visibleText: .collected("Visible screen text", [])))
     }
+
+    func testTruncationNeverLeavesAnOpenFenceOrPutsTheNoticeInsideContent() {
+        let snapshot = "# Context Snapshot\n\n## Visible text\n\n### Active window: Chat\n\n````text\nuse ```code``` here\n"
+            + (0..<80).map { "visible line \($0)" }.joined(separator: "\n")
+            + "\n````\n\n## System context\n\n" + (0..<40).map { "- item \($0)" }.joined(separator: "\n") + "\n"
+        for max in 50...1_200 {
+            let output = MarkdownFormatter.limitOutput(snapshot, maxCharacters: max)
+            XCTAssertLessThanOrEqual((output as NSString).length, max, "max \(max)")
+            XCTAssertTrue(output.hasSuffix(MarkdownFormatter.truncationNotice), "max \(max)")
+            let body = String(output.dropLast(MarkdownFormatter.truncationNotice.count))
+            XCTAssertNil(MarkdownFormatter.openFence(body as NSString), "max \(max)")
+        }
+    }
 }
