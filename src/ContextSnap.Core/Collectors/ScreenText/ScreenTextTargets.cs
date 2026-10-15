@@ -34,10 +34,7 @@ public sealed record TargetSelection(IReadOnlyList<ScreenTextTarget> Targets, in
 
 public static class ScreenTextTargetSelector
 {
-    public static readonly IReadOnlySet<string> Browsers = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-    {
-        "chrome", "msedge", "brave", "vivaldi", "opera", "firefox", "arc", "thorium",
-    };
+    public static readonly IReadOnlySet<string> Browsers = new HashSet<string>(KnownBrowsers.Names.Keys, StringComparer.OrdinalIgnoreCase);
 
     private static readonly HashSet<string> ShellClasses = new(StringComparer.Ordinal)
     {

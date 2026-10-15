@@ -1,4 +1,5 @@
 using ContextSnap.Collectors;
+using ContextSnap.Collectors.ScreenText;
 using ContextSnap.Configuration;
 using ContextSnap.Model;
 using ContextSnap.Privacy;
@@ -222,21 +223,29 @@ public sealed class DesktopCollectorTests : IDisposable
 
 public class BrowserTabCollectorTests
 {
+    /// <summary>Like the UI Automation source, returns excluded browsers' windows without reading them.</summary>
     private sealed class FakeBrowserSource(params RawBrowserWindow[] windows) : IBrowserTabSource
     {
         public bool? RequestedUrls { get; private set; }
+        public List<string> ReadProcesses { get; } = [];
 
-        public IReadOnlyList<RawBrowserWindow> GetWindows(bool includeActiveUrl, CancellationToken cancellationToken)
+        public IReadOnlyList<RawBrowserWindow> GetWindows(bool includeActiveUrl, Func<string, bool> isExcluded, CancellationToken cancellationToken)
         {
             RequestedUrls = includeActiveUrl;
-            return windows;
+            return windows.Select(w =>
+            {
+                if (isExcluded(w.ProcessName))
+                    return w with { WindowTitle = string.Empty, Tabs = [], ActiveUrl = null };
+                ReadProcesses.Add(w.ProcessName);
+                return w;
+            }).ToArray();
         }
     }
 
     [Fact]
     public void Collect_AssignsUrlOnlyToActiveTabWhenEnabled()
     {
-        var source = new FakeBrowserSource(new RawBrowserWindow("Chrome", "Docs - Google Chrome",
+        var source = new FakeBrowserSource(new RawBrowserWindow("Chrome", "chrome", "Docs - Google Chrome",
             [new RawBrowserTab("Docs", true), new RawBrowserTab("Mail", false)], "https://docs.test/page"));
         var settings = new AppSettings { CollectBrowserTabs = true, IncludeBrowserUrls = true };
 
@@ -251,8 +260,8 @@ public class BrowserTabCollectorTests
     public void Collect_SkipsPrivateWindowsAndExcludedTabs()
     {
         var source = new FakeBrowserSource(
-            new RawBrowserWindow("Edge", "New tab - [InPrivate] - Microsoft Edge", [new RawBrowserTab("Bank", true)], null),
-            new RawBrowserWindow("Chrome", "Docs", [new RawBrowserTab("Change password", false), new RawBrowserTab("Docs", true)], null));
+            new RawBrowserWindow("Edge", "msedge", "New tab - [InPrivate] - Microsoft Edge", [new RawBrowserTab("Bank", true)], null),
+            new RawBrowserWindow("Chrome", "chrome", "Docs", [new RawBrowserTab("Change password", false), new RawBrowserTab("Docs", true)], null));
         var settings = new AppSettings { CollectBrowserTabs = true };
 
         var output = new BrowserTabCollector(source).Collect(CollectorContext.For(settings), CancellationToken.None);
@@ -260,6 +269,53 @@ public class BrowserTabCollectorTests
         Assert.Equal(["Docs"], output.Items.Select(t => t.Title));
         Assert.Equal(2, output.ExcludedCount);
         Assert.Null(output.Items[0].Url);
+    }
+
+    [Theory]
+    [InlineData("chrome")]
+    [InlineData("chrome.exe")]
+    [InlineData("CHROME")]
+    [InlineData("Chrome")]
+    public void Collect_NeverReadsBrowsersInExcludedPrograms(string excludedEntry)
+    {
+        var source = new FakeBrowserSource(
+            new RawBrowserWindow("Chrome", "chrome", "Bank - Google Chrome", [new RawBrowserTab("Bank", true), new RawBrowserTab("Mail", false)], "https://bank.test/"),
+            new RawBrowserWindow("Edge", "msedge", "Docs - Microsoft Edge", [new RawBrowserTab("Docs", true)], "https://docs.test/"));
+        var settings = new AppSettings { CollectBrowserTabs = true, IncludeBrowserUrls = true, ExcludedProcesses = [excludedEntry] };
+
+        var output = new BrowserTabCollector(source).Collect(CollectorContext.For(settings), CancellationToken.None);
+
+        Assert.Equal(["msedge"], source.ReadProcesses);
+        Assert.Equal(["Docs"], output.Items.Select(t => t.Title));
+        Assert.All(output.Items, t => Assert.Equal("Edge", t.Browser));
+        Assert.Equal(1, output.ExcludedCount);
+    }
+
+    [Fact]
+    public void Collect_ExcludesBrowsersFromWindowsReturnedUnfiltered()
+    {
+        // Defense in depth: even if a source ignores the exclusion callback, nothing from the browser is kept.
+        var source = new UnfilteredBrowserSource(
+            new RawBrowserWindow("Firefox", "firefox", "Private - Mozilla Firefox", [new RawBrowserTab("Secret", true)], "https://secret.test/"));
+        var settings = new AppSettings { CollectBrowserTabs = true, IncludeBrowserUrls = true, ExcludedProcesses = ["firefox"] };
+
+        var output = new BrowserTabCollector(source).Collect(CollectorContext.For(settings), CancellationToken.None);
+
+        Assert.Empty(output.Items);
+        Assert.Equal(1, output.ExcludedCount);
+    }
+
+    private sealed class UnfilteredBrowserSource(params RawBrowserWindow[] windows) : IBrowserTabSource
+    {
+        public IReadOnlyList<RawBrowserWindow> GetWindows(bool includeActiveUrl, Func<string, bool> isExcluded, CancellationToken cancellationToken) => windows;
+    }
+
+    [Fact]
+    public void BrowserListsAreShared()
+    {
+        Assert.True(ScreenTextTargetSelector.Browsers.SetEquals(KnownBrowsers.Names.Keys));
+        foreach (var process in new[] { "chrome", "msedge", "brave", "vivaldi", "opera", "firefox", "arc", "thorium" })
+            Assert.Contains(process, KnownBrowsers.Names.Keys);
     }
 
     [Theory]

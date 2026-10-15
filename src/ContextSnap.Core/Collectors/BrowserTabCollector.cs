@@ -7,11 +7,16 @@ namespace ContextSnap.Collectors;
 
 public sealed record RawBrowserTab(string Title, bool IsSelected);
 
-public sealed record RawBrowserWindow(string Browser, string WindowTitle, IReadOnlyList<RawBrowserTab> Tabs, string? ActiveUrl);
+/// <param name="ProcessName">Process name without .exe, used for the excluded-programs setting.</param>
+public sealed record RawBrowserWindow(string Browser, string ProcessName, string WindowTitle, IReadOnlyList<RawBrowserTab> Tabs, string? ActiveUrl);
 
 public interface IBrowserTabSource
 {
-    IReadOnlyList<RawBrowserWindow> GetWindows(bool includeActiveUrl, CancellationToken cancellationToken);
+    /// <summary>
+    /// Windows of supported browsers. Windows whose process <paramref name="isExcluded"/> matches are
+    /// returned without being read (no title, tabs, or address), so the caller can count them.
+    /// </summary>
+    IReadOnlyList<RawBrowserWindow> GetWindows(bool includeActiveUrl, Func<string, bool> isExcluded, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -29,10 +34,13 @@ public sealed partial class BrowserTabCollector(IBrowserTabSource source) : ICol
         var tabs = new List<BrowserTab>();
         var excluded = 0;
 
-        foreach (var window in source.GetWindows(settings.IncludeBrowserUrls, cancellationToken))
+        bool IsExcluded(string processName) => IsExcludedBrowser(processName, settings.ExcludedProcesses);
+
+        foreach (var window in source.GetWindows(settings.IncludeBrowserUrls, IsExcluded, cancellationToken))
         {
-            // Private/incognito windows are skipped as a whole via the window title keywords.
-            if (PrivacyRules.ContainsExcludedKeyword(window.WindowTitle, settings.ExcludedTitleKeywords))
+            // Excluded programs, and private/incognito windows (by window title keywords), are skipped as a whole.
+            if (IsExcluded(window.ProcessName)
+                || PrivacyRules.ContainsExcludedKeyword(window.WindowTitle, settings.ExcludedTitleKeywords))
             {
                 excluded += Math.Max(1, window.Tabs.Count);
                 continue;
@@ -56,6 +64,11 @@ public sealed partial class BrowserTabCollector(IBrowserTabSource source) : ICol
 
         return new CollectorOutput<BrowserTab>(tabs, ExcludedCount: excluded);
     }
+
+    /// <summary>A browser is excluded by its process name (chrome, chrome.exe) or its display name (Chrome).</summary>
+    internal static bool IsExcludedBrowser(string processName, IReadOnlyCollection<string> excludedProcesses) =>
+        PrivacyRules.IsProcessExcluded(processName, excludedProcesses)
+        || (KnownBrowsers.Names.TryGetValue(processName, out var displayName) && PrivacyRules.IsProcessExcluded(displayName, excludedProcesses));
 
     /// <summary>Removes status text that Chromium appends to accessible tab names (memory use, audio state).</summary>
     internal static string CleanTitle(string title)
@@ -81,25 +94,21 @@ public sealed class UiAutomationBrowserTabSource(IWindowSource windows) : IBrows
     private const int MaxDepth = 24;
     private const int MaxNodesPerWindow = 4_000;
 
-    private static readonly Dictionary<string, string> SupportedBrowsers = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["chrome"] = "Chrome",
-        ["msedge"] = "Edge",
-        ["brave"] = "Brave",
-        ["vivaldi"] = "Vivaldi",
-        ["opera"] = "Opera",
-        ["firefox"] = "Firefox",
-    };
-
-    public IReadOnlyList<RawBrowserWindow> GetWindows(bool includeActiveUrl, CancellationToken cancellationToken)
+    public IReadOnlyList<RawBrowserWindow> GetWindows(bool includeActiveUrl, Func<string, bool> isExcluded, CancellationToken cancellationToken)
     {
         var result = new List<RawBrowserWindow>();
         foreach (var window in windows.GetWindows())
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (window.IsCloaked || window.IsToolWindow || window.IsOwnedPopup
-                || window.ProcessName is null || !SupportedBrowsers.TryGetValue(window.ProcessName, out var browser))
+                || window.ProcessName is null || !KnownBrowsers.Names.TryGetValue(window.ProcessName, out var browser))
                 continue;
+
+            if (isExcluded(window.ProcessName))
+            {
+                result.Add(new RawBrowserWindow(browser, window.ProcessName, string.Empty, [], null));
+                continue;
+            }
 
             try
             {
@@ -108,7 +117,7 @@ public sealed class UiAutomationBrowserTabSource(IWindowSource windows) : IBrows
                 string? url = null;
                 Walk(root, includeActiveUrl, tabs, ref url, cancellationToken);
                 if (tabs.Count > 0)
-                    result.Add(new RawBrowserWindow(browser, window.Title, tabs, url));
+                    result.Add(new RawBrowserWindow(browser, window.ProcessName, window.Title, tabs, url));
             }
             catch (ElementNotAvailableException)
             {
