@@ -150,4 +150,37 @@ final class SharedSpecTests: XCTestCase {
             XCTAssertNil(MarkdownFormatter.openFence(body as NSString), "max \(max)")
         }
     }
+
+    /// Inputs that used to make some redaction patterns quadratic must stay well within a second at 50,000 characters.
+    func testRedactionIsFastOnAdversarialInput() {
+        func repeating(_ unit: String) -> String { String(String(repeating: unit, count: 50_000 / unit.count + 1).prefix(50_000)) }
+        let inputs: [(String, String)] = [
+            ("dotted run", repeating("a.")), ("dashed run", repeating("a-")), ("JWT-like run", repeating("eyJ-")),
+            ("email local part", repeating("a.") + "@"), ("email domain", "x@" + repeating("a1.")),
+            ("URL credentials", "http://a:" + repeating("a")), ("many schemes", repeating("a://")),
+            ("private key without end", "-----BEGIN " + repeating("A ")), ("token-like run", repeating("Ab1-")),
+            ("key=value run", repeating("api_key=")),
+        ]
+        let redactor = Redactor.default
+        _ = redactor.redact("warm up api_key=x")
+        for (name, input) in inputs {
+            let started = Date()
+            _ = redactor.redact(input)
+            let elapsed = Date().timeIntervalSince(started)
+            XCTAssertLessThan(elapsed, 1.0, "\(name): \(Int(elapsed * 1000)) ms")
+        }
+    }
+
+    func testRedactionKeepsCoverageAfterLinearRewrite() {
+        let cases = [
+            ("x-eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdEFGH12", "x-[REDACTED_TOKEN]"),
+            ("eyJ-eyJ-eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdEFGH12 end", "[REDACTED_TOKEN] end"),
+            ("xeyJ-eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdEFGH12", "xeyJ-[REDACTED_TOKEN]"),
+            ("clone git+ssh://deploy:hunter2@example.test/repo", "clone git+ssh://[REDACTED]@example.test/repo"),
+            ("a.b.c.api_key=abc123 next", "a.b.c.api_key=[REDACTED] next"),
+        ]
+        for (input, expected) in cases {
+            XCTAssertEqual(Redactor.default.redact(input), expected)
+        }
+    }
 }

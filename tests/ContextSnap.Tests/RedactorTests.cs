@@ -121,3 +121,52 @@ public class RedactorTests
         Assert.Equal(string.Empty, Redactor.Default.Redact(string.Empty));
     }
 }
+
+/// <summary>
+/// Redaction runs on up to 50,000 characters of visible text per window. Inputs that used to make some
+/// patterns quadratic (about 24 s for 50,000 characters of "a.a.a…") must stay well within a second.
+/// </summary>
+public class RedactorPerformanceTests
+{
+    private const int Length = 50_000;
+    private static readonly TimeSpan Bound = TimeSpan.FromSeconds(1);
+
+    private static string Repeat(string unit) => string.Concat(Enumerable.Repeat(unit, Length / unit.Length + 1))[..Length];
+
+    public static TheoryData<string, string> AdversarialInputs => new()
+    {
+        { "dotted run", Repeat("a.") },
+        { "dashed run", Repeat("a-") },
+        { "JWT-like run", Repeat("eyJ-") },
+        { "email local part", Repeat("a.") + "@" },
+        { "email domain", "x@" + Repeat("a1.") },
+        { "URL credentials", "http://a:" + Repeat("a") },
+        { "many schemes", Repeat("a://") },
+        { "private key without end", "-----BEGIN " + Repeat("A ") },
+        { "token-like run", Repeat("Ab1-") },
+        { "key=value run", Repeat("api_key=") },
+    };
+
+    [Theory]
+    [MemberData(nameof(AdversarialInputs))]
+    public void Redact_IsFastOnAdversarialInput(string name, string input)
+    {
+        var redactor = new Redactor(new RedactionOptions());
+        redactor.Redact("warm up api_key=x");
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        redactor.Redact(input);
+        stopwatch.Stop();
+
+        Assert.True(stopwatch.Elapsed < Bound, $"{name}: {stopwatch.Elapsed.TotalMilliseconds:0} ms for {input.Length:N0} characters");
+    }
+
+    [Theory]
+    [InlineData("x-eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdEFGH12", "x-[REDACTED_TOKEN]")]
+    [InlineData("eyJ-eyJ-eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdEFGH12 end", "[REDACTED_TOKEN] end")]
+    [InlineData("xeyJ-eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.abcdEFGH12", "xeyJ-[REDACTED_TOKEN]")]
+    [InlineData("clone git+ssh://deploy:hunter2@example.test/repo", "clone git+ssh://[REDACTED]@example.test/repo")]
+    [InlineData("a.b.c.api_key=abc123 next", "a.b.c.api_key=[REDACTED] next")]
+    public void Redact_KeepsCoverageAfterLinearRewrite(string input, string expected) =>
+        Assert.Equal(expected, Redactor.Default.Redact(input));
+}

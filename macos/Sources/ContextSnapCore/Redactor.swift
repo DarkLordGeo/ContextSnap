@@ -44,15 +44,18 @@ public final class Redactor: @unchecked Sendable {
     // Applied in this order, matching the Windows implementation.
     private static let secretRules: [(NSRegularExpression, String)] = [
         (regex(#"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z0-9 ]*PRIVATE KEY-----|$)"#), redactedPrivateKey),
-        (regex(#"(?i)\b([a-z][a-z0-9+.-]*://)[^/\s:@]+:[^/\s@]+@"#), "$1" + redacted + "@"),
+        // Anchored on "://" with the scheme checked behind it (starting at every word boundary was quadratic).
+        (regex(#"(?i)(://)(?<=[a-z][a-z0-9+.-]{0,255}://)[^/\s:@]+:[^/\s@]+@"#), "$1" + redacted + "@"),
         (regex(#"(?i)\b(authorization\s*[:=]\s*["']?(?:bearer|basic|token|digest)\s+)(?!\[REDACTED)[^\s"']+"#), "$1" + redacted),
         (regex(#"(?i)\b(bearer)\s+(?!\[REDACTED)[A-Za-z0-9\-._~+/]{16,}=*"#), "$1 " + redacted),
         (regex(#"(?i)\b(basic)\s+[A-Za-z0-9+/]{16,}={0,2}"#), "$1 " + redacted),
-        (regex(#"\beyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}"#), redactedToken),
+        // From the run start, committed to the first word-boundary "eyJ" (linear; same tokens as "\beyJ…").
+        (regex(#"(?<![A-Za-z0-9_-])(?>([A-Za-z0-9_-]*?)\beyJ)[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}"#), "$1" + redactedToken),
         (regex(#"\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|glpat-[A-Za-z0-9_-]{20,}|xox[abposr]-[A-Za-z0-9-]{10,}|(?:AKIA|ASIA)[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|[rsp]k_(?:live|test)_[0-9A-Za-z]{16,}|sk-(?:ant-|proj-)?[A-Za-z0-9_-]{20,}|npm_[A-Za-z0-9]{36}|hf_[A-Za-z0-9]{30,})"#), redactedToken),
         (regex(#"(?i)\b(password|pwd|accountkey|sharedaccesskey|sharedaccesssignature)\s*=\s*(?!\[REDACTED)[^;\r\n]+"#), "$1=" + redacted),
         (regex(#"(?i)([?&](?:access_token|refresh_token|id_token|token|key|api_key|apikey|sig|signature|code|password|secret|auth|session|sid)=)[^&#\s]+"#), "$1" + redacted),
-        (regex(#"(?i)\b([a-z0-9_.-]*?(?:api[_-]?key|apikey|access[_-]?key|secret|token|password|passwd|pwd|passphrase|credentials?|private[_-]?key|client[_-]?secret|account[_-]?key|session[_-]?id|sessionid|auth[_-]?token|authorization))(\s*[:=]\s*)(["']?)(?!\[REDACTED|(?:bearer|basic|token|digest)\s)([^\s"'&;,]+)"#), "$1$2$3" + redacted),
+        // The key starts where a run of key characters starts (starting at every word boundary was quadratic).
+        (regex(#"(?i)(?<![a-z0-9_.-])([a-z0-9_.-]*?(?:api[_-]?key|apikey|access[_-]?key|secret|token|password|passwd|pwd|passphrase|credentials?|private[_-]?key|client[_-]?secret|account[_-]?key|session[_-]?id|sessionid|auth[_-]?token|authorization))(\s*[:=]\s*)(["']?)(?!\[REDACTED|(?:bearer|basic|token|digest)\s)([^\s"'&;,]+)"#), "$1$2$3" + redacted),
     ]
 
     private static let randomToken = regex(#"(?<![A-Za-z0-9_-])[A-Za-z0-9_-]{32,}={0,2}"#)
