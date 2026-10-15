@@ -34,7 +34,7 @@ public class SharedSpecTests
     {
         var spec = Load("markdown-cases.json");
 
-        Assert.Equal(spec.GetProperty("truncationNotice").GetString(), MarkdownFormatter.TruncationNotice);
+        Assert.Equal(MarkdownFormatter.TruncationNotice, spec.GetProperty("truncationNotice").GetString());
         foreach (var item in spec.GetProperty("escape").EnumerateArray())
             Assert.Equal(item.GetProperty("expected").GetString(), MarkdownText.Escape(item.GetProperty("input").GetString()!));
         foreach (var item in spec.GetProperty("codeSpan").EnumerateArray())
