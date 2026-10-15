@@ -115,6 +115,9 @@ h1 { font-size: clamp(36px, 5.6vw, 58px); letter-spacing: -0.035em; margin-botto
 .download .detail { font-size: 14px; }
 .download .meta { margin-top: 6px; font: 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; word-break: break-all; }
 .download .meta:empty { display: none; }
+.download .install-note { margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--green-soft); color: var(--text); font-size: 13px; line-height: 1.5; }
+.download .install-note:empty { display: none; }
+.download .install-note + .button { margin-top: 18px; }
 .download .button { margin-top: auto; }
 .download .detail + .meta + .button, .download .meta + .button { margin-top: 18px; }
 

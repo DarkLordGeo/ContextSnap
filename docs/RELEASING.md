@@ -58,5 +58,44 @@ the same pull request branch.
 - Pull requests opened with `GITHUB_TOKEN` do not trigger other workflows such as CI. The Vercel
   preview still builds. The packages were already tested in the same Release run.
 - Windows builds are framework-dependent (.NET 10 Desktop Runtime) and not code-signed. macOS builds
-  are ad-hoc signed and not notarized. Set `MACOS_SIGNING_IDENTITY` in `scripts/build.sh`'s
-  environment once a Developer ID certificate is available.
+  are ad-hoc signed and not notarized until the secrets below are set.
+
+## macOS signing and notarization (optional)
+
+macOS opens downloaded apps without warnings only when they are signed with a **Developer ID**
+certificate and **notarized** by Apple. Without that, the app still downloads and runs, but on first
+launch macOS says it "could not verify" the app; users click **Done**, then **Open Anyway** in
+System Settings → Privacy & Security. The website shows these steps on the macOS download card for
+builds that are not notarized and hides them for notarized builds. Ad-hoc signed builds also lose
+their Accessibility and Screen Recording permissions after each update, because macOS ties those
+permissions to the signature; Developer ID builds keep them.
+
+The Release workflow signs and notarizes automatically once these repository secrets exist
+(Settings → Secrets and variables → Actions):
+
+| Secret | What it is |
+|---|---|
+| `MACOS_CERTIFICATE_P12` | Your "Developer ID Application" certificate and private key, exported as .p12, base64-encoded |
+| `MACOS_CERTIFICATE_PASSWORD` | The password chosen when exporting the .p12 |
+| `NOTARY_KEY_ID` | App Store Connect API key ID |
+| `NOTARY_ISSUER_ID` | App Store Connect issuer ID |
+| `NOTARY_KEY` | Contents of the downloaded `AuthKey_<id>.p8` file |
+
+1. Join the **Apple Developer Program** (developer.apple.com/programs, US$99 per year; an individual
+   membership is enough).
+2. Create the certificate on a Mac: Xcode → Settings → Accounts → select your team → Manage
+   Certificates → **+** → **Developer ID Application** (only the Account Holder can create it).
+3. Export it: Keychain Access → My Certificates → right-click "Developer ID Application: …" →
+   Export → .p12 with a password. Then `base64 -i Certificates.p12 | pbcopy` and paste the result as
+   `MACOS_CERTIFICATE_P12`; the password goes into `MACOS_CERTIFICATE_PASSWORD`.
+4. Create a notary key: App Store Connect → Users and Access → Integrations → App Store Connect API →
+   Team Keys → **+**, access **Developer**. Download the .p8 (it can be downloaded only once). Its Key ID
+   goes into `NOTARY_KEY_ID`, the Issuer ID shown above the list into `NOTARY_ISSUER_ID`, and the file's
+   full contents into `NOTARY_KEY`.
+5. Run the Release workflow. The macOS job imports the certificate into a temporary keychain (deleted
+   when the job ends), `scripts/build.sh` signs with the hardened runtime, notarizes and staples the
+   app and the DMG, and checks both with `spctl` (the same assessment Gatekeeper makes). The website
+   pull request then drops the "Open Anyway" note.
+
+Locally, the same script signs and notarizes when `MACOS_SIGNING_IDENTITY`, `NOTARY_KEY_ID`,
+`NOTARY_ISSUER_ID`, and `NOTARY_KEY` are set in the environment.
