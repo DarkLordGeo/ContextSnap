@@ -93,10 +93,14 @@
   const sheet = button.querySelector(".cb-sheet");
   const lines = button.querySelector(".cb-lines");
   const ripple = button.querySelector(".collector-ripple");
+  const edgeLayer = document.querySelector(".capture.is-icon");
+  const fx = window.contextSnapFX;
   const receiving = (on) => button.classList.toggle("is-receiving", on);
   // A card goes in: a sheet slides under the clip, the lines are written again, a ring goes out, and the
   // badge counts up to this card's share of the snapshot's parts.
   const land = (k, n, total) => {
+    // The first card in sets off the same pixel bars the window edges show during a capture.
+    if (k === 1 && edgeLayer && fx && button.offsetWidth) fx.play(edgeLayer, { width: 80, height: 80, dark: true, pixel: 3 });
     badge.hidden = false;
     badge.textContent = String(Math.max(1, Math.round((total * k) / n)));
     badge.animate([{ transform: "scale(1)" }, { transform: "scale(1.35)", offset: 0.35 }, { transform: "scale(1)" }], { duration: 300, easing: "ease-out" });
