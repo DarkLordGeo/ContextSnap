@@ -1,4 +1,4 @@
-﻿# ContextSnap
+﻿# Snapctx
 
 ## Goal
 A lightweight Windows desktop utility that captures useful desktop context, generates Markdown, and copies it to the clipboard using a global keyboard shortcut. Users paste the result into any LLM manually. No AI integration.

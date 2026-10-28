@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:ContextSnap"
-        Title="ContextSnap"
+        Title="Snapctx"
         Icon="ContextSnap.ico"
         Width="1000" Height="740" MinWidth="680" MinHeight="500"
         WindowStartupLocation="CenterScreen"
@@ -38,7 +38,7 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
-                    <TextBlock Text="ContextSnap" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Text="Snapctx" FontSize="20" FontWeight="SemiBold" />
                     <TextBlock Style="{DynamicResource MutedText}" Margin="0,2,0,0"
                                Text="Capture a Markdown snapshot of what you're working on, then paste it into any AI chat. Everything stays on this PC." />
                 </StackPanel>
@@ -112,7 +112,7 @@
                         <StackPanel MaxWidth="560" Margin="24,36" HorizontalAlignment="Center">
                             <TextBlock Text="Capture what you're working on" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center" />
                             <TextBlock Style="{DynamicResource MutedText}" TextAlignment="Center" Margin="0,8,0,20"
-                                       Text="ContextSnap builds a short Markdown summary of your open windows, projects, and folders so an AI assistant understands your situation without a long explanation." />
+                                       Text="Snapctx builds a short Markdown summary of your open windows, projects, and folders so an AI assistant understands your situation without a long explanation." />
                             <Border Style="{DynamicResource Card}">
                                 <StackPanel>
                                     <TextBlock Text="1.  Press Capture snapshot (F5 or Ctrl+Enter)." Margin="0,2" />
@@ -124,7 +124,7 @@
                             <TextBlock x:Name="EnabledCollectorsText" Style="{DynamicResource MutedText}" TextAlignment="Center" />
                             <TextBlock x:Name="FirstRunText" Style="{DynamicResource MutedText}" TextAlignment="Center" Margin="0,10,0,0"
                                        Visibility="Collapsed"
-                                       Text="First run: browser tabs are off, redaction is on, and ContextSnap will start minimized when you sign in. Review the Settings and Privacy tabs to change any of this." />
+                                       Text="First run: browser tabs are off, redaction is on, and Snapctx will start minimized when you sign in. Review the Settings and Privacy tabs to change any of this." />
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>
@@ -187,7 +187,7 @@
                                              ToolTip="One per line, for example: Signal, Outlook, Bank. The general exclusions below also apply." />
                                 </StackPanel>
                                 <TextBlock Style="{DynamicResource MutedText}" Margin="0,8,0,0" FontSize="12"
-                                           Text="Text is read on this PC through Windows UI Automation and, when needed, Windows OCR. Nothing is sent anywhere or saved. Password fields are skipped, and for browsers only the page is read, never tabs or the address bar. ContextSnap never clicks, scrolls, or changes focus to read more." />
+                                           Text="Text is read on this PC through Windows UI Automation and, when needed, Windows OCR. Nothing is sent anywhere or saved. Password fields are skipped, and for browsers only the page is read, never tabs or the address bar. Snapctx never clicks, scrolls, or changes focus to read more." />
                             </StackPanel>
                         </Border>
 
@@ -299,26 +299,36 @@
                             <StackPanel>
                                 <TextBlock Style="{DynamicResource SectionTitle}" Text="Behavior" />
                                 <CheckBox x:Name="HotkeyCheck" IsChecked="{Binding EnableGlobalHotkey}">
-                                    <TextBlock x:Name="HotkeyCheckText" Text="Global shortcut Ctrl+Alt+Shift+C: capture while ContextSnap is running" TextWrapping="Wrap" />
+                                    <TextBlock x:Name="HotkeyCheckText" Text="Global shortcut: capture while Snapctx runs in the background" TextWrapping="Wrap" />
                                 </CheckBox>
+                                <StackPanel Orientation="Horizontal" Margin="24,2,0,4" IsEnabled="{Binding IsChecked, ElementName=HotkeyCheck}">
+                                    <Label Target="{Binding ElementName=HotkeyBox}" Content="Shortc_ut" Padding="0,0,8,0" VerticalAlignment="Center" />
+                                    <TextBox x:Name="HotkeyBox" Width="180" Text="{Binding Hotkey}"
+                                             ToolTip="For example Ctrl+Alt+Shift+C or Ctrl+Win+F9: Ctrl, Alt, or Win (optionally Shift) plus a letter, digit, or F1–F24."
+                                             AutomationProperties.Name="Global shortcut" />
+                                </StackPanel>
                                 <TextBlock x:Name="HotkeyStatusText" Style="{DynamicResource MutedText}" Margin="24,0,0,4" FontSize="12" />
-                                <CheckBox Margin="24,0,0,4" IsChecked="{Binding HotkeyCopiesImmediately}" IsEnabled="{Binding EnableGlobalHotkey}"
-                                          AutomationProperties.HelpText="Off by default: when a snapshot includes visible screen text, the shortcut opens it here for review instead of copying it.">
-                                    <TextBlock Text="Shortcut copies immediately, without review (also when visible screen text is included)" TextWrapping="Wrap" />
-                                </CheckBox>
+                                <TextBlock Style="{DynamicResource MutedText}" Margin="24,0,0,4" FontSize="12" TextWrapping="Wrap"
+                                           Text="The shortcut always captures and copies the full Markdown snapshot directly, with no window or review. Redaction and output limits still apply." />
                                 <CheckBox Content="Copy to clipboard automatically after Capture" IsChecked="{Binding CopyAfterCapture}" />
                                 <CheckBox Content="Show a notification when a snapshot is copied" IsChecked="{Binding ShowCopyNotifications}"
                                           AutomationProperties.HelpText="A small, non-intrusive notice in the bottom-right corner with character, word, and size counts. It never shows snapshot contents." />
-                                <CheckBox Content="Start ContextSnap in the background when I sign in to Windows" IsChecked="{Binding StartWithWindows}"
-                                          AutomationProperties.HelpText="Adds or removes a ContextSnap shortcut in your Startup folder. At sign-in ContextSnap starts in the notification area, ready for the shortcut. No administrator rights are needed." />
+                                <CheckBox Content="Start Snapctx in the background when I sign in to Windows" IsChecked="{Binding StartWithWindows}"
+                                          AutomationProperties.HelpText="Adds or removes a Snapctx shortcut in your Startup folder. At sign-in Snapctx starts in the background with no window, taskbar button, or icon, ready for the shortcut. No administrator rights are needed." />
+                                <CheckBox Content="Show a Snapctx icon in the notification area" IsChecked="{Binding ShowNotificationAreaIcon}"
+                                          AutomationProperties.HelpText="Off by default. When on, the icon offers Open, Capture, and Exit." />
                                 <TextBlock Style="{DynamicResource MutedText}" Margin="24,0,0,4" FontSize="12" TextWrapping="Wrap"
-                                           Text="Closing this window keeps ContextSnap running in the notification area so the shortcut keeps working. To quit, right-click its icon there and choose Exit." />
+                                           Text="Closing this window keeps Snapctx running in the background while the shortcut is on. Open Snapctx again to show this window. To stop it: Quit Snapctx below, run Snapctx --exit, or end it in Task Manager." />
                                 <TextBlock x:Name="StartupStatusText" Style="{DynamicResource MutedText}" Margin="24,0,0,4" FontSize="12" />
                             </StackPanel>
                         </Border>
 
                         <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
                             <Button Content="Restore _defaults" Click="OnRestoreDefaults" />
+                            <Button Content="Open diagnostics _log" Click="OnOpenDiagnostics" Margin="8,0,0,0"
+                                    ToolTip="Opens the folder with Snapctx's local diagnostics log (errors only, never snapshot contents)." />
+                            <Button Content="_Quit Snapctx" Click="OnQuit" Margin="8,0,0,0"
+                                    ToolTip="Stops the background process and unregisters the shortcut until Snapctx is started again." />
                             <TextBlock x:Name="SettingsPathText" Style="{DynamicResource MutedText}" VerticalAlignment="Center" Margin="12,0,0,0" FontSize="12" />
                         </StackPanel>
                     </StackPanel>
@@ -332,7 +342,7 @@
                         <Border Style="{DynamicResource Card}">
                             <StackPanel>
                                 <TextBlock Style="{DynamicResource SectionTitle}" Text="Stays on this PC" />
-                                <TextBlock TextWrapping="Wrap" Text="ContextSnap makes no network requests and has no telemetry, accounts, or cloud features. A snapshot leaves this application only when you copy it, and it goes only to your clipboard. Nothing is written to disk except your settings file and, while Start with Windows is on, a ContextSnap shortcut in your Startup folder (it contains only the program path)." />
+                                <TextBlock TextWrapping="Wrap" Text="Snapctx makes no network requests and has no telemetry, accounts, or cloud features. A snapshot leaves this application only when you copy it, and it goes only to your clipboard. Nothing is written to disk except your settings file and, while Start with Windows is on, a Snapctx shortcut in your Startup folder (it contains only the program path)." />
                             </StackPanel>
                         </Border>
                         <Border Style="{DynamicResource Card}">

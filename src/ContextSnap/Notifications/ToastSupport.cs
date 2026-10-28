@@ -26,9 +26,10 @@ public sealed class SpringEase : EasingFunctionBase
 public static class MotionPreference
 {
     /// <summary>Diagnostic override: set to 1 to force reduced motion, 0 to force full motion.</summary>
-    public const string OverrideVariable = "CONTEXTSNAP_REDUCED_MOTION";
+    public const string OverrideVariable = "SNAPCTX_REDUCED_MOTION";
+    public const string LegacyOverrideVariable = "CONTEXTSNAP_REDUCED_MOTION";
 
-    public static bool IsReduced => Environment.GetEnvironmentVariable(OverrideVariable) switch
+    public static bool IsReduced => (Environment.GetEnvironmentVariable(OverrideVariable) ?? Environment.GetEnvironmentVariable(LegacyOverrideVariable)) switch
     {
         "1" => true,
         "0" => false,
@@ -43,7 +44,8 @@ public sealed record ToastPalette(
     Brush ShadowOuter, Brush ShadowMiddle, Brush ShadowInner)
 {
     /// <summary>Diagnostic override: "light" or "dark".</summary>
-    public const string ThemeOverrideVariable = "CONTEXTSNAP_TOAST_THEME";
+    public const string ThemeOverrideVariable = "SNAPCTX_TOAST_THEME";
+    public const string LegacyThemeOverrideVariable = "CONTEXTSNAP_TOAST_THEME";
 
     public static ToastPalette For(CopyNotificationKind kind)
     {
@@ -55,7 +57,7 @@ public sealed record ToastPalette(
 
     public static bool UsesDarkTheme()
     {
-        switch (Environment.GetEnvironmentVariable(ThemeOverrideVariable)?.ToLowerInvariant())
+        switch ((Environment.GetEnvironmentVariable(ThemeOverrideVariable) ?? Environment.GetEnvironmentVariable(LegacyThemeOverrideVariable))?.ToLowerInvariant())
         {
             case "dark":
                 return true;

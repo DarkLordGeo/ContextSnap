@@ -7,20 +7,23 @@ public sealed class GlobalHotkey(nint windowHandle) : IDisposable
 {
     public const int Id = 0xC511;
     public const int WmHotkey = 0x0312;
-    public const string DisplayText = "Ctrl+Alt+Shift+C";
 
-    private const uint ModAlt = 0x1;
-    private const uint ModControl = 0x2;
-    private const uint ModShift = 0x4;
     private const uint ModNoRepeat = 0x4000;
-    private const uint VirtualKeyC = 0x43;
 
     public bool IsRegistered { get; private set; }
 
-    public bool Register()
+    /// <summary>The shortcut currently registered, or null.</summary>
+    public HotkeyGesture? Current { get; private set; }
+
+    /// <summary>Registers <paramref name="gesture"/>, replacing any previous shortcut. False when another app owns it.</summary>
+    public bool Register(HotkeyGesture gesture)
     {
-        if (!IsRegistered)
-            IsRegistered = NativeMethods.RegisterHotKey(windowHandle, Id, ModControl | ModAlt | ModShift | ModNoRepeat, VirtualKeyC);
+        if (IsRegistered && gesture == Current)
+            return true;
+
+        Unregister();
+        IsRegistered = NativeMethods.RegisterHotKey(windowHandle, Id, gesture.Modifiers | ModNoRepeat, gesture.VirtualKey);
+        Current = IsRegistered ? gesture : null;
         return IsRegistered;
     }
 
@@ -31,6 +34,7 @@ public sealed class GlobalHotkey(nint windowHandle) : IDisposable
 
         NativeMethods.UnregisterHotKey(windowHandle, Id);
         IsRegistered = false;
+        Current = null;
     }
 
     public void Dispose() => Unregister();

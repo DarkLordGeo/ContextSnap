@@ -15,7 +15,7 @@ public struct MarkdownFormatter {
 
     public func format(_ snapshot: Snapshot) -> String {
         var md = "# Context Snapshot\n\n"
-        md += "_Captured \(Self.timestamp(snapshot.capturedAt, snapshot.timeZone)) by ContextSnap. Sensitive values may be redacted._\n"
+        md += "_Captured \(Self.timestamp(snapshot.capturedAt, snapshot.timeZone)) by Snapctx. Sensitive values may be redacted._\n"
 
         if let app = snapshot.foregroundApp {
             md += "\n**Foreground window:** \(text(app)) — \(text(snapshot.foregroundTitle ?? ""))\n"

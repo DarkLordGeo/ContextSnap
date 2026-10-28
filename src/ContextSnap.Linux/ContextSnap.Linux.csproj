@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>ContextSnap</RootNamespace>
-    <AssemblyName>contextsnap</AssemblyName>
+    <AssemblyName>snapctx</AssemblyName>
     <!-- No ICU dependency: output is formatted with the invariant culture. -->
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
@@ -29,7 +29,7 @@
     <Compile Include="..\ContextSnap.Core\Capture\SnapshotService.cs;..\ContextSnap.Core\Capture\HeadlessRunner.cs" LinkBase="Core\Capture" />
     <Compile Include="..\ContextSnap.Core\Output\CopyService.cs;..\ContextSnap.Core\Output\IClipboardWriter.cs" LinkBase="Core\Output" />
     <Compile Include="..\ContextSnap.Core\Notifications\CopyNotification.cs" LinkBase="Core\Notifications" />
-    <Compile Include="..\ContextSnap.Core\Platform\ExecutableLocator.cs" LinkBase="Core\Platform" />
+    <Compile Include="..\ContextSnap.Core\Platform\ExecutableLocator.cs;..\ContextSnap.Core\Platform\HotkeyGesture.cs" LinkBase="Core\Platform" />
   </ItemGroup>
 
 </Project>

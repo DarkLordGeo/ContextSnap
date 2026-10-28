@@ -13,20 +13,28 @@ public enum RunMode
     Capture,
     Print,
     Help,
+
+    /// <summary>Ask the running background instance to quit.</summary>
+    Exit,
+    EnableStartup,
+    DisableStartup,
 }
 
-/// <param name="StartMinimized">Set by <c>--startup</c> (used by the sign-in shortcut): start in the notification area without a window and stay quiet if already running.</param>
+/// <param name="StartMinimized">Set by <c>--startup</c> (used by the sign-in shortcut): start in the background without a window and stay quiet if already running.</param>
 public sealed record CommandLineOptions(RunMode Mode, string? Error = null, bool StartMinimized = false)
 {
     public const string Usage = """
-        ContextSnap — capture a Markdown snapshot of your current desktop context.
+        Snapctx — capture a Markdown snapshot of your current desktop context.
 
         Usage:
-          ContextSnap                Open the application window.
-          ContextSnap --capture      Capture, copy to the clipboard, print a summary, and exit.
-          ContextSnap --print        Capture and write the Markdown to standard output (no clipboard).
-          ContextSnap --startup      Start in the notification area without a window (used at sign-in).
-          ContextSnap --help         Show this help.
+          Snapctx                Open the application window.
+          Snapctx --capture      Capture, copy to the clipboard, print a summary, and exit.
+          Snapctx --print        Capture and write the Markdown to standard output (no clipboard).
+          Snapctx --startup      Start in the background: no window, taskbar button, or icon (used at sign-in).
+          Snapctx --exit         Quit the running background instance.
+          Snapctx --disable-startup   Stop starting Snapctx when you sign in.
+          Snapctx --enable-startup    Start Snapctx in the background when you sign in.
+          Snapctx --help         Show this help.
 
         Settings are read from %APPDATA%\ContextSnap\settings.json. In --capture and --print modes,
         the current directory is also checked for a Git repository.
@@ -45,6 +53,9 @@ public sealed record CommandLineOptions(RunMode Mode, string? Error = null, bool
             "--startup" or "/startup" => new CommandLineOptions(RunMode.Gui, StartMinimized: true),
             "--print" or "-p" or "/print" => new CommandLineOptions(RunMode.Print),
             "--help" or "-h" or "-?" or "/?" => new CommandLineOptions(RunMode.Help),
+            "--exit" or "/exit" => new CommandLineOptions(RunMode.Exit),
+            "--enable-startup" => new CommandLineOptions(RunMode.EnableStartup),
+            "--disable-startup" => new CommandLineOptions(RunMode.DisableStartup),
             _ => new CommandLineOptions(RunMode.Help, "Unknown option."),
         };
     }

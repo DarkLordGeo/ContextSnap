@@ -66,7 +66,7 @@ public class ScreenTextIntegrationTests
         {
             var window = new Window
             {
-                Title = "ContextSnap integration test",
+                Title = "Snapctx integration test",
                 Width = 560, Height = 260, Left = 40, Top = 40,
                 WindowStartupLocation = WindowStartupLocation.Manual,
                 ShowActivated = false, ShowInTaskbar = false, Topmost = true,

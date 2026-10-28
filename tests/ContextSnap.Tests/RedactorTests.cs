@@ -50,7 +50,7 @@ public class RedactorTests
     }
 
     [Theory]
-    [InlineData("Program.cs - ContextSnap - Visual Studio Code")]
+    [InlineData("Program.cs - Snapctx - Visual Studio Code")]
     [InlineData("ed0064a Apply redaction and output limits")]
     [InlineData("C:\\Users\\Public\\Documents\\report_final_v2.docx")]
     [InlineData("3f786850e387550fdab836ed7e6dc881de23001b")]

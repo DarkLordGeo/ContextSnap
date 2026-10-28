@@ -10,7 +10,7 @@ public static class Program
     {
         if (args is ["--version"])
         {
-            Console.WriteLine($"ContextSnap {Version}");
+            Console.WriteLine($"Snapctx {Version}");
             return 0;
         }
 
@@ -35,7 +35,7 @@ public static class Program
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"ContextSnap failed: {ex.GetType().Name}: {ex.Message}");
+            Console.Error.WriteLine($"Snapctx failed: {ex.GetType().Name}: {ex.Message}");
             return 1;
         }
     }

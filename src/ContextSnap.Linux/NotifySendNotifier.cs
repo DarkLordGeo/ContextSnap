@@ -25,7 +25,7 @@ public sealed class NotifySendNotifier(string path) : ICopyNotifier
             .Where(line => !string.IsNullOrWhiteSpace(line)));
         return
         [
-            "--app-name=ContextSnap",
+            "--app-name=Snapctx",
             "--icon=" + (content.Kind == CopyNotificationKind.Success ? "edit-copy" : "dialog-warning"),
             "--urgency=" + (content.Kind == CopyNotificationKind.Error ? "critical" : "low"),
             "--expire-time=" + ((int)content.Duration.TotalMilliseconds).ToString(CultureInfo.InvariantCulture),

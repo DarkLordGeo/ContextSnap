@@ -53,7 +53,7 @@
       banner.setAttribute("aria-label", "Cookie consent");
       banner.innerHTML =
         '<p>May we use Google Analytics cookies to understand how visitors use this site? ' +
-        'The ContextSnap apps never send analytics. <a href="/privacy">Privacy details</a></p>' +
+        'The Snapctx apps never send analytics. <a href="/#privacy">Privacy details</a></p>' +
         '<div class="consent-actions">' +
         '<button type="button" class="button ghost" data-choice="denied">Decline</button>' +
         '<button type="button" class="button primary" data-choice="granted">Accept</button>' +

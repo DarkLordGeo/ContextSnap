@@ -5,146 +5,477 @@
 <!-- Google tag (gtag.js): loaded by gtag.js only after the visitor accepts analytics cookies -->
 <script src="gtag.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ContextSnap — Capture your context. Paste it anywhere.</title>
-<meta name="description" content="ContextSnap turns what you are working on into a redacted Markdown snapshot, only when you press its shortcut. Processed locally on Windows and Linux.">
-<meta name="theme-color" content="#f7faf8">
-<meta property="og:title" content="ContextSnap">
-<meta property="og:description" content="One shortcut. A useful Markdown snapshot of your current context. Processed on your machine.">
+<title>Snapctx: Your desktop context. One shortcut. Ready for AI.</title>
+<meta name="description" content="Snapctx captures what you are working on as readable, redacted Markdown and copies it to your clipboard with Ctrl + Alt + Shift + C. Processed locally on Windows and Linux.">
+<meta name="theme-color" content="#f7f5f2">
+<meta property="og:title" content="Snapctx">
+<meta property="og:description" content="One shortcut turns your current context into Markdown on your clipboard. Processed on your machine. You choose where to paste it.">
 <meta property="og:type" content="website">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="win11.css">
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 <header class="site-header">
-  <div class="wrap nav">
-    <a class="wordmark" href="/" aria-label="ContextSnap home"><span class="mark" aria-hidden="true"></span>ContextSnap</a>
-    <nav aria-label="Main">
+  <div class="nav-bar">
+    <a class="wordmark" href="/" aria-label="Snapctx home"><span class="mark" aria-hidden="true"></span>Snapctx</a>
+    <nav class="nav-links" aria-label="Main">
       <ul>
-        <li><a href="#how">How it works</a></li>
+        <li><a href="#desktop">Try it</a></li>
         <li><a href="#privacy">Privacy</a></li>
-        <li class="nav-github"><a href="https://github.com/DarkLordGeo/ContextSnap" rel="noopener" aria-label="ContextSnap on GitHub"><svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.06-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg><span class="nav-label">GitHub</span></a></li>
-        <li><a class="nav-cta" href="#download">Download</a></li>
+        <li><a href="https://github.com/DarkLordGeo/ContextSnap" rel="noopener">GitHub</a></li>
       </ul>
     </nav>
   </div>
 </header>
 
 <main id="main">
-  <section class="wrap hero" aria-labelledby="hero-title">
-    <div class="hero-copy">
-      <p class="eyebrow">For Windows and Linux</p>
-      <h1 id="hero-title">Capture your context.<br>Paste it anywhere.</h1>
-      <p class="lead">Press one shortcut and ContextSnap turns what you are working on into a short, redacted Markdown snapshot on your clipboard. Paste it into ChatGPT, Claude, or any other assistant.</p>
-      <div class="actions">
-        <a class="button primary" href="#download">Get ContextSnap</a>
-        <a class="button ghost" href="https://github.com/DarkLordGeo/ContextSnap" rel="noopener"><svg class="gh-mark" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.06-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>View on GitHub</a>
+  <section class="stage" aria-labelledby="stage-title">
+    <div class="wrap">
+      <div class="stage-head">
+        <h1 id="stage-title">Your desktop context. One shortcut. Ready for AI.</h1>
+        <p class="lead">Snapctx copies what you're working on as Markdown, ready to paste into any AI chat.</p>
+        <div class="stage-actions">
+          <a class="button ghost" href="https://github.com/DarkLordGeo/ContextSnap" rel="noopener">View on GitHub</a>
+          <a class="button dark" href="#download">Download free</a>
+        </div>
       </div>
-      <p class="fine">Runs only when you ask it to. Processed on your computer. No account.</p>
+      <div class="demo is-home" id="demo" data-state="idle">
+        <div class="demo-desk is-crop">
+          <div class="kb" id="kb" role="group" aria-label="Keyboard demo. Press Ctrl, Alt, Shift and C to see what the shortcut does.">
+            <div class="kb-plate">
+                    <div class="kb-row">
+                      <span class="key mod" data-code="Escape" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">Esc</span></span></span></span>
+                      <span class="key" data-code="Digit1" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">1</span></span></span></span>
+                      <span class="key" data-code="Digit2" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">2</span></span></span></span>
+                      <span class="key" data-code="Digit3" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">3</span></span></span></span>
+                      <span class="key" data-code="Digit4" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">4</span></span></span></span>
+                      <span class="key" data-code="Digit5" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">5</span></span></span></span>
+                      <span class="key" data-code="Digit6" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">6</span></span></span></span>
+                      <span class="key" data-code="Digit7" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">7</span></span></span></span>
+                      <span class="key" data-code="Digit8" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">8</span></span></span></span>
+                      <span class="key" data-code="Digit9" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">9</span></span></span></span>
+                      <span class="key" data-code="Digit0" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">0</span></span></span></span>
+                      <span class="key" data-code="Minus" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">-</span></span></span></span>
+                      <span class="key" data-code="Equal" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">=</span></span></span></span>
+                      <span class="key w200 mod" data-code="Backspace" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">Backspace</span></span></span></span>
+                    </div>
+                    <div class="kb-row">
+                      <span class="key w150 mod" data-code="Tab" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">Tab</span></span></span></span>
+                      <span class="key" data-code="KeyQ" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">Q</span></span></span></span>
+                      <span class="key" data-code="KeyW" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">W</span></span></span></span>
+                      <span class="key" data-code="KeyE" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">E</span></span></span></span>
+                      <span class="key" data-code="KeyR" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">R</span></span></span></span>
+                      <span class="key" data-code="KeyT" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">T</span></span></span></span>
+                      <span class="key" data-code="KeyY" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">Y</span></span></span></span>
+                      <span class="key" data-code="KeyU" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">U</span></span></span></span>
+                      <span class="key" data-code="KeyI" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">I</span></span></span></span>
+                      <span class="key" data-code="KeyO" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">O</span></span></span></span>
+                      <span class="key" data-code="KeyP" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">P</span></span></span></span>
+                      <span class="key" data-code="BracketLeft" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">[</span></span></span></span>
+                      <span class="key" data-code="BracketRight" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">]</span></span></span></span>
+                      <span class="key w150" data-code="Backslash" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">\</span></span></span></span>
+                    </div>
+                    <div class="kb-row">
+                      <span class="key w175 mod" data-code="CapsLock" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">Caps</span></span></span></span>
+                      <span class="key" data-code="KeyA" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">A</span></span></span></span>
+                      <span class="key" data-code="KeyS" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">S</span></span></span></span>
+                      <span class="key" data-code="KeyD" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">D</span></span></span></span>
+                      <span class="key" data-code="KeyF" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">F</span></span></span></span>
+                      <span class="key" data-code="KeyG" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">G</span></span></span></span>
+                      <span class="key" data-code="KeyH" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">H</span></span></span></span>
+                      <span class="key" data-code="KeyJ" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">J</span></span></span></span>
+                      <span class="key" data-code="KeyK" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">K</span></span></span></span>
+                      <span class="key" data-code="KeyL" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">L</span></span></span></span>
+                      <span class="key" data-code="Semicolon" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">;</span></span></span></span>
+                      <span class="key" data-code="Quote" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">&#x27;</span></span></span></span>
+                      <span class="key w225 mod" data-code="Enter" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">Enter</span></span></span></span>
+                    </div>
+                    <div class="kb-row">
+                      <button type="button" class="key w225 mod hot" data-code="ShiftLeft" data-combo="shift" aria-pressed="false" aria-label="Shift"><span class="kc"><span class="top"><span class="lg">Shift</span></span></span></button>
+                      <span class="key" data-code="KeyZ" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">Z</span></span></span></span>
+                      <span class="key" data-code="KeyX" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">X</span></span></span></span>
+                      <button type="button" class="key hot" data-code="KeyC" data-combo="c" aria-label="C"><span class="kc"><span class="top"><span class="lg">C</span></span></span></button>
+                      <span class="key" data-code="KeyV" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">V</span></span></span></span>
+                      <span class="key" data-code="KeyB" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">B</span></span></span></span>
+                      <span class="key" data-code="KeyN" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">N</span></span></span></span>
+                      <span class="key" data-code="KeyM" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">M</span></span></span></span>
+                      <span class="key" data-code="Comma" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">,</span></span></span></span>
+                      <span class="key" data-code="Period" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">.</span></span></span></span>
+                      <span class="key" data-code="Slash" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">/</span></span></span></span>
+                      <span class="key w275 mod" data-code="ShiftRight" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">Shift</span></span></span></span>
+                    </div>
+                    <div class="kb-row">
+                      <button type="button" class="key w150 mod hot" data-code="ControlLeft" data-combo="ctrl" aria-pressed="false" aria-label="Ctrl"><span class="kc"><span class="top"><span class="lg">Ctrl</span></span></span></button>
+                      <span class="key mod" data-code="MetaLeft" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">Win</span></span></span></span>
+                      <button type="button" class="key w150 mod hot" data-code="AltLeft" data-combo="alt" aria-pressed="false" aria-label="Alt"><span class="kc"><span class="top"><span class="lg">Alt</span></span></span></button>
+                      <span class="key w700 space" data-code="Space" aria-hidden="true"><span class="kc"><span class="top"><span class="lg"></span></span></span></span>
+                      <span class="key w150 mod" data-code="AltRight" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">Alt</span></span></span></span>
+                      <span class="key mod" data-code="MetaRight" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">Win</span></span></span></span>
+                      <span class="key w150 mod" data-code="ControlRight" aria-hidden="true"><span class="kc"><span class="top"><span class="lg">Ctrl</span></span></span></span>
+                    </div>
+            </div>
+          </div>
+        </div>
+
+        <section class="chat" id="chat" aria-labelledby="chat-title">
+          <header class="chat-head">
+            <span class="chat-avatar" aria-hidden="true"></span>
+            <h2 class="chat-title" id="chat-title">Assistant</h2>
+            <span class="chat-sub">Sample conversation</span>
+          </header>
+          <div class="chat-log" data-log>
+            <p class="chat-day">Today</p>
+            <p class="msg msg-me">Our billing API started returning 404s after I refactored the routes.</p>
+            <div class="msg msg-ai"><p>I can't see your screen. Capture what you are working on and paste it here, and I'll take a look.</p></div>
+            <div class="followups" data-thread></div>
+            <div class="chat-slot" data-slot aria-hidden="true"><span class="slot-keys"><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Shift</kbd><kbd>C</kbd></span><span>Press the shortcut to paste your context here.</span></div>
+          </div>
+          <div class="suggest" data-suggest role="group" aria-label="Ask a sample question"></div>
+          <div class="chat-composer" data-composer-box aria-hidden="true">
+            <div class="composer-attach" data-attach hidden>
+              <span class="ctx-icon">#</span>
+              <span class="attach-text"><b>Snapctx.md</b><span data-attach-meta></span></span>
+            </div>
+            <div class="composer-row">
+              <span class="composer-plus"></span>
+              <span class="composer-text" data-composer>Message the assistant</span>
+              <span class="send"></span>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <p class="visually-hidden" id="demo-status" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <section class="desk-section" id="desktop" aria-labelledby="desktop-title">
+    <svg class="sprite" aria-hidden="true" focusable="false">
+      <symbol id="ic-start" viewBox="0 0 24 24"><rect x="2" y="2" width="9.6" height="9.6" rx="1.4" fill="#0a84ff"/><rect x="12.4" y="2" width="9.6" height="9.6" rx="1.4" fill="#3aa2ff"/><rect x="2" y="12.4" width="9.6" height="9.6" rx="1.4" fill="#0067c0"/><rect x="12.4" y="12.4" width="9.6" height="9.6" rx="1.4" fill="#1a86ef"/></symbol>
+      <symbol id="ic-folder" viewBox="0 0 24 24"><path d="M2.5 6A1.5 1.5 0 0 1 4 4.5h5.2l2 2H20A1.5 1.5 0 0 1 21.5 8v10.5A1.5 1.5 0 0 1 20 20H4a1.5 1.5 0 0 1-1.5-1.5z" fill="#e3a21a"/><path d="M2.5 9.5A1.5 1.5 0 0 1 4 8h16a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 20 20H4a1.5 1.5 0 0 1-1.5-1.5z" fill="#ffc83d"/></symbol>
+      <symbol id="ic-code" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" fill="#0e7ad1"/><path d="M9.5 8 5.5 12l4 4M14.5 8l4 4-4 4" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="ic-term" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="18" rx="4" fill="#2b2b2b"/><path d="m6.5 9 3 3-3 3" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 15.5h5" stroke="#61d6d6" stroke-width="1.9" stroke-linecap="round"/></symbol>
+      <symbol id="ic-chat" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="6" fill="#1f1f1f"/><path d="M7 7.5h10a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 1-1.5 1.5h-5.5L8 18v-2.5H7A1.5 1.5 0 0 1 5.5 14V9A1.5 1.5 0 0 1 7 7.5z" fill="#fff"/></symbol>
+      <symbol id="ic-git" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" fill="#e0603a"/><circle cx="8.5" cy="7.5" r="1.8" fill="#fff"/><circle cx="8.5" cy="16.5" r="1.8" fill="#fff"/><circle cx="15.5" cy="10" r="1.8" fill="#fff"/><path d="M8.5 9.3v5.4M15.5 11.8c0 2.4-2.6 2.6-5.4 3.6" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></symbol>
+      <symbol id="ic-collect" viewBox="0 0 24 24"><rect x="4.5" y="3.5" width="15" height="18" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="8.5" y="2" width="7" height="3.6" rx="1.2" fill="currentColor"/><path d="M8.2 10h7.6M8.2 13.3h7.6M8.2 16.6h4.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+      <symbol id="ic-info" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" fill="#5b6470"/><circle cx="12" cy="7.6" r="1.4" fill="#fff"/><path d="M12 11v6" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></symbol>
+    </svg>
+
+    <div class="desk-frame">
+    <div class="desk-bar">
+      <h2 id="desktop-title">Try it on a sample Windows desktop</h2>
+      <ol class="flow" aria-label="Steps">
+        <li data-step="work"><span>Work</span></li>
+        <li data-step="capture"><span>Capture</span></li>
+        <li data-step="extract"><span>Extract</span></li>
+        <li data-step="attach"><span>Attach</span></li>
+        <li data-step="ask"><span>Ask</span></li>
+        <li data-step="answer"><span>Answer</span></li>
+      </ol>
+      <div class="desk-actions">
+        <button type="button" class="button small ghost" data-os-reset>Reset</button>
+        <button type="button" class="button small dark" data-os-replay>Replay</button>
+      </div>
+      <p class="visually-hidden" aria-live="polite" data-os-status></p>
     </div>
 
-    <figure class="preview" aria-label="Example of a copied snapshot">
-      <div class="preview-bar" aria-hidden="true"><span></span><span></span><span></span><em>Clipboard · Markdown</em></div>
-      <pre class="preview-body"><code><b># Context Snapshot</b>
-<i>_Captured 2026-10-14 19:31 by ContextSnap._</i>
+    <div class="os" id="os" role="region" aria-label="Sample Windows desktop. A website simulation: nothing on your computer is read.">
+      <div class="os-inner">
+      <div class="os-screen">
+        <section class="win win-dark" data-app="editor" aria-label="Code editor">
+          <header class="win-bar"><svg class="win-ic" aria-hidden="true"><use href="#ic-code"/></svg><span class="win-title" data-title></span><span class="caps"><button type="button" class="cap cap-min" data-min aria-label="Minimize"></button><button type="button" class="cap cap-max" data-max aria-label="Maximize"></button><button type="button" class="cap cap-close" data-close aria-label="Close"></button></span></header>
+          <div class="code-tabs"><span class="code-tab"><span class="lang-badge" data-lang-badge>TS</span><span data-file-tab></span></span></div>
+          <div class="code">
+            <pre class="gutter" aria-hidden="true"></pre>
+            <div class="code-area">
+              <pre class="code-hl" aria-hidden="true"></pre>
+              <textarea class="editor" spellcheck="false" wrap="off" aria-label="Sample file contents, editable"></textarea>
+            </div>
+          </div>
+          <footer class="code-status"><span>main ↑1</span><span data-lang>TypeScript</span></footer>
+        </section>
 
-<b>## Visible text</b>
-<b>### Active window:</b> Code — Program.cs
-api_key = <mark>[REDACTED]</mark>
+        <section class="win win-dark" data-app="terminal" aria-label="Terminal">
+          <header class="win-bar"><svg class="win-ic" aria-hidden="true"><use href="#ic-term"/></svg><span class="win-title" data-title></span><span class="caps"><button type="button" class="cap cap-min" data-min aria-label="Minimize"></button><button type="button" class="cap cap-max" data-max aria-label="Maximize"></button><button type="button" class="cap cap-close" data-close aria-label="Close"></button></span></header>
+          <pre class="term-out" tabindex="0" aria-label="Terminal output"></pre>
+          <div class="term-cmds" aria-label="Run a sample command"><span class="term-label" aria-hidden="true">Run</span></div>
+        </section>
 
-<b>## System context</b>
-<b>### Git repositories (1)</b>
-- Branch: `main` → `origin/main` (ahead 1)
-- Working tree: 2 unstaged, 1 untracked</code></pre>
-      <figcaption class="preview-toast" aria-hidden="true"><span class="check"></span>Context copied to clipboard</figcaption>
-    </figure>
-  </section>
+        <section class="win" data-app="files" aria-label="File Explorer">
+          <header class="win-bar"><svg class="win-ic" aria-hidden="true"><use href="#ic-folder"/></svg><span class="win-title" data-title></span><span class="caps"><button type="button" class="cap cap-min" data-min aria-label="Minimize"></button><button type="button" class="cap cap-max" data-max aria-label="Maximize"></button><button type="button" class="cap cap-close" data-close aria-label="Close"></button></span></header>
+          <p class="ex-address"><span>billing-api</span><span aria-hidden="true">›</span><span>src</span></p>
+          <p class="ex-head" aria-hidden="true"><span>Name</span><span>Type</span></p>
+          <ul class="files-list" aria-label="Files. Choose one to open it in Code."></ul>
+          <p class="ex-status" data-files-count></p>
+        </section>
 
-  <section class="wrap section" id="how" aria-labelledby="how-title" data-reveal>
-    <h2 id="how-title">How it works</h2>
-    <ol class="steps">
-      <li class="card">
-        <span class="step-number" aria-hidden="true">1</span>
-        <h3>Press the shortcut</h3>
-        <p><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> by default. ContextSnap starts with your computer and waits quietly in the background. Nothing is read before you press it.</p>
-      </li>
-      <li class="card">
-        <span class="step-number" aria-hidden="true">2</span>
-        <h3>Context is collected and redacted</h3>
-        <p>Open apps, Git state, system basics, and on Windows the visible text of the window you are using. Secrets, tokens, and email addresses are redacted on your machine.</p>
-      </li>
-      <li class="card">
-        <span class="step-number" aria-hidden="true">3</span>
-        <h3>Paste the Markdown</h3>
-        <p>The snapshot lands on your clipboard with a short confirmation. Review it, then paste it wherever you need it.</p>
-      </li>
-    </ol>
-  </section>
+        <section class="win" data-app="system" aria-label="System Information">
+          <header class="win-bar"><svg class="win-ic" aria-hidden="true"><use href="#ic-info"/></svg><span class="win-title" data-title></span><span class="caps"><button type="button" class="cap cap-min" data-min aria-label="Minimize"></button><button type="button" class="cap cap-max" data-max aria-label="Maximize"></button><button type="button" class="cap cap-close" data-close aria-label="Close"></button></span></header>
+          <dl class="sysinfo"></dl>
+        </section>
 
-  <section class="wrap section" aria-labelledby="captures-title" data-reveal>
-    <h2 id="captures-title">What a snapshot can include</h2>
-    <p class="section-lead">Each source can be turned off. Size limits keep the result short enough to be useful.</p>
-    <ul class="features">
-      <li class="card"><h3>Visible text</h3><p>On Windows, text on screen in the focused window, read through accessibility APIs with on-device OCR as a fallback. Password fields are skipped.</p></li>
-      <li class="card"><h3>Apps and windows</h3><p>Names and titles of open apps (on Linux, X11 and XWayland apps). Password managers and private browsing windows are excluded by default.</p></li>
-      <li class="card"><h3>Git state</h3><p>Branch, upstream, changed file names, and recent commit subjects. Git is run read-only; diffs and file contents are never read.</p></li>
-      <li class="card"><h3>System basics</h3><p>Operating system, architecture, CPU count, and memory, plus running developer tools and Desktop items. On Windows also File Explorer folders.</p></li>
-    </ul>
-  </section>
+        <section class="win" data-app="assistant" aria-label="Sample AI chat">
+          <header class="win-bar"><svg class="win-ic" aria-hidden="true"><use href="#ic-chat"/></svg><span class="win-title" data-title></span><span class="caps"><button type="button" class="cap cap-min" data-min aria-label="Minimize"></button><button type="button" class="cap cap-max" data-max aria-label="Maximize"></button><button type="button" class="cap cap-close" data-close aria-label="Close"></button></span></header>
+          <div class="ca">
+            <div class="ca-head">
+              <button type="button" class="ca-model" aria-haspopup="listbox" aria-expanded="false" data-model-button><span class="pv" data-model-mark></span><span data-model-name></span><span class="ca-chev" aria-hidden="true"></span></button>
+              <span class="ca-demo">Demo · no model is called</span>
+              <button type="button" class="ca-new" data-new-chat>New chat</button>
+            </div>
+            <div class="ca-menu" role="listbox" aria-label="Model" tabindex="-1" data-model-menu hidden></div>
+            <div class="ca-log" role="log" aria-live="polite" data-ca-log>
+              <div class="ca-empty" data-ca-empty>
+                <p class="ca-hello">What are you working on?</p>
+                <p>Paste a Snapctx snapshot and ask about your screen.</p>
+                <p class="ca-keys"><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Shift</kbd><kbd>C</kbd><span>then</span><kbd>Ctrl</kbd><kbd>V</kbd></p>
+              </div>
+            </div>
+            <div class="ca-suggest" data-ca-suggest></div>
+            <form class="ca-composer" data-ca-form>
+              <div class="ca-attach" data-ca-attach hidden>
+                <button type="button" class="ca-file" data-ca-inspect><span class="md-ic" aria-hidden="true">MD</span><span><b>Snapctx.md</b><small data-ca-attach-meta></small></span></button>
+                <button type="button" class="ca-remove" data-ca-remove aria-label="Remove Snapctx.md"></button>
+              </div>
+              <textarea class="ca-input" rows="1" data-ca-input aria-label="Message"></textarea>
+              <div class="ca-row">
+                <span class="ca-hint"><kbd>Enter</kbd> to send · <kbd>Shift</kbd>+<kbd>Enter</kbd> new line</span>
+                <button type="submit" class="ca-send" aria-label="Send" data-ca-send></button>
+              </div>
+            </form>
+            <section class="ca-inspect" aria-label="Snapctx.md" data-ca-inspector hidden>
+              <header><b>Snapctx.md</b><span data-ca-inspect-meta></span><button type="button" class="ca-close" data-ca-inspect-close aria-label="Close"></button></header>
+              <pre class="snap-md" tabindex="0" data-ca-inspect-md></pre>
+            </section>
+          </div>
+        </section>
 
-  <section class="wrap section" id="privacy" aria-labelledby="privacy-title" data-reveal>
-    <div class="privacy card">
-      <div>
-        <h2 id="privacy-title">Private by design</h2>
-        <p>ContextSnap is a capture tool, not a monitor. It does nothing until you press the shortcut or click Capture, and it keeps no history.</p>
+        <div class="os-keys" aria-hidden="true"><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Shift</kbd><kbd>C</kbd></div>
+        <p class="os-pill" aria-hidden="true"><img src="favicon.svg" alt=""><span data-pill-text>Capturing</span></p>
+        <div class="xfer" aria-hidden="true"></div>
+
+        <div class="start-menu" role="dialog" aria-label="Start" hidden>
+          <p class="menu-title">Pinned</p>
+          <div class="start-grid">
+            <button type="button" class="start-app" data-open="files"><svg aria-hidden="true"><use href="#ic-folder"/></svg>File Explorer</button>
+            <button type="button" class="start-app" data-open="editor"><svg aria-hidden="true"><use href="#ic-code"/></svg>Code</button>
+            <button type="button" class="start-app" data-open="terminal"><svg aria-hidden="true"><use href="#ic-term"/></svg>Terminal</button>
+            <button type="button" class="start-app" data-open="assistant"><svg aria-hidden="true"><use href="#ic-chat"/></svg>AI chat</button>
+            <button type="button" class="start-app" data-open="system"><svg aria-hidden="true"><use href="#ic-info"/></svg>System Info</button>
+          </div>
+          <div class="start-foot"><button type="button" data-os-replay>Replay demo</button><button type="button" data-os-reset>Reset desktop</button></div>
+        </div>
+
+        <div class="tray-menu" role="dialog" aria-label="Snapctx" hidden>
+          <p class="menu-title"><img src="favicon.svg" alt="">Snapctx</p>
+          <button type="button" class="tray-item" data-capture>Capture now<span>Ctrl+Alt+Shift+C</span></button>
+          <p class="tray-sub">Include</p>
+          <div class="levels" role="radiogroup" aria-label="Context to include (website illustration)">
+            <button type="button" role="radio" class="level" data-level="1" aria-checked="false">Active window</button>
+            <button type="button" role="radio" class="level" data-level="2" aria-checked="true">Working context</button>
+            <button type="button" role="radio" class="level" data-level="3" aria-checked="false">Workspace</button>
+          </div>
+          <p class="tray-note" data-level-note></p>
+        </div>
+
       </div>
-      <ul class="checks">
-        <li>Captures only when you trigger it</li>
-        <li>Processed and redacted locally</li>
-        <li>No network requests, telemetry, or accounts</li>
-        <li>Nothing captured is saved to disk</li>
+
+      <nav class="taskbar" aria-label="Taskbar">
+        <span class="tb-sim">Website simulation</span>
+        <div class="tb-center">
+          <button type="button" class="tb-btn tb-start" aria-label="Start" aria-expanded="false" data-start><svg aria-hidden="true"><use href="#ic-start"/></svg></button>
+          <button type="button" class="tb-btn tb-app" data-app="files" aria-label="File Explorer"><svg aria-hidden="true"><use href="#ic-folder"/></svg></button>
+          <button type="button" class="tb-btn tb-app" data-app="editor" aria-label="Code"><svg aria-hidden="true"><use href="#ic-code"/></svg></button>
+          <button type="button" class="tb-btn tb-app" data-app="terminal" aria-label="Terminal"><svg aria-hidden="true"><use href="#ic-term"/></svg></button>
+          <button type="button" class="tb-btn tb-app" data-app="assistant" aria-label="AI chat"><svg aria-hidden="true"><use href="#ic-chat"/></svg></button>
+          <button type="button" class="tb-btn tb-app" data-app="system" aria-label="System Information"><svg aria-hidden="true"><use href="#ic-info"/></svg></button>
+        </div>
+        <div class="tb-tray">
+          <button type="button" class="tb-btn tb-cs" aria-label="Snapctx" aria-expanded="false" data-tray><img src="favicon.svg" alt=""><span class="tb-badge" aria-hidden="true"></span></button>
+          <span class="tb-clock" aria-hidden="true"><span data-time></span><span data-date></span></span>
+        </div>
+      </nav>
+      </div>
+      <div class="capture is-local" aria-hidden="true"><div class="capture-scrim"></div><div class="capture-scan"></div><div class="capture-flash"></div></div>
+    </div>
+    </div>
+  </section>
+
+  <section class="get" id="download" aria-labelledby="download-title">
+    <div class="wrap">
+      <div class="get-head">
+        <h2 id="download-title">Get Snapctx</h2>
+        <p>Runs quietly in the background and copies your context when you press the shortcut.</p>
+        <ul class="get-tags" aria-label="License">
+          <li>Free</li>
+          <li>Open source</li>
+          <li><a href="https://github.com/DarkLordGeo/ContextSnap/blob/master/LICENSE" rel="noopener">MIT license</a></li>
+        </ul>
+      </div>
+      <div class="downloads">
+        <article class="download" data-platform="windows" aria-labelledby="dl-windows">
+          <div class="dl-top">
+            <svg class="os-logo" viewBox="0 0 48 48" aria-hidden="true">
+              <rect x="4" y="4" width="19.25" height="19.25" rx="1" fill="#0078d4"/>
+              <rect x="24.75" y="4" width="19.25" height="19.25" rx="1" fill="#0078d4"/>
+              <rect x="4" y="24.75" width="19.25" height="19.25" rx="1" fill="#0078d4"/>
+              <rect x="24.75" y="24.75" width="19.25" height="19.25" rx="1" fill="#0078d4"/>
+            </svg>
+            <div>
+              <h3 id="dl-windows">Windows</h3>
+              <p class="detail">Windows 10/11, 64-bit · requires the .NET 10 Desktop Runtime</p>
+            </div>
+          </div>
+          <dl class="dl-specs">
+            <div><dt>Version</dt><dd data-spec="version">…</dd></div>
+            <div><dt>Size</dt><dd data-spec="size">…</dd></div>
+            <div><dt>Architecture</dt><dd>x64</dd></div>
+          </dl>
+          <a class="button dark dl-button" aria-disabled="true">Download not yet available</a>
+          <details class="dl-more">
+            <summary>Install steps, requirements, and checksum</summary>
+            <div class="dl-body">
+              <section class="dl-group" aria-label="Windows install steps">
+                <h4>Install</h4>
+                <ol class="dl-steps" data-variant="installer" hidden>
+                  <li>Run <code>Snapctx-Setup.exe</code>. It is not code-signed yet, so if SmartScreen says “Windows protected your PC”, choose <b>More info</b> → <b>Run anyway</b>.</li>
+                  <li>Choose whether Snapctx starts when you sign in. No administrator rights are needed.</li>
+                  <li>Snapctx starts when setup finishes. Press <kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Shift</kbd><kbd>C</kbd> in any app, then paste.</li>
+                </ol>
+                <ol class="dl-steps" data-variant="zip">
+                  <li>Extract the ZIP to a folder you keep; the app runs from there.</li>
+                  <li>Open <code data-exe>ContextSnap.exe</code>. It is not code-signed yet, so if SmartScreen says “Windows protected your PC”, choose <b>More info</b> → <b>Run anyway</b>.</li>
+                  <li>Press <kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Shift</kbd><kbd>C</kbd> in any app, then paste into your AI chat.</li>
+                </ol>
+              </section>
+              <section class="dl-group" aria-label="Windows requirements">
+                <h4>Requirements</h4>
+                <ul class="dl-reqs" data-variant="installer" hidden>
+                  <li>Windows 10 or 11, 64-bit (x64)</li>
+                  <li>Everything else is included; no .NET install needed</li>
+                </ul>
+                <ul class="dl-reqs" data-variant="zip">
+                  <li>Windows 10 or 11, 64-bit (x64)</li>
+                  <li><a href="https://dotnet.microsoft.com/download/dotnet/10.0" rel="noopener">.NET 10 Desktop Runtime</a></li>
+                </ul>
+              </section>
+              <section class="dl-group" aria-label="Windows checksum">
+                <h4>Checksum (SHA-256)</h4>
+                <code class="checksum" data-spec="sha256">Listed with the release on GitHub</code>
+                <p class="dl-hint">Verify in PowerShell:</p>
+                <pre class="dl-code"><code>Get-FileHash <span data-file>ContextSnap-1.0.1-windows-x64.zip</span></code></pre>
+              </section>
+              <p class="install-note"></p>
+            </div>
+          </details>
+        </article>
+        <article class="download" data-platform="linux" aria-labelledby="dl-linux">
+          <div class="dl-top">
+            <img class="os-logo" src="tux.svg" alt="" width="41" height="48"><!-- Tux by Larry Ewing (lewing@isc.tamu.edu) and The GIMP -->
+            <div>
+              <h3 id="dl-linux">Linux</h3>
+              <p class="detail">64-bit (x64) · command-line app for X11 and Wayland · no .NET install needed</p>
+            </div>
+          </div>
+          <dl class="dl-specs">
+            <div><dt>Version</dt><dd data-spec="version">…</dd></div>
+            <div><dt>Size</dt><dd data-spec="size">…</dd></div>
+            <div><dt>Architecture</dt><dd>x64</dd></div>
+          </dl>
+          <a class="button dark dl-button" aria-disabled="true">Download not yet available</a>
+          <details class="dl-more">
+            <summary>Install steps, requirements, and checksum</summary>
+            <div class="dl-body">
+              <section class="dl-group" aria-label="Linux install steps">
+                <h4>Install</h4>
+                <ol class="dl-steps">
+                  <li>In a terminal in your downloads folder, extract it and set up the shortcut once:
+                    <pre class="dl-code"><code data-linux-steps>tar -xzf ContextSnap-1.0.1-linux-x64.tar.gz
+./contextsnap-1.0.1-linux-x64/contextsnap --install</code></pre>
+                  </li>
+                  <li>Press <kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Shift</kbd><kbd>C</kbd>, then paste. On Wayland desktops other than GNOME, <code>--install</code> prints a command to add as a shortcut in your keyboard settings.</li>
+                </ol>
+              </section>
+              <section class="dl-group" aria-label="Linux requirements">
+                <h4>Requirements</h4>
+                <ul class="dl-reqs">
+                  <li>64-bit (x64) Linux, X11 or Wayland. No .NET install needed.</li>
+                  <li><code>wl-clipboard</code> (Wayland) or <code>xclip</code> (X11) to copy, and <code>wmctrl</code> to list windows:
+                    <pre class="dl-code"><code>sudo apt install wl-clipboard xclip wmctrl</code></pre>
+                  </li>
+                </ul>
+              </section>
+              <section class="dl-group" aria-label="Linux checksum">
+                <h4>Checksum (SHA-256)</h4>
+                <code class="checksum" data-spec="sha256">Listed with the release on GitHub</code>
+                <p class="dl-hint">Verify in a terminal:</p>
+                <pre class="dl-code"><code>sha256sum <span data-file>ContextSnap-1.0.1-linux-x64.tar.gz</span></code></pre>
+              </section>
+              <p class="install-note"></p>
+            </div>
+          </details>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="privacy" id="privacy" aria-labelledby="privacy-title">
+    <div class="wrap">
+      <div class="get-head">
+        <h2 id="privacy-title">Privacy</h2>
+        <p>Snapctx is built to share only what you choose, with no one but you.</p>
+      </div>
+      <ul class="privacy-list">
+        <li><h3>You control every capture</h3><p>It captures only when you press the shortcut. Nothing watches or records in the background.</p></li>
+        <li><h3>Your data stays local</h3><p>Snapshots are made on your computer and go only to your clipboard. No uploads, accounts, or cloud.</p></li>
+        <li><h3>Sensitive information is redacted</h3><p>Keys, tokens, passwords, and email addresses are replaced before copying. It can miss things, so look before you paste.</p></li>
+        <li><h3>Private data stays untouched</h3><p>It never reads file contents, password fields, cookies, browser history, or environment variables.</p></li>
       </ul>
-      <p class="note">Redaction is pattern-based and cannot catch every secret. Window titles and file names can still reveal what you work on, so review the snapshot before you share it. <a href="privacy">Read the privacy details</a>.</p>
+      <p class="fine get-links"><a href="https://github.com/DarkLordGeo/ContextSnap" rel="noopener">Read the source</a><button type="button" class="link-button" data-consent-open>Cookie settings</button></p>
     </div>
   </section>
 
-  <section class="wrap section" id="download" aria-labelledby="download-title" data-reveal>
-    <h2 id="download-title">Download</h2>
-    <p class="section-lead">Builds are published here when a release is available.</p>
-    <div class="downloads">
-      <article class="card download" data-platform="windows" aria-labelledby="dl-windows">
-        <h3 id="dl-windows">Windows</h3>
-        <p class="detail">Windows 10/11, 64-bit · requires the .NET 10 Desktop Runtime</p>
-        <p class="meta"></p>
-        <p class="install-note"></p>
-        <a class="button primary" aria-disabled="true">Download not yet available</a>
-      </article>
-      <article class="card download" data-platform="linux" aria-labelledby="dl-linux">
-        <h3 id="dl-linux">Linux</h3>
-        <p class="detail">64-bit (x64) · command-line app for X11 and Wayland · no .NET install needed</p>
-        <p class="meta"></p>
-        <p class="install-note"></p>
-        <a class="button primary" aria-disabled="true">Download not yet available</a>
-      </article>
+  <section class="closing" aria-labelledby="closing-title">
+    <div class="wrap">
+      <div class="closing-card">
+        <h2 id="closing-title">Stop describing your screen.</h2>
+        <p>Press one shortcut and your AI chat sees what you see.</p>
+        <div class="closing-actions">
+          <a class="button dark" href="#download">Download Snapctx</a>
+          <a class="button ghost" href="https://github.com/DarkLordGeo/ContextSnap" rel="noopener">Star on GitHub</a>
+        </div>
+      </div>
     </div>
-    <p class="fine">Current builds are not code-signed, so Windows SmartScreen may ask you to confirm the first launch. Each download lists its SHA-256 checksum.</p>
-    <p class="fine">ContextSnap is open source under the MIT license. <a href="https://github.com/DarkLordGeo/ContextSnap" rel="noopener">View the source code on GitHub</a>.</p>
   </section>
 </main>
-
-<footer class="site-footer">
-  <div class="wrap footer-inner">
-    <span>ContextSnap</span>
-    <nav aria-label="Footer">
-      <a href="#how">How it works</a>
-      <a href="privacy">Privacy</a>
-      <a href="#download">Download</a>
-      <a href="https://github.com/DarkLordGeo/ContextSnap" rel="noopener">GitHub</a>
-      <button type="button" class="link-button" data-consent-open>Cookie settings</button>
-    </nav>
+<button type="button" class="collector" data-collector aria-haspopup="dialog" aria-label="Collected context: nothing yet" title="Collected context"><svg class="collector-ic" aria-hidden="true"><use href="#ic-collect"/></svg><span class="collector-badge" data-collector-count hidden></span></button>
+<div class="collect-fly" aria-hidden="true"></div>
+<dialog class="collect" data-collect aria-labelledby="collect-title">
+  <h2 id="collect-title" class="visually-hidden">Collected context</h2>
+  <button type="button" class="card-close collect-close" data-collect-close aria-label="Close"></button>
+  <div class="collect-body">
+    <p class="collect-empty" data-collect-empty>Nothing collected yet. Press <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Shift</kbd> <kbd>C</kbd>, or watch the sample desktop capture.</p>
+    <ul class="collect-cards" data-collect-cards aria-label="Collected context cards"></ul>
+    <section class="collect-detail" data-collect-detail aria-labelledby="collect-detail-title" hidden>
+      <button type="button" class="collect-back" data-collect-back>All cards</button>
+      <p class="card-src" data-detail-src></p>
+      <h3 id="collect-detail-title" data-detail-title></h3>
+      <p class="card-desc" data-detail-desc></p>
+      <pre class="card-full" data-detail-text tabindex="0" aria-label="This part in Markdown"></pre>
+    </section>
+    <p class="collect-foot"><span class="collect-meta" data-collect-meta></span><span class="card-sim">Simulated desktop data · Nothing captured from your computer</span></p>
   </div>
-</footer>
+  <div class="collect-out" aria-hidden="true"></div>
+</dialog>
+<div class="capture" aria-hidden="true"><div class="capture-scrim"></div><div class="capture-scan"></div><div class="capture-flash"></div></div>
 <script src="app.js" defer></script>
+<script src="capture-fx.js" defer></script>
+<script src="workspace-sim.js" defer></script>
+<script src="os-demo.js" defer></script>
+<script src="collector.js" defer></script>
+<script src="keyboard-demo.js" defer></script>
 <script src="/_vercel/insights/script.js" defer></script>
 </body>
 </html>

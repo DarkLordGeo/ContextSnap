@@ -6,7 +6,7 @@ struct ContextSnapApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        MenuBarExtra("ContextSnap", systemImage: "text.viewfinder") {
+        MenuBarExtra("Snapctx", systemImage: "text.viewfinder") {
             MenuContent(capture: appDelegate.capture)
         }
         Settings {
@@ -46,7 +46,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 520, height: 460),
                               styleMask: [.titled, .closable], backing: .buffered, defer: false)
-        window.title = "Welcome to ContextSnap"
+        window.title = "Welcome to Snapctx"
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: OnboardingView { [weak self] in
             UserDefaults.standard.set(true, forKey: PreferenceKey.onboardingShown)
@@ -79,7 +79,7 @@ struct MenuContent: View {
         }
         SettingsLink { Text("Settings…") }
         Divider()
-        Button("Quit ContextSnap") { NSApp.terminate(nil) }
+        Button("Quit Snapctx") { NSApp.terminate(nil) }
     }
 }
 
@@ -91,7 +91,7 @@ struct OnboardingView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("ContextSnap captures your current context only when you press \(Shortcut.current().display) and redacts it on this Mac. When the snapshot includes text from your screen, you review it before it is copied to your clipboard. Nothing is sent anywhere.")
+            Text("Snapctx captures your current context only when you press \(Shortcut.current().display) and redacts it on this Mac. When the snapshot includes text from your screen, you review it before it is copied to your clipboard. Nothing is sent anywhere.")
                 .fixedSize(horizontal: false, vertical: true)
 
             PermissionRow(
@@ -102,11 +102,11 @@ struct OnboardingView: View {
 
             PermissionRow(
                 title: "Screen Recording",
-                explanation: "Optional. Lets ContextSnap use on-device OCR (Apple Vision) for apps that do not expose their text. Used only when you capture.",
+                explanation: "Optional. Lets Snapctx use on-device OCR (Apple Vision) for apps that do not expose their text. Used only when you capture.",
                 granted: screenRecording,
                 grant: { Permissions.requestScreenRecording(); Permissions.openScreenRecordingSettings() })
 
-            Text("Without these permissions ContextSnap still works and includes app, Git, and system context. You can change them any time in System Settings → Privacy & Security.")
+            Text("Without these permissions Snapctx still works and includes app, Git, and system context. You can change them any time in System Settings → Privacy & Security.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

@@ -14,9 +14,22 @@ public static class Program
     public static int Main(string[] args)
     {
         var options = CommandLineOptions.Parse(args);
+        if (options.Mode is RunMode.Exit or RunMode.EnableStartup or RunMode.DisableStartup)
+            return RunBackgroundCommand(options.Mode);
         return options.Mode == RunMode.Gui && options.Error is null
             ? RunGui(options.StartMinimized)
             : RunHeadless(options);
+    }
+
+    /// <summary><c>--exit</c>, <c>--enable-startup</c>, <c>--disable-startup</c>: no window; output goes to the parent console, if any.</summary>
+    private static int RunBackgroundCommand(RunMode mode)
+    {
+        ConsoleAttachment.AttachToParentIfNeeded();
+        Console.OutputEncoding = new UTF8Encoding(false);
+        using var instance = mode == RunMode.Exit ? SingleInstance.Acquire() : null;
+        var commands = new BackgroundCommands(SettingsStore.CreateDefault(), StartupRegistration.CreateDefault(),
+            () => instance?.RequestExitOfFirstInstance() ?? false);
+        return commands.Run(mode, Console.Out, Console.Error);
     }
 
     private static int RunGui(bool startMinimized)
@@ -38,7 +51,7 @@ public static class Program
         {
             // Last-resort boundary: report instead of terminating; the user can retry or close.
             MessageBox.Show($"An unexpected error occurred:\n\n{e.Exception.GetType().Name}: {e.Exception.Message}",
-                "ContextSnap", MessageBoxButton.OK, MessageBoxImage.Error);
+                "Snapctx", MessageBoxButton.OK, MessageBoxImage.Error);
             e.Handled = true;
         };
 
@@ -47,27 +60,21 @@ public static class Program
         {
             app.Resources.MergedDictionaries.Add(new ResourceDictionary
             {
-                Source = new Uri("pack://application:,,,/ContextSnap;component/Themes/Styles.xaml"),
+                Source = new Uri("pack://application:,,,/Snapctx;component/Themes/Styles.xaml"),
             });
         }
 
         var notifier = new WpfCopyNotifier(app.Dispatcher);
         var window = new MainWindow(store, service, new Win32ClipboardWriter(), notifier, StartupRegistration.CreateDefault());
         instance.ListenForActivation(() => window.Dispatcher.BeginInvoke(window.BringToFront));
+        instance.ListenForExit(() => window.Dispatcher.BeginInvoke(window.ExitApplication));
         app.SessionEnding += (_, _) => window.ExitApplication();
 
-        if (startMinimized)
-        {
-            // Started at sign-in: only the notification-area icon and the shortcut, no window. Creating the
-            // handle registers both.
-            new System.Windows.Interop.WindowInteropHelper(window).EnsureHandle();
-            if (!window.HasTrayIcon)
-                window.Show(); // No notification area (Explorer not running): stay reachable.
-        }
-        else
-        {
+        // Creating the handle registers the shortcut (and the optional icon) without showing anything, so a
+        // sign-in launch has no window, taskbar button, or console. Opening Snapctx again shows the window.
+        new System.Windows.Interop.WindowInteropHelper(window).EnsureHandle();
+        if (BackgroundPolicy.ShowWindowAtLaunch(startMinimized))
             window.Show();
-        }
 
         return app.Run();
     }
@@ -93,7 +100,7 @@ public static class Program
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"ContextSnap failed: {ex.GetType().Name}: {ex.Message}");
+            Console.Error.WriteLine($"Snapctx failed: {ex.GetType().Name}: {ex.Message}");
             return 1;
         }
 

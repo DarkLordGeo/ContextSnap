@@ -26,6 +26,8 @@ public partial class MainWindow : Window
     private readonly SettingsStore _store;
     private readonly SnapshotService _service;
     private readonly CopyService _copy;
+    private readonly HotkeyCaptureWorkflow _hotkeyCapture;
+    private readonly DiagnosticsLog _diagnostics = DiagnosticsLog.CreateDefault();
     private readonly StartupRegistration _startup;
 
     private AppSettings _settings;
@@ -45,6 +47,7 @@ public partial class MainWindow : Window
         _store = store;
         _service = service;
         _copy = new CopyService(clipboard, notifier);
+        _hotkeyCapture = new HotkeyCaptureWorkflow(settings => _service.CaptureAsync(settings), _copy, notifier, _diagnostics);
         _startup = startup;
         notifier.Failed += error =>
             SetStatus(StatusKind.Warning, $"Copied, but the notification could not be shown ({error}).");
@@ -73,15 +76,30 @@ public partial class MainWindow : Window
         _hwndSource = HwndSource.FromHwnd(handle);
         _hwndSource?.AddHook(WndProc);
         _hotkey = new GlobalHotkey(handle);
-        _trayIcon = new NotificationAreaIcon(handle, $"ContextSnap — {GlobalHotkey.DisplayText} to capture");
-        _trayIcon.Add();
         ApplyHotkeySetting();
+        ApplyTrayIconSetting();
         ApplyStartupSetting();
     }
 
-    public bool HasTrayIcon => _trayIcon is { IsAdded: true };
+    private string HotkeyText => HotkeyGesture.Parse(_settings.Hotkey)?.DisplayText ?? HotkeyGesture.DefaultText;
 
-    /// <summary>Quits for real (tray menu Exit, or Windows signing out), instead of hiding to the notification area.</summary>
+    /// <summary>The notification-area icon is opt-in; by default Snapctx runs with no icon at all.</summary>
+    private void ApplyTrayIconSetting()
+    {
+        var handle = new WindowInteropHelper(this).Handle;
+        if (_settings.ShowNotificationAreaIcon && _trayIcon is not { IsAdded: true } && handle != 0)
+        {
+            _trayIcon = new NotificationAreaIcon(handle, $"Snapctx — {HotkeyText} to capture");
+            _trayIcon.Add();
+        }
+        else if (!_settings.ShowNotificationAreaIcon && _trayIcon is not null)
+        {
+            _trayIcon.Dispose();
+            _trayIcon = null;
+        }
+    }
+
+    /// <summary>Quits for real (Quit button, tray menu Exit, <c>--exit</c>, or Windows signing out).</summary>
     public void ExitApplication()
     {
         if (_exiting)
@@ -93,27 +111,34 @@ public partial class MainWindow : Window
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
-        // Like other background apps, closing the window keeps ContextSnap (and its shortcut) running in the
-        // notification area. Without a notification-area icon there would be no way back, so it exits then.
-        if (!_exiting && _trayIcon is { IsAdded: true })
+        // Closing hides the window and keeps Snapctx running in the background while its shortcut works
+        // (or its optional icon is shown). Opening Snapctx again shows this window; Quit or --exit ends it.
+        if (BackgroundPolicy.KeepRunningAfterClose(_exiting, _hotkey is { IsRegistered: true }, _trayIcon is { IsAdded: true }))
         {
             e.Cancel = true;
             CommitPendingSettingsEdit();
             Hide();
-            if (!_closeHintShown)
+            if (!_closeHintShown && _trayIcon is { IsAdded: true })
             {
                 _closeHintShown = true;
-                _trayIcon.ShowInfo("ContextSnap is still running",
-                    $"Press {GlobalHotkey.DisplayText} to capture. To quit, right-click the ContextSnap icon and choose Exit.");
+                _trayIcon.ShowInfo("Snapctx is still running",
+                    $"Press {HotkeyText} to capture. To quit, right-click the Snapctx icon and choose Exit.");
             }
 
             return;
         }
 
+        if (!_exiting)
+        {
+            // Nothing would keep working in the background (shortcut off or unavailable), so closing quits.
+            _exiting = true;
+            Dispatcher.BeginInvoke(() => Application.Current?.Shutdown());
+        }
+
         base.OnClosing(e);
     }
 
-    /// <summary>Called when another launch of ContextSnap asks this instance to show itself.</summary>
+    /// <summary>Called when another launch of Snapctx asks this instance to show itself.</summary>
     public void BringToFront()
     {
         if (WindowState == WindowState.Minimized)
@@ -143,11 +168,11 @@ public partial class MainWindow : Window
         if (message == GlobalHotkey.WmHotkey && wParam == GlobalHotkey.Id)
         {
             handled = true;
-            _ = CaptureAsync(fromHotkey: true);
+            _ = HotkeyCaptureAsync();
             return 0;
         }
 
-        var command = _trayIcon?.HandleMessage(message, wParam, lParam, $"&Capture snapshot\t{GlobalHotkey.DisplayText}", out handled)
+        var command = _trayIcon?.HandleMessage(message, wParam, lParam, $"&Capture snapshot\t{HotkeyText}", out handled)
             ?? TrayCommand.None;
         switch (command)
         {
@@ -155,8 +180,8 @@ public partial class MainWindow : Window
                 BringToFront();
                 break;
             case TrayCommand.Capture:
-                // Same as the shortcut, including review before copying visible screen text.
-                _ = CaptureAsync(fromHotkey: true);
+                // Same as the shortcut: capture and copy, no window.
+                _ = HotkeyCaptureAsync();
                 break;
             case TrayCommand.Exit:
                 Dispatcher.BeginInvoke(ExitApplication);
@@ -169,14 +194,14 @@ public partial class MainWindow : Window
     private void OnCaptureCanExecute(object sender, CanExecuteRoutedEventArgs e) => e.CanExecute = !_isCapturing;
 
     private void OnCaptureExecuted(object sender, ExecutedRoutedEventArgs e) =>
-        _ = CaptureAsync(fromHotkey: false);
+        _ = CaptureAsync();
 
     private void OnCopyCanExecute(object sender, CanExecuteRoutedEventArgs e) =>
         e.CanExecute = !_isCapturing && PreviewBox is { Text.Length: > 0 }; // Null while XAML is loading.
 
     private void OnCopyExecuted(object sender, ExecutedRoutedEventArgs e) => CopyPreview();
 
-    private async Task CaptureAsync(bool fromHotkey)
+    private async Task CaptureAsync()
     {
         if (_isCapturing)
             return;
@@ -193,28 +218,10 @@ public partial class MainWindow : Window
             _lastResult = result;
             ShowPreview(result);
 
-            var copy = fromHotkey
-                ? HotkeyBehavior.CopiesImmediately(_settings.HotkeyCopiesImmediately, result.Snapshot.ScreenText)
-                : _settings.CopyAfterCapture;
-            if (copy)
-            {
+            if (_settings.CopyAfterCapture)
                 CopyPreview();
-            }
-            else if (fromHotkey)
-            {
-                // Visible screen text can contain anything that was on screen, so it is reviewed before copying.
-                SetStatus(StatusKind.Success, "Snapshot includes visible screen text. Review or edit it below, then copy it (Ctrl+Shift+C).");
-                BringToFront();
-                return;
-            }
             else
-            {
                 SetStatus(StatusKind.Success, "Snapshot captured. Review or edit it below, then copy it.");
-            }
-
-            // The copy notification already confirms hotkey captures; flash only when notifications are off.
-            if (fromHotkey && !IsActive && !_settings.ShowCopyNotifications)
-                WindowAttention.Flash(new WindowInteropHelper(this).Handle);
         }
         catch (Exception ex)
         {
@@ -227,6 +234,60 @@ public partial class MainWindow : Window
             CaptureButton.Content = CaptureLabel;
             CommandManager.InvalidateRequerySuggested();
         }
+    }
+
+    /// <summary>
+    /// The global shortcut (and the optional icon's Capture): capture and copy the complete Markdown with no
+    /// window, dialog, or review. The hidden window's preview is updated so opening Snapctx shows it.
+    /// </summary>
+    private async Task HotkeyCaptureAsync()
+    {
+        if (IsVisible)
+            CommitPendingSettingsEdit();
+
+        HotkeyCaptureOutcome outcome;
+        try
+        {
+            outcome = await _hotkeyCapture.RunAsync(_settings.Clone());
+        }
+        catch (Exception ex)
+        {
+            // Defensive: the workflow already handles capture and copy failures.
+            _diagnostics.Error("Shortcut workflow failed", ex);
+            SetStatus(StatusKind.Error, $"Shortcut capture failed: {ex.Message}. See {_diagnostics.FilePath}.");
+            return;
+        }
+
+        if (outcome.Capture is { } capture)
+        {
+            _lastResult = capture;
+            ShowPreview(capture);
+        }
+
+        // Return the capture's temporary memory to Windows now, rather than holding it until the next capture.
+        if (outcome.Status != HotkeyCaptureStatus.Busy)
+            _ = Task.Run(MemoryRelief.ReleaseCaptureMemory);
+
+        var time = DateTime.Now.ToString("T", CultureInfo.CurrentCulture);
+        switch (outcome.Status)
+        {
+            case HotkeyCaptureStatus.Copied:
+                SetStatus(StatusKind.Success, $"Shortcut copied {outcome.Capture!.Markdown.Length:N0} characters at {time}.");
+                break;
+            case HotkeyCaptureStatus.CopyFailed:
+                SetStatus(StatusKind.Error, $"Shortcut capture at {time} could not be copied: {outcome.Error}");
+                break;
+            case HotkeyCaptureStatus.CaptureFailed:
+                SetStatus(StatusKind.Error, $"Shortcut capture at {time} failed: {outcome.Error}. Details: {_diagnostics.FilePath}");
+                break;
+        }
+    }
+
+    private void OnOpenDiagnostics(object sender, RoutedEventArgs e)
+    {
+        var folder = System.IO.Path.GetDirectoryName(_diagnostics.FilePath)!;
+        System.IO.Directory.CreateDirectory(folder);
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe") { ArgumentList = { folder }, UseShellExecute = false });
     }
 
     private void ShowPreview(CaptureResult result)
@@ -324,6 +385,12 @@ public partial class MainWindow : Window
             SaveSettings();
     }
 
+    private void OnQuit(object sender, RoutedEventArgs e)
+    {
+        CommitPendingSettingsEdit();
+        ExitApplication();
+    }
+
     private void OnRestoreDefaults(object sender, RoutedEventArgs e)
     {
         var answer = MessageBox.Show(this,
@@ -347,6 +414,7 @@ public partial class MainWindow : Window
 
     private void SaveSettings()
     {
+        var invalidHotkey = HotkeyGesture.Parse(_settings.Hotkey) is null ? _settings.Hotkey : null;
         var before = Serialize(_settings);
         _settings.Normalize();
         var after = Serialize(_settings);
@@ -354,6 +422,9 @@ public partial class MainWindow : Window
             RebindSettings(); // Show clamped values.
 
         ApplyHotkeySetting();
+        if (invalidHotkey is not null)
+            SetStatus(StatusKind.Warning, $"\"{invalidHotkey}\" is not a valid shortcut, so the previous default was restored. Use Ctrl, Alt, or Win (optionally Shift) plus a letter, digit, or F1–F24.");
+        ApplyTrayIconSetting();
         if (_settings.StartWithWindows != _appliedStartWithWindows)
             ApplyStartupSetting();
         UpdateEnabledCollectorsText();
@@ -393,16 +464,15 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (_hotkey.Register())
+        var gesture = HotkeyGesture.Parse(_settings.Hotkey) ?? HotkeyGesture.Default;
+        if (_hotkey.Register(gesture))
         {
-            HotkeyStatusText.Text = "Active while ContextSnap is running, including when this window is closed to the notification area.";
-            HotkeyHint.Text = _settings.HotkeyCopiesImmediately
-                ? $"Tip: press {GlobalHotkey.DisplayText} in any application to capture and copy in one step."
-                : $"Tip: press {GlobalHotkey.DisplayText} in any application to capture. Snapshots with visible screen text open here for review before copying.";
+            HotkeyStatusText.Text = $"Active: {gesture.DisplayText} works in any application while Snapctx runs in the background, also after this window is closed.";
+            HotkeyHint.Text = $"Tip: press {gesture.DisplayText} in any application to capture and copy in one step.";
         }
         else
         {
-            HotkeyStatusText.Text = "Unavailable: another application is already using this shortcut.";
+            HotkeyStatusText.Text = $"Unavailable: another application is already using {gesture.DisplayText}. Choose another shortcut.";
             HotkeyHint.Text = string.Empty;
         }
     }

@@ -34,7 +34,7 @@ public class WindowFilterTests
             Window("Palette", tool: true),
             Window("Find dialog", owned: true),
             Window("   "),
-            Window("ContextSnap", pid: 999),
+            Window("Snapctx", pid: 999),
             Window("Keep me"),
         ], Options);
 

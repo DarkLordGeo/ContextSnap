@@ -17,10 +17,10 @@ public class LaunchTargetResolverTests
     [Fact]
     public void Resolve_PrefersLauncherNextToApplication()
     {
-        var result = LaunchTargetResolver.Resolve(@"D:\Apps\ContextSnap\ContextSnap.exe", Published + @"\", Files(@"D:\Apps\ContextSnap\ContextSnap.exe"));
+        var result = LaunchTargetResolver.Resolve(@"D:\Apps\ContextSnap\Snapctx.exe", Published + @"\", Files(@"D:\Apps\ContextSnap\Snapctx.exe"));
 
         var target = Assert.IsType<LaunchTarget>(result.Target);
-        Assert.Equal(@"D:\Apps\ContextSnap\ContextSnap.exe", target.FileName);
+        Assert.Equal(@"D:\Apps\ContextSnap\Snapctx.exe", target.FileName);
         Assert.Equal("--startup", target.Arguments);
         Assert.Equal(Published, target.WorkingDirectory);
         Assert.False(target.IsDevelopmentBuild);
@@ -29,7 +29,7 @@ public class LaunchTargetResolverTests
     [Fact]
     public void Resolve_UsesLauncherEvenWhenStartedThroughDotnetRun()
     {
-        var launcher = DebugBuild + @"\ContextSnap.exe";
+        var launcher = DebugBuild + @"\Snapctx.exe";
 
         var result = LaunchTargetResolver.Resolve(@"C:\Program Files\dotnet\dotnet.exe", DebugBuild, Files(launcher, @"C:\Program Files\dotnet\dotnet.exe"));
 
@@ -41,7 +41,7 @@ public class LaunchTargetResolverTests
     public void Resolve_FallsBackToDotnetHostWhenLauncherIsMissing()
     {
         const string dotnet = @"C:\Program Files\dotnet\dotnet.exe";
-        var assembly = Published + @"\ContextSnap.dll";
+        var assembly = Published + @"\Snapctx.dll";
 
         var result = LaunchTargetResolver.Resolve(dotnet, Published, Files(dotnet, assembly));
 
@@ -51,7 +51,7 @@ public class LaunchTargetResolverTests
     }
 
     [Theory]
-    [InlineData(@"D:\Apps\ContextSnap\ContextSnap.exe")]
+    [InlineData(@"D:\Apps\ContextSnap\Snapctx.exe")]
     [InlineData(@"C:\Program Files\dotnet\dotnet.exe")]
     [InlineData(null)]
     public void Resolve_ReportsMissingExecutable(string? processPath)
@@ -82,8 +82,8 @@ public class LaunchTargetResolverTests
 public class StartupRegistrationTests
 {
     private const string StartupFolder = @"T:\FakeProfile\Startup";
-    private const string ShortcutPath = StartupFolder + @"\ContextSnap.lnk";
-    private static readonly LaunchTarget Target = new(@"D:\Apps\ContextSnap\ContextSnap.exe", "--startup", @"D:\Apps\ContextSnap", false);
+    private const string ShortcutPath = StartupFolder + @"\Snapctx.lnk";
+    private static readonly LaunchTarget Target = new(@"D:\Apps\ContextSnap\Snapctx.exe", "--startup", @"D:\Apps\ContextSnap", false);
 
     private sealed class FakeShortcutStore : IShortcutStore
     {
@@ -143,11 +143,11 @@ public class StartupRegistrationTests
         registration.Apply(true);
         Assert.Equal(1, store.Writes);
 
-        var moved = new LaunchTargetResult(Target with { FileName = @"E:\New\ContextSnap.exe", WorkingDirectory = @"E:\New" }, null);
+        var moved = new LaunchTargetResult(Target with { FileName = @"E:\New\Snapctx.exe", WorkingDirectory = @"E:\New" }, null);
         Registration(store, moved).Apply(true);
 
         Assert.Equal(2, store.Writes);
-        Assert.Equal(@"E:\New\ContextSnap.exe", store.Files[ShortcutPath].TargetPath);
+        Assert.Equal(@"E:\New\Snapctx.exe", store.Files[ShortcutPath].TargetPath);
     }
 
     [Fact]
@@ -195,7 +195,7 @@ public class StartupRegistrationTests
     {
         var store = new FakeShortcutStore();
 
-        var state = Registration(store, new LaunchTargetResult(null, "The ContextSnap executable was not found in D:\\x.")).Apply(true);
+        var state = Registration(store, new LaunchTargetResult(null, "The Snapctx executable was not found in D:\\x.")).Apply(true);
 
         Assert.False(state.Success);
         Assert.False(state.IsRegistered);
@@ -258,11 +258,54 @@ public class StartupRegistrationTests
     }
 
     [Fact]
-    public void IsContextSnapShortcut_RecognizesLauncherAndDotnetHost()
+    public void IsOwnShortcut_RecognizesLauncherAndDotnetHostUnderBothNames()
     {
-        Assert.True(StartupRegistration.IsContextSnapShortcut(new(@"D:\a\contextsnap.EXE", "--startup", "", "", "")));
-        Assert.True(StartupRegistration.IsContextSnapShortcut(new(@"C:\dotnet\dotnet.exe", "\"D:\\a\\ContextSnap.dll\" --startup", "", "", "")));
-        Assert.False(StartupRegistration.IsContextSnapShortcut(new(@"C:\dotnet\dotnet.exe", "other.dll", "", "", "")));
+        Assert.True(StartupRegistration.IsOwnShortcut(new(@"D:\a\snapctx.EXE", "--startup", "", "", "")));
+        Assert.True(StartupRegistration.IsOwnShortcut(new(@"C:\dotnet\dotnet.exe", "\"D:\\a\\Snapctx.dll\" --startup", "", "", "")));
+        Assert.True(StartupRegistration.IsOwnShortcut(new(@"D:\old\ContextSnap.exe", "--startup", "", "", "")));
+        Assert.True(StartupRegistration.IsOwnShortcut(new(@"C:\dotnet\dotnet.exe", "\"D:\\old\\ContextSnap.dll\" --startup", "", "", "")));
+        Assert.False(StartupRegistration.IsOwnShortcut(new(@"C:\dotnet\dotnet.exe", "other.dll", "", "", "")));
+    }
+
+    private const string LegacyShortcutPath = StartupFolder + @"\ContextSnap.lnk";
+
+    [Fact]
+    public void Enable_ReplacesTheShortcutFromBeforeTheRename()
+    {
+        var store = new FakeShortcutStore();
+        store.Files[LegacyShortcutPath] = new ShortcutDefinition(@"D:\Old\ContextSnap.exe", "--startup", @"D:\Old", "", "");
+
+        var state = Registration(store).Apply(true);
+
+        Assert.True(state.Success);
+        Assert.True(store.Exists(ShortcutPath));
+        Assert.False(store.Exists(LegacyShortcutPath));
+    }
+
+    [Fact]
+    public void Disable_RemovesTheShortcutFromBeforeTheRename()
+    {
+        var store = new FakeShortcutStore();
+        store.Files[LegacyShortcutPath] = new ShortcutDefinition(@"D:\Old\ContextSnap.exe", "--startup", @"D:\Old", "", "");
+
+        var state = Registration(store).Apply(false);
+
+        Assert.True(state.Success);
+        Assert.False(state.IsRegistered);
+        Assert.False(store.Exists(LegacyShortcutPath));
+    }
+
+    [Fact]
+    public void LegacyNamedShortcutForAnotherProgramIsLeftAlone()
+    {
+        var store = new FakeShortcutStore();
+        var foreign = new ShortcutDefinition(@"C:\Tools\other.exe", "", @"C:\Tools", "", "");
+        store.Files[LegacyShortcutPath] = foreign;
+
+        Registration(store).Apply(true);
+        Registration(store).Apply(false);
+
+        Assert.Same(foreign, store.Files[LegacyShortcutPath]);
     }
 }
 
@@ -279,7 +322,7 @@ public sealed class ShellLinkShortcutStoreTests : IDisposable
         var store = new ShellLinkShortcutStore();
         var path = Path.Combine(_directory, "nested", "ContextSnap.lnk");
         var target = Environment.ProcessPath!;
-        var shortcut = new ShortcutDefinition(target, "--startup", Path.GetDirectoryName(target)!, "ContextSnap test", target);
+        var shortcut = new ShortcutDefinition(target, "--startup", Path.GetDirectoryName(target)!, "Snapctx test", target);
 
         store.Write(path, shortcut);
         var read = store.Read(path);
@@ -289,7 +332,7 @@ public sealed class ShellLinkShortcutStoreTests : IDisposable
         Assert.Equal(shortcut.TargetPath, read.TargetPath, ignoreCase: true);
         Assert.Equal("--startup", read.Arguments);
         Assert.Equal(shortcut.WorkingDirectory, read.WorkingDirectory, ignoreCase: true);
-        Assert.Equal("ContextSnap test", read.Description);
+        Assert.Equal("Snapctx test", read.Description);
 
         store.Delete(path);
         Assert.False(store.Exists(path));
@@ -300,7 +343,7 @@ public sealed class ShellLinkShortcutStoreTests : IDisposable
     public void Registration_WithRealStoreInTemporaryFolder()
     {
         var appDirectory = Directory.CreateDirectory(Path.Combine(_directory, "app")).FullName;
-        var executable = Path.Combine(appDirectory, "ContextSnap.exe");
+        var executable = Path.Combine(appDirectory, "Snapctx.exe");
         File.WriteAllBytes(executable, []); // Stand-in; never executed.
         var resolved = LaunchTargetResolver.Resolve(null, appDirectory, File.Exists);
         var registration = new StartupRegistration(new ShellLinkShortcutStore(), () => _directory, () => resolved);
@@ -308,7 +351,7 @@ public sealed class ShellLinkShortcutStoreTests : IDisposable
         var enabled = registration.Apply(true);
 
         Assert.True(enabled.Success, enabled.Message);
-        Assert.Equal(Path.Combine(_directory, "ContextSnap.lnk"), enabled.ShortcutPath);
+        Assert.Equal(Path.Combine(_directory, "Snapctx.lnk"), enabled.ShortcutPath);
         var written = new ShellLinkShortcutStore().Read(enabled.ShortcutPath!)!;
         Assert.Equal(executable, written.TargetPath, ignoreCase: true);
         Assert.Equal(appDirectory, written.WorkingDirectory, ignoreCase: true);
