@@ -26,7 +26,7 @@ public sealed class MarkdownFormatter(Redactor redactor)
         var md = new StringBuilder();
         md.AppendLine("# Context Snapshot");
         md.AppendLine();
-        md.AppendLine(Culture, $"_Captured {snapshot.CapturedAt:yyyy-MM-dd HH:mm} (UTC{snapshot.CapturedAt:zzz}) by ContextSnap. Sensitive values may be redacted._");
+        md.AppendLine(Culture, $"_Captured {snapshot.CapturedAt:yyyy-MM-dd HH:mm} (UTC{snapshot.CapturedAt:zzz}) by Snapctx. Sensitive values may be redacted._");
 
         var foreground = snapshot.Windows.Items.FirstOrDefault(w => w.IsForeground);
         if (foreground is not null)

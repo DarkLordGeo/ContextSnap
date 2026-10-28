@@ -51,7 +51,7 @@ public static class Program
         {
             // Last-resort boundary: report instead of terminating; the user can retry or close.
             MessageBox.Show($"An unexpected error occurred:\n\n{e.Exception.GetType().Name}: {e.Exception.Message}",
-                "ContextSnap", MessageBoxButton.OK, MessageBoxImage.Error);
+                "Snapctx", MessageBoxButton.OK, MessageBoxImage.Error);
             e.Handled = true;
         };
 
@@ -60,7 +60,7 @@ public static class Program
         {
             app.Resources.MergedDictionaries.Add(new ResourceDictionary
             {
-                Source = new Uri("pack://application:,,,/ContextSnap;component/Themes/Styles.xaml"),
+                Source = new Uri("pack://application:,,,/Snapctx;component/Themes/Styles.xaml"),
             });
         }
 
@@ -71,7 +71,7 @@ public static class Program
         app.SessionEnding += (_, _) => window.ExitApplication();
 
         // Creating the handle registers the shortcut (and the optional icon) without showing anything, so a
-        // sign-in launch has no window, taskbar button, or console. Opening ContextSnap again shows the window.
+        // sign-in launch has no window, taskbar button, or console. Opening Snapctx again shows the window.
         new System.Windows.Interop.WindowInteropHelper(window).EnsureHandle();
         if (BackgroundPolicy.ShowWindowAtLaunch(startMinimized))
             window.Show();
@@ -100,7 +100,7 @@ public static class Program
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"ContextSnap failed: {ex.GetType().Name}: {ex.Message}");
+            Console.Error.WriteLine($"Snapctx failed: {ex.GetType().Name}: {ex.Message}");
             return 1;
         }
 

@@ -106,3 +106,41 @@ public sealed class SettingsTests : IDisposable
         Assert.DoesNotContain("other", settings.ExcludedProcesses);
     }
 }
+
+public sealed class SettingsMigrationTests : IDisposable
+{
+    private readonly string _directory = Path.Combine(Path.GetTempPath(), "snapctx-settings-" + Guid.NewGuid().ToString("N"));
+
+    public SettingsMigrationTests() => Directory.CreateDirectory(_directory);
+
+    public void Dispose() => Directory.Delete(_directory, recursive: true);
+
+    [Fact]
+    public void Load_ReadsTheSettingsFromBeforeTheRenameUntilTheFirstSave()
+    {
+        var current = Path.Combine(_directory, "Snapctx", "settings.json");
+        var legacy = Path.Combine(_directory, "ContextSnap", "settings.json");
+        new SettingsStore(legacy).Save(new AppSettings { CollectGit = false });
+        var store = new SettingsStore(current, legacy);
+
+        var loaded = store.Load();
+        Assert.False(loaded.IsFirstRun);
+        Assert.False(loaded.Settings.CollectGit);
+
+        store.Save(loaded.Settings);
+        Assert.True(File.Exists(current));
+        Assert.True(File.Exists(legacy)); // the old file is never deleted
+    }
+
+    [Fact]
+    public void Load_PrefersTheNewFileAndIsFirstRunWhenNeitherExists()
+    {
+        var current = Path.Combine(_directory, "Snapctx", "settings.json");
+        var legacy = Path.Combine(_directory, "ContextSnap", "settings.json");
+        Assert.True(new SettingsStore(current, legacy).Load().IsFirstRun);
+
+        new SettingsStore(legacy).Save(new AppSettings { CollectGit = false });
+        new SettingsStore(current).Save(new AppSettings { CollectGit = true });
+        Assert.True(new SettingsStore(current, legacy).Load().Settings.CollectGit);
+    }
+}

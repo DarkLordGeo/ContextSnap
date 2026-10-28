@@ -48,7 +48,7 @@ public sealed class HotkeyCaptureWorkflow(
                 // Capture runs third-party accessibility code; a failure must never reach the UI as a dialog.
                 log.Error("Shortcut capture failed", ex);
                 if (settings.ShowCopyNotifications)
-                    TryNotify(CopyNotifications.ForFailure($"Capture failed ({ex.GetType().Name}). Details are in the ContextSnap diagnostics log."));
+                    TryNotify(CopyNotifications.ForFailure($"Capture failed ({ex.GetType().Name}). Details are in the Snapctx diagnostics log."));
                 return new HotkeyCaptureOutcome(HotkeyCaptureStatus.CaptureFailed, null, null, $"{ex.GetType().Name}: {ex.Message}");
             }
 

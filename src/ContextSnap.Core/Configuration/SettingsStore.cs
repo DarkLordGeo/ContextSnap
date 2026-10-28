@@ -5,8 +5,12 @@ namespace ContextSnap.Configuration;
 
 public sealed record SettingsLoadResult(AppSettings Settings, bool IsFirstRun, string? Error);
 
-/// <summary>Reads and writes <see cref="AppSettings"/> as JSON in the user's roaming AppData folder.</summary>
-public sealed class SettingsStore(string filePath)
+/// <summary>
+/// Reads and writes <see cref="AppSettings"/> as JSON in the user's roaming AppData folder. Until the first
+/// save, settings are read from <paramref name="legacyFilePath"/> when only that file exists (the folder
+/// used before the rename from ContextSnap to Snapctx), so existing settings carry over.
+/// </summary>
+public sealed class SettingsStore(string filePath, string? legacyFilePath = null)
 {
     internal static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -19,21 +23,32 @@ public sealed class SettingsStore(string filePath)
 
     public static string DefaultPath => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "ContextSnap",
+        "Snapctx",
+        "settings.json");
+
+    /// <summary>Where ContextSnap, the product's previous name, kept its settings.</summary>
+    public static string LegacyDefaultPath => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "Snapctx",
         "settings.json");
 
     public string FilePath { get; } = filePath;
 
-    public static SettingsStore CreateDefault() => new(DefaultPath);
+    public static SettingsStore CreateDefault() => new(DefaultPath, LegacyDefaultPath);
 
     public SettingsLoadResult Load()
     {
-        if (!File.Exists(FilePath))
-            return new SettingsLoadResult(new AppSettings(), IsFirstRun: true, Error: null);
+        var source = FilePath;
+        if (!File.Exists(source))
+        {
+            if (legacyFilePath is null || !File.Exists(legacyFilePath))
+                return new SettingsLoadResult(new AppSettings(), IsFirstRun: true, Error: null);
+            source = legacyFilePath; // left in place; the next save writes the new file
+        }
 
         try
         {
-            var settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(FilePath), JsonOptions)
+            var settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(source), JsonOptions)
                 ?? new AppSettings();
             settings.Normalize();
             return new SettingsLoadResult(settings, IsFirstRun: false, Error: null);

@@ -6,16 +6,18 @@ using System.Text.RegularExpressions;
 namespace ContextSnap.Linux;
 
 /// <summary>
-/// <c>--install</c> and <c>--uninstall</c>: put contextsnap in ~/.local/bin and make Ctrl+Alt+Shift+C work
+/// <c>--install</c> and <c>--uninstall</c>: put snapctx in ~/.local/bin and make Ctrl+Alt+Shift+C work
 /// from login onwards. GNOME (X11 and Wayland) gets a custom keyboard shortcut, so the desktop itself
 /// listens for the key and nothing has to stay running. Other X11 desktops get an autostart entry that
-/// starts <c>contextsnap --background</c> at login. Other Wayland desktops cannot be set up automatically.
-/// Only files and settings named after ContextSnap are created, changed, or removed.
+/// starts <c>snapctx --background</c> at login. Other Wayland desktops cannot be set up automatically.
+/// Only files and settings named after Snapctx, or after ContextSnap (its previous name, cleaned up when
+/// upgrading), are created, changed, or removed.
 /// </summary>
 public sealed partial class LinuxSetup(TextWriter output, Func<string, string?>? environment = null)
 {
     public const string GnomeSchema = "org.gnome.settings-daemon.plugins.media-keys";
-    public const string GnomeKeybindingPath = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/contextsnap/";
+    public const string GnomeKeybindingPath = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/snapctx/";
+    public const string LegacyGnomeKeybindingPath = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/contextsnap/";
     public const string GnomeBinding = "<Control><Alt><Shift>c";
 
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(5);
@@ -24,12 +26,18 @@ public sealed partial class LinuxSetup(TextWriter output, Func<string, string?>?
 
     private string Home => Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
-    public string InstalledPath => Path.Combine(Home, ".local", "bin", "contextsnap");
+    public string InstalledPath => Path.Combine(Home, ".local", "bin", "snapctx");
+
+    public string LegacyInstalledPath => Path.Combine(Home, ".local", "bin", "contextsnap");
 
     /// <summary>The XDG autostart folder ($XDG_CONFIG_HOME/autostart, usually ~/.config/autostart).</summary>
-    public string AutostartFile => Path.Combine(
+    private string AutostartFolder => Path.Combine(
         _environment("XDG_CONFIG_HOME") is { Length: > 0 } config && Path.IsPathFullyQualified(config) ? config : Path.Combine(Home, ".config"),
-        "autostart", "contextsnap.desktop");
+        "autostart");
+
+    public string AutostartFile => Path.Combine(AutostartFolder, "snapctx.desktop");
+
+    public string LegacyAutostartFile => Path.Combine(AutostartFolder, "contextsnap.desktop");
 
     public bool IsGnome => (_environment("XDG_CURRENT_DESKTOP") ?? string.Empty)
         .Split(':').Any(d => d.Equals("GNOME", StringComparison.OrdinalIgnoreCase));
@@ -46,6 +54,7 @@ public sealed partial class LinuxSetup(TextWriter output, Func<string, string?>?
         }
 
         StopBackground();
+        RemoveLegacyInstall();
         var target = CopyExecutable(currentExecutable);
 
         if (IsGnome && ToolRunner.Find("gsettings") is { } gsettings)
@@ -63,7 +72,7 @@ public sealed partial class LinuxSetup(TextWriter output, Func<string, string?>?
         {
             Directory.CreateDirectory(Path.GetDirectoryName(AutostartFile)!);
             File.WriteAllText(AutostartFile, DesktopEntry(target));
-            output.WriteLine($"Added {AutostartFile}: ContextSnap starts in the background when you log in.");
+            output.WriteLine($"Added {AutostartFile}: Snapctx starts in the background when you log in.");
             if (!StartBackground(target))
                 return 1;
             output.WriteLine($"Started. Press {X11Hotkey.DisplayText} to copy a snapshot.");
@@ -82,13 +91,14 @@ public sealed partial class LinuxSetup(TextWriter output, Func<string, string?>?
     public int Uninstall()
     {
         var stopped = StopBackground();
+        RemoveLegacyInstall();
         if (File.Exists(AutostartFile))
         {
             File.Delete(AutostartFile);
             output.WriteLine($"Removed {AutostartFile}.");
         }
 
-        if (ToolRunner.Find("gsettings") is { } gsettings && RemoveGnomeShortcut(gsettings))
+        if (ToolRunner.Find("gsettings") is { } gsettings && RemoveGnomeShortcut(gsettings, GnomeKeybindingPath))
             output.WriteLine("Removed the GNOME keyboard shortcut.");
 
         if (File.Exists(InstalledPath))
@@ -99,8 +109,30 @@ public sealed partial class LinuxSetup(TextWriter output, Func<string, string?>?
 
         if (stopped)
             output.WriteLine("Stopped the background instance.");
-        output.WriteLine($"ContextSnap is uninstalled. Your settings were kept in {Path.GetDirectoryName(Configuration.SettingsStore.DefaultPath)}.");
+        output.WriteLine($"Snapctx is uninstalled. Your settings were kept in {Path.GetDirectoryName(Configuration.SettingsStore.DefaultPath)}.");
         return 0;
+    }
+
+    /// <summary>
+    /// Removes what an install from before the rename (contextsnap) set up: its autostart entry, GNOME
+    /// shortcut, and ~/.local/bin/contextsnap. Its settings are kept and read by Snapctx until it saves.
+    /// </summary>
+    private void RemoveLegacyInstall()
+    {
+        if (File.Exists(LegacyAutostartFile))
+        {
+            File.Delete(LegacyAutostartFile);
+            output.WriteLine($"Removed {LegacyAutostartFile} (from ContextSnap, the previous name).");
+        }
+
+        if (ToolRunner.Find("gsettings") is { } gsettings && RemoveGnomeShortcut(gsettings, LegacyGnomeKeybindingPath))
+            output.WriteLine("Removed the Snapctx GNOME keyboard shortcut.");
+
+        if (File.Exists(LegacyInstalledPath))
+        {
+            File.Delete(LegacyInstalledPath);
+            output.WriteLine($"Removed {LegacyInstalledPath}.");
+        }
     }
 
     /// <summary>Copies the running executable to ~/.local/bin, replacing an older copy atomically.</summary>
@@ -141,22 +173,28 @@ public sealed partial class LinuxSetup(TextWriter output, Func<string, string?>?
         return false;
     }
 
-    /// <summary>Stops a running background instance, identified by its pid file and process name.</summary>
-    private static bool StopBackground()
+    /// <summary>
+    /// Stops a running background instance, identified by its pid file and process name: snapctx, or
+    /// contextsnap from before the rename.
+    /// </summary>
+    private static bool StopBackground() =>
+        StopBackground(InstanceLock.PidFile, "snapctx") | StopBackground(InstanceLock.LegacyPidFile, "contextsnap");
+
+    private static bool StopBackground(string pidFile, string processName)
     {
         try
         {
-            if (!File.Exists(InstanceLock.PidFile)
-                || !int.TryParse(File.ReadAllText(InstanceLock.PidFile).Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var pid)
+            if (!File.Exists(pidFile)
+                || !int.TryParse(File.ReadAllText(pidFile).Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var pid)
                 || pid == Environment.ProcessId)
                 return false;
 
             using var process = Process.GetProcessById(pid);
-            if (process.ProcessName != "contextsnap")
+            if (process.ProcessName != processName)
                 return false; // Stale pid file: the number now belongs to another program.
             process.Kill();
             process.WaitForExit(Timeout);
-            File.Delete(InstanceLock.PidFile); // A killed instance cannot remove it itself.
+            File.Delete(pidFile); // A killed instance cannot remove it itself.
             return true;
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or IOException or System.ComponentModel.Win32Exception)
@@ -176,23 +214,23 @@ public sealed partial class LinuxSetup(TextWriter output, Func<string, string?>?
             paths.Add(GnomeKeybindingPath);
 
         var relocatable = $"{GnomeSchema}.custom-keybinding:{GnomeKeybindingPath}";
-        return Set(gsettings, relocatable, "name", GVariantString("ContextSnap"))
+        return Set(gsettings, relocatable, "name", GVariantString("Snapctx"))
             && Set(gsettings, relocatable, "command", GVariantString(Quote(target)))
             && Set(gsettings, relocatable, "binding", GVariantString(GnomeBinding))
             && Set(gsettings, GnomeSchema, "custom-keybindings", FormatStringArray(paths));
     }
 
-    private static bool RemoveGnomeShortcut(string gsettings)
+    private static bool RemoveGnomeShortcut(string gsettings, string keybindingPath)
     {
         var list = ToolRunner.ReadOutput(gsettings, ["get", GnomeSchema, "custom-keybindings"], Timeout);
         if (list is null)
             return false;
 
         var paths = ParseStringArray(list);
-        if (!paths.Remove(GnomeKeybindingPath))
+        if (!paths.Remove(keybindingPath))
             return false;
 
-        var relocatable = $"{GnomeSchema}.custom-keybinding:{GnomeKeybindingPath}";
+        var relocatable = $"{GnomeSchema}.custom-keybinding:{keybindingPath}";
         foreach (var key in new[] { "name", "command", "binding" })
             ToolRunner.ReadOutput(gsettings, ["reset", relocatable, key], Timeout);
         return Set(gsettings, GnomeSchema, "custom-keybindings", FormatStringArray(paths));
@@ -221,7 +259,7 @@ public sealed partial class LinuxSetup(TextWriter output, Func<string, string?>?
     public static string DesktopEntry(string executable) => $"""
         [Desktop Entry]
         Type=Application
-        Name=ContextSnap
+        Name=Snapctx
         Comment=Copy a Markdown snapshot of your desktop context with {X11Hotkey.DisplayText}
         Exec={Quote(executable).Replace("\\", "\\\\", StringComparison.Ordinal).Replace("%", "%%", StringComparison.Ordinal)} --background
         Terminal=false

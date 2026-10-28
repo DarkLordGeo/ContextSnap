@@ -1,7 +1,7 @@
 name: Release
 
-# Builds versioned Windows and Linux packages with checksums, publishes them as a GitHub Release in
-# the public releases repository (ContextSnap-Releases), verifies that the public
+# Builds the Snapctx Windows installer and Linux package with checksums, publishes them as a GitHub Release
+# in the public releases repository (ContextSnap-Releases, named before the rename), verifies that the public
 # download URLs serve the exact files, and opens a pull request that updates website/downloads.json.
 # Binaries are never committed to this repository. Setup: docs/RELEASING.md.
 # The macOS app (macos/) is built and tested by CI but not released until it can be notarized.
@@ -52,17 +52,21 @@ jobs:
       - run: dotnet test -c Release
         env:
           CI: "true"
-      - run: dotnet publish src/ContextSnap -c Release -p:Version=${{ env.VERSION }} -o publish/ContextSnap
-      - name: Package
+      # Self-contained: the installer carries the .NET runtime, so users install nothing else.
+      - run: dotnet publish src/ContextSnap -c Release -r win-x64 --self-contained -p:Version=${{ env.VERSION }} -o publish/installer-app
+      - name: Build the installer
         shell: pwsh
         run: |
-          $zip = "ContextSnap-$env:VERSION-windows-x64.zip"
-          Compress-Archive -Path publish/ContextSnap/* -DestinationPath $zip
-          (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower() + "  $zip" | Out-File "$zip.sha256" -Encoding ascii
+          choco install innosetup --no-progress -y
+          $iscc = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
+          & $iscc /Q "/DAppVersion=$env:VERSION" installer/Snapctx.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $setup = "publish/Snapctx-Setup.exe"
+          (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower() + "  Snapctx-Setup.exe" | Out-File "$setup.sha256" -Encoding ascii
       - uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: ContextSnap-*-windows-x64.zip*
+          path: publish/Snapctx-Setup.exe*
 
   linux:
     needs: version
@@ -85,19 +89,19 @@ jobs:
           -p:PublishSingleFile=true -p:Version=${{ env.VERSION }} -o publish/linux
       - name: Smoke test
         run: |
-          [[ "$(publish/linux/contextsnap --version)" == "ContextSnap $VERSION" ]]
-          publish/linux/contextsnap --print | grep -q "^# Context Snapshot"
+          [[ "$(publish/linux/snapctx --version)" == "Snapctx $VERSION" ]]
+          publish/linux/snapctx --print | grep -q "^# Context Snapshot"
       - name: Package
         run: |
-          dir="contextsnap-$VERSION-linux-x64"
+          dir="snapctx-$VERSION-linux-x64"
           mkdir "$dir"
-          cp publish/linux/contextsnap LICENSE "$dir/"
-          tar -czf "ContextSnap-$VERSION-linux-x64.tar.gz" "$dir"
-          sha256sum "ContextSnap-$VERSION-linux-x64.tar.gz" > "ContextSnap-$VERSION-linux-x64.tar.gz.sha256"
+          cp publish/linux/snapctx LICENSE "$dir/"
+          tar -czf "Snapctx-$VERSION-linux-x64.tar.gz" "$dir"
+          sha256sum "Snapctx-$VERSION-linux-x64.tar.gz" > "Snapctx-$VERSION-linux-x64.tar.gz.sha256"
       - uses: actions/upload-artifact@v4
         with:
           name: linux
-          path: ContextSnap-*-linux-x64.tar.gz*
+          path: Snapctx-*-linux-x64.tar.gz*
 
   publish:
     needs: [version, windows, linux]
@@ -119,13 +123,13 @@ jobs:
           if gh release view "v$VERSION" --repo "$RELEASES_REPO" > /dev/null 2>&1; then
             gh release upload "v$VERSION" "${files[@]}" --repo "$RELEASES_REPO" --clobber
           else
-            gh release create "v$VERSION" "${files[@]}" --repo "$RELEASES_REPO" --title "ContextSnap $VERSION" \
-              --notes "Windows: framework-dependent build (requires the .NET 10 Desktop Runtime), not code-signed. Linux: self-contained x64 command-line app (needs wl-clipboard or xclip; wmctrl to list windows). Verify downloads with the .sha256 files."
+            gh release create "v$VERSION" "${files[@]}" --repo "$RELEASES_REPO" --title "Snapctx $VERSION" \
+              --notes "Windows: Snapctx-Setup.exe, a per-user x64 installer that includes the .NET runtime. It is not code-signed, so SmartScreen may warn on first run. Linux: self-contained x64 command-line app (needs wl-clipboard or xclip; wmctrl to list windows). Verify downloads with the .sha256 files."
           fi
       - name: Verify public downloads
         run: |
           # Anonymous downloads (no token) prove the assets are public; checksums prove they are these files.
-          for f in "ContextSnap-$VERSION-windows-x64.zip" "ContextSnap-$VERSION-linux-x64.tar.gz"; do
+          for f in "Snapctx-Setup.exe" "Snapctx-$VERSION-linux-x64.tar.gz"; do
             local_file=$(ls artifacts/*/"$f")
             url="https://github.com/$RELEASES_REPO/releases/download/v$VERSION/$f"
             curl -fsSL --retry 5 --retry-delay 10 --retry-all-errors -o "/tmp/$f" "$url"
@@ -156,8 +160,8 @@ jobs:
             const info = (dir, f) => { const b = fs.readFileSync(path.join("artifacts", dir, f)); return { file: base + f, size: (b.length / 1048576).toFixed(1) + " MB", sha256: crypto.createHash("sha256").update(b).digest("hex") }; };
             const m = JSON.parse(fs.readFileSync("website/downloads.json"));
             m.version = v;
-            Object.assign(m.platforms.windows, info("windows", `ContextSnap-${v}-windows-x64.zip`));
-            m.platforms.linux = Object.assign(m.platforms.linux || { label: "Linux" }, info("linux", `ContextSnap-${v}-linux-x64.tar.gz`));
+            Object.assign(m.platforms.windows, { detail: "Windows 10/11, 64-bit installer · everything included, no .NET install needed" }, info("windows", "Snapctx-Setup.exe"));
+            m.platforms.linux = Object.assign(m.platforms.linux || { label: "Linux" }, info("linux", `Snapctx-${v}-linux-x64.tar.gz`));
             fs.writeFileSync("website/downloads.json", JSON.stringify(m, null, 2) + "\n");'
           git diff --stat
       - name: Open a pull request
@@ -173,13 +177,13 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "$branch"
-          git commit -am "Point website downloads to ContextSnap $VERSION"
+          git commit -am "Point website downloads to Snapctx $VERSION"
           # The branch only ever holds this generated commit, so a re-run replaces it.
           git push --force -u origin "$branch"
           if gh pr view "$branch" --json state --jq .state 2>/dev/null | grep -q OPEN; then
             echo "Pull request for $branch already open; branch updated."
             exit 0
           fi
-          gh pr create --base "$BASE" --head "$branch" --title "Website downloads: ContextSnap $VERSION" \
+          gh pr create --base "$BASE" --head "$branch" --title "Website downloads: Snapctx $VERSION" \
             --body "Updates website/downloads.json to the public assets of v$VERSION in $RELEASES_REPO. The release workflow downloaded each asset anonymously and matched its SHA-256 before opening this PR. Merging deploys the website." \
             || echo "::warning::Could not open the pull request (allow GitHub Actions to create pull requests in Settings → Actions → General). Branch $branch is pushed."

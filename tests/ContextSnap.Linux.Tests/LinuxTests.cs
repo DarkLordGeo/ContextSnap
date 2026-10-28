@@ -33,7 +33,7 @@ public class X11WindowSourceTests
 {
     private const string WmctrlOutput = """
         0x01e00003  0 2345   gnome-terminal-server.Gnome-terminal  myhost ~/projects — bash
-        0x02400007  0 3456   code.Code             myhost main.cs - ContextSnap - Visual Studio Code
+        0x02400007  0 3456   code.Code             myhost main.cs - Snapctx - Visual Studio Code
         0x00a0000c -1 1200   xfdesktop.Xfdesktop   myhost Desktop
         0x03000001  0 0      N/A                   myhost Untitled X client
         0x03200004  0 4567   firefox.firefox       myhost N/A
@@ -285,7 +285,7 @@ public class LinuxCommandLineTests
         var exitCode = await runner.RunAsync(LinuxCommandLine.Parse(["--help"]), output, TextWriter.Null, Environment.CurrentDirectory);
 
         Assert.Equal(0, exitCode);
-        Assert.Contains("contextsnap --print", output.ToString(), StringComparison.Ordinal);
+        Assert.Contains("snapctx --print", output.ToString(), StringComparison.Ordinal);
     }
 
     [LinuxFact]
@@ -462,7 +462,7 @@ public class LinuxSetupTests
     [Fact]
     public void Usage_DescribesInstall()
     {
-        Assert.Contains("contextsnap --install", LinuxCommandLine.Usage, StringComparison.Ordinal);
-        Assert.Contains("contextsnap --uninstall", LinuxCommandLine.Usage, StringComparison.Ordinal);
+        Assert.Contains("snapctx --install", LinuxCommandLine.Usage, StringComparison.Ordinal);
+        Assert.Contains("snapctx --uninstall", LinuxCommandLine.Usage, StringComparison.Ordinal);
     }
 }

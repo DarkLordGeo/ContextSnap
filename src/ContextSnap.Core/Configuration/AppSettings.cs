@@ -79,7 +79,7 @@ public sealed class AppSettings
     /// <summary>The global shortcut, for example "Ctrl+Alt+Shift+C" (see <see cref="Platform.HotkeyGesture"/>).</summary>
     public string Hotkey { get; set; } = Platform.HotkeyGesture.DefaultText;
 
-    /// <summary>Off by default: ContextSnap runs in the background without a notification-area icon.</summary>
+    /// <summary>Off by default: Snapctx runs in the background without a notification-area icon.</summary>
     public bool ShowNotificationAreaIcon { get; set; }
 
     /// <summary>
@@ -90,7 +90,7 @@ public sealed class AppSettings
 
     public bool CopyAfterCapture { get; set; }
 
-    /// <summary>Adds a shortcut to the current user's Startup folder so ContextSnap opens minimized at sign-in.</summary>
+    /// <summary>Adds a shortcut to the current user's Startup folder so Snapctx opens minimized at sign-in.</summary>
     public bool StartWithWindows { get; set; } = true;
 
     /// <summary>Shows a small bottom-right notification after each copy. Never affects copying itself.</summary>

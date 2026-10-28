@@ -23,7 +23,7 @@ internal static class StaThread
         })
         {
             IsBackground = true,
-            Name = "ContextSnap STA worker",
+            Name = "Snapctx STA worker",
         };
         thread.SetApartmentState(ApartmentState.STA);
         thread.Start();

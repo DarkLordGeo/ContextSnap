@@ -3,7 +3,8 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key><string>com.darklordgeo.contextsnap</string>
-    <key>CFBundleName</key><string>ContextSnap</string>
+    <key>CFBundleName</key><string>Snapctx</string>
+    <key>CFBundleDisplayName</key><string>Snapctx</string>
     <key>CFBundleExecutable</key><string>ContextSnap</string>
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>__VERSION__</string>

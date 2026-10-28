@@ -1,11 +1,12 @@
 namespace ContextSnap.Platform;
 
 /// <summary>
-/// Ensures one ContextSnap window per Windows session. A second launch signals the first instance
+/// Ensures one Snapctx window per Windows session. A second launch signals the first instance
 /// (which brings its window forward) and exits. Uses session-local named kernel objects only.
 /// </summary>
 public sealed class SingleInstance : IDisposable
 {
+    /// <summary>Kept from before the rename to Snapctx, so a new build still finds and stops a running older one.</summary>
     public const string DefaultName = "ContextSnap";
 
     private const uint AllowAnyProcess = 0xFFFFFFFF;
@@ -38,7 +39,7 @@ public sealed class SingleInstance : IDisposable
             _activation, (_, _) => onActivate(), null, Timeout.Infinite, executeOnlyOnce: false);
     }
 
-    /// <summary>First instance only: runs <paramref name="onExit"/> (on a thread-pool thread) when <c>ContextSnap --exit</c> asks it to quit.</summary>
+    /// <summary>First instance only: runs <paramref name="onExit"/> (on a thread-pool thread) when <c>Snapctx --exit</c> asks it to quit.</summary>
     public void ListenForExit(Action onExit)
     {
         if (!IsFirstInstance)

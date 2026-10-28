@@ -42,7 +42,7 @@ public static class ScreenTextTargetSelector
     };
 
     /// <summary>
-    /// Picks the windows to read. The focused window is the foreground window, or, when ContextSnap
+    /// Picks the windows to read. The focused window is the foreground window, or, when Snapctx
     /// itself is in front (the Capture button was clicked), the most recently used other window.
     /// </summary>
     /// <param name="windowsInZOrder">Top-level windows, topmost first.</param>
@@ -78,7 +78,7 @@ public static class ScreenTextTargetSelector
 
         var focusedIndex = eligible.FindIndex(e => e.Window.IsForeground);
         if (focusedIndex < 0)
-            focusedIndex = 0; // ContextSnap (or nothing) is in front: use the most recently used window.
+            focusedIndex = 0; // Snapctx (or nothing) is in front: use the most recently used window.
 
         var targets = new List<ScreenTextTarget> { ToTarget(eligible[focusedIndex], isFocused: true) };
         if (options.Mode == ScreenTextMode.AllVisibleWindows)

@@ -66,7 +66,7 @@ public sealed class GitProcessRunner : IGitRunner
     internal const string FilterKeyPattern = @"^filter\..+\.(clean|smudge|process|required)$";
 
     internal const string UnsafeFilterMessage =
-        "This repository defines a Git filter that ContextSnap cannot disable safely, so Git was not run.";
+        "This repository defines a Git filter that Snapctx cannot disable safely, so Git was not run.";
 
     /// <summary>
     /// Runs one Git command with every configured filter driver disabled. A repository's own config can

@@ -83,13 +83,13 @@ public partial class MainWindow : Window
 
     private string HotkeyText => HotkeyGesture.Parse(_settings.Hotkey)?.DisplayText ?? HotkeyGesture.DefaultText;
 
-    /// <summary>The notification-area icon is opt-in; by default ContextSnap runs with no icon at all.</summary>
+    /// <summary>The notification-area icon is opt-in; by default Snapctx runs with no icon at all.</summary>
     private void ApplyTrayIconSetting()
     {
         var handle = new WindowInteropHelper(this).Handle;
         if (_settings.ShowNotificationAreaIcon && _trayIcon is not { IsAdded: true } && handle != 0)
         {
-            _trayIcon = new NotificationAreaIcon(handle, $"ContextSnap — {HotkeyText} to capture");
+            _trayIcon = new NotificationAreaIcon(handle, $"Snapctx — {HotkeyText} to capture");
             _trayIcon.Add();
         }
         else if (!_settings.ShowNotificationAreaIcon && _trayIcon is not null)
@@ -111,8 +111,8 @@ public partial class MainWindow : Window
 
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
-        // Closing hides the window and keeps ContextSnap running in the background while its shortcut works
-        // (or its optional icon is shown). Opening ContextSnap again shows this window; Quit or --exit ends it.
+        // Closing hides the window and keeps Snapctx running in the background while its shortcut works
+        // (or its optional icon is shown). Opening Snapctx again shows this window; Quit or --exit ends it.
         if (BackgroundPolicy.KeepRunningAfterClose(_exiting, _hotkey is { IsRegistered: true }, _trayIcon is { IsAdded: true }))
         {
             e.Cancel = true;
@@ -121,8 +121,8 @@ public partial class MainWindow : Window
             if (!_closeHintShown && _trayIcon is { IsAdded: true })
             {
                 _closeHintShown = true;
-                _trayIcon.ShowInfo("ContextSnap is still running",
-                    $"Press {HotkeyText} to capture. To quit, right-click the ContextSnap icon and choose Exit.");
+                _trayIcon.ShowInfo("Snapctx is still running",
+                    $"Press {HotkeyText} to capture. To quit, right-click the Snapctx icon and choose Exit.");
             }
 
             return;
@@ -138,7 +138,7 @@ public partial class MainWindow : Window
         base.OnClosing(e);
     }
 
-    /// <summary>Called when another launch of ContextSnap asks this instance to show itself.</summary>
+    /// <summary>Called when another launch of Snapctx asks this instance to show itself.</summary>
     public void BringToFront()
     {
         if (WindowState == WindowState.Minimized)
@@ -238,7 +238,7 @@ public partial class MainWindow : Window
 
     /// <summary>
     /// The global shortcut (and the optional icon's Capture): capture and copy the complete Markdown with no
-    /// window, dialog, or review. The hidden window's preview is updated so opening ContextSnap shows it.
+    /// window, dialog, or review. The hidden window's preview is updated so opening Snapctx shows it.
     /// </summary>
     private async Task HotkeyCaptureAsync()
     {
@@ -467,7 +467,7 @@ public partial class MainWindow : Window
         var gesture = HotkeyGesture.Parse(_settings.Hotkey) ?? HotkeyGesture.Default;
         if (_hotkey.Register(gesture))
         {
-            HotkeyStatusText.Text = $"Active: {gesture.DisplayText} works in any application while ContextSnap runs in the background, also after this window is closed.";
+            HotkeyStatusText.Text = $"Active: {gesture.DisplayText} works in any application while Snapctx runs in the background, also after this window is closed.";
             HotkeyHint.Text = $"Tip: press {gesture.DisplayText} in any application to capture and copy in one step.";
         }
         else

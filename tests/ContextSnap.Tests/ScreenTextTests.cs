@@ -223,7 +223,7 @@ public class ScreenTextTargetSelectorTests
     [Fact]
     public void WhenContextSnapIsInFront_UsesTheMostRecentOtherWindow()
     {
-        var selection = Select([Window(1, "ContextSnap", "ContextSnap", foreground: true, pid: 99), Window(2, "Chat", "chrome")], Options());
+        var selection = Select([Window(1, "Snapctx", "Snapctx", foreground: true, pid: 99), Window(2, "Chat", "chrome")], Options());
 
         Assert.Equal("Chat", Assert.Single(selection.Targets).Title);
         Assert.True(selection.Targets[0].IsBrowser);

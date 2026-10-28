@@ -3,7 +3,7 @@ using System.Runtime;
 namespace ContextSnap.Platform;
 
 /// <summary>
-/// ContextSnap is idle between captures, so the garbage collector otherwise has no reason to run and a
+/// Snapctx is idle between captures, so the garbage collector otherwise has no reason to run and a
 /// capture's temporary memory (UI Automation COM wrappers that hold handles until finalized, OCR pixel
 /// buffers on the large-object heap) would stay allocated until the next capture. One collection right
 /// after a capture returns that memory to Windows.

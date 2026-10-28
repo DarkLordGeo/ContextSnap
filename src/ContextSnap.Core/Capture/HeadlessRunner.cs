@@ -24,17 +24,17 @@ public enum RunMode
 public sealed record CommandLineOptions(RunMode Mode, string? Error = null, bool StartMinimized = false)
 {
     public const string Usage = """
-        ContextSnap — capture a Markdown snapshot of your current desktop context.
+        Snapctx — capture a Markdown snapshot of your current desktop context.
 
         Usage:
-          ContextSnap                Open the application window.
-          ContextSnap --capture      Capture, copy to the clipboard, print a summary, and exit.
-          ContextSnap --print        Capture and write the Markdown to standard output (no clipboard).
-          ContextSnap --startup      Start in the background: no window, taskbar button, or icon (used at sign-in).
-          ContextSnap --exit         Quit the running background instance.
-          ContextSnap --disable-startup   Stop starting ContextSnap when you sign in.
-          ContextSnap --enable-startup    Start ContextSnap in the background when you sign in.
-          ContextSnap --help         Show this help.
+          Snapctx                Open the application window.
+          Snapctx --capture      Capture, copy to the clipboard, print a summary, and exit.
+          Snapctx --print        Capture and write the Markdown to standard output (no clipboard).
+          Snapctx --startup      Start in the background: no window, taskbar button, or icon (used at sign-in).
+          Snapctx --exit         Quit the running background instance.
+          Snapctx --disable-startup   Stop starting Snapctx when you sign in.
+          Snapctx --enable-startup    Start Snapctx in the background when you sign in.
+          Snapctx --help         Show this help.
 
         Settings are read from %APPDATA%\ContextSnap\settings.json. In --capture and --print modes,
         the current directory is also checked for a Git repository.

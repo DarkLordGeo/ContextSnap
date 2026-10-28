@@ -128,8 +128,8 @@ public sealed class BackgroundCommandsTests : IDisposable
     }
 
     [Theory]
-    [InlineData(true, "Asked the running ContextSnap to quit")]
-    [InlineData(false, "ContextSnap is not running.")]
+    [InlineData(true, "Asked the running Snapctx to quit")]
+    [InlineData(false, "Snapctx is not running.")]
     public void Exit_ReportsWhetherAnInstanceWasRunning(bool running, string expected)
     {
         var (commands, _, _) = Create(() => running);

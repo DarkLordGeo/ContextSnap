@@ -11,7 +11,7 @@ public enum TrayCommand
 }
 
 /// <summary>
-/// The ContextSnap icon in the Windows notification area (Shell_NotifyIcon, version 4). Clicks and the
+/// The Snapctx icon in the Windows notification area (Shell_NotifyIcon, version 4). Clicks and the
 /// context menu arrive as <see cref="CallbackMessage"/> on the owner window; pass them to
 /// <see cref="HandleMessage"/>. The icon is re-added when Explorer restarts.
 /// </summary>
@@ -98,7 +98,7 @@ public sealed class NotificationAreaIcon(nint windowHandle, string tooltip) : ID
 
         try
         {
-            AppendMenuW(menu, MfString, (nuint)TrayCommand.Open, "&Open ContextSnap");
+            AppendMenuW(menu, MfString, (nuint)TrayCommand.Open, "&Open Snapctx");
             AppendMenuW(menu, MfString, (nuint)TrayCommand.Capture, captureLabel);
             AppendMenuW(menu, MfSeparator, 0, null);
             AppendMenuW(menu, MfString, (nuint)TrayCommand.Exit, "E&xit");

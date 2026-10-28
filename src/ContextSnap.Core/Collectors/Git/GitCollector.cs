@@ -102,7 +102,7 @@ public sealed class GitCollector(IGitRunner runner) : ICollector<GitRepositoryIn
 
         if (result.Error.Contains("dubious ownership", StringComparison.OrdinalIgnoreCase)
             || result.Error.Contains("safe.directory", StringComparison.OrdinalIgnoreCase))
-            return "Git refused to read this repository because it is owned by another user (safe.directory). ContextSnap does not override this check.";
+            return "Git refused to read this repository because it is owned by another user (safe.directory). Snapctx does not override this check.";
 
         if (result.Error.Contains("not a git repository", StringComparison.OrdinalIgnoreCase))
             return "Not a Git repository.";

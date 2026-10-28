@@ -1,11 +1,11 @@
-# ContextSnap Markdown output specification
+# Snapctx Markdown output specification
 
 Both implementations (Windows: `src/`, macOS: `macos/`) produce Markdown with this structure. Sections that are turned off or not supported on a platform are omitted; their names appear in the final "Not collected" line.
 
 ```markdown
 # Context Snapshot
 
-_Captured 2026-10-14 19:31 (UTC+04:00) by ContextSnap. Sensitive values may be redacted._
+_Captured 2026-10-14 19:31 (UTC+04:00) by Snapctx. Sensitive values may be redacted._
 
 **Foreground window:** <app> — <window title>
 

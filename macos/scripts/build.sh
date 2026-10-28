@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds a universal (Apple silicon + Intel) ContextSnap.app and packages a ZIP and DMG in macos/dist.
+# Builds a universal (Apple silicon + Intel) Snapctx.app and packages a ZIP and DMG in macos/dist.
 #
 # Signing (see docs/RELEASING.md):
 # - Default: ad-hoc signed. macOS asks users to confirm the first launch
@@ -37,9 +37,9 @@ notarize() {
 
 swift build -c release --arch arm64 --arch x86_64
 BIN="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/ContextSnap"
-APP=dist/ContextSnap.app
-ZIP="dist/ContextSnap-${VERSION}-macos-universal.zip"
-DMG="dist/ContextSnap-${VERSION}-macos-universal.dmg"
+APP=dist/Snapctx.app
+ZIP="dist/Snapctx-${VERSION}-macos-universal.zip"
+DMG="dist/Snapctx-${VERSION}-macos-universal.dmg"
 rm -rf dist
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/ContextSnap"
@@ -61,7 +61,7 @@ if $NOTARIZE; then
 fi
 
 ditto -c -k --keepParent "$APP" "$ZIP"
-hdiutil create -volname ContextSnap -srcfolder "$APP" -ov -format UDZO "$DMG" >/dev/null
+hdiutil create -volname Snapctx -srcfolder "$APP" -ov -format UDZO "$DMG" >/dev/null
 
 if [[ -n "$IDENTITY" ]]; then
   codesign --force --timestamp -s "$IDENTITY" "$DMG"

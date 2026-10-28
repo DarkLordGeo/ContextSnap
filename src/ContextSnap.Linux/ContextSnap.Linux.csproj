@@ -8,7 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>ContextSnap</RootNamespace>
-    <AssemblyName>contextsnap</AssemblyName>
+    <AssemblyName>snapctx</AssemblyName>
     <!-- No ICU dependency: output is formatted with the invariant culture. -->
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>

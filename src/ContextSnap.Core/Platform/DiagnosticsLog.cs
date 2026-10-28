@@ -13,7 +13,7 @@ public interface IDiagnosticsLog
 }
 
 /// <summary>
-/// A small local text log (<c>%LOCALAPPDATA%\ContextSnap\logs\contextsnap.log</c>). It is written only
+/// A small local text log (<c>%LOCALAPPDATA%\Snapctx\logs\snapctx.log</c>). It is written only
 /// when something goes wrong, holds error types and messages (with secrets redacted), never snapshot
 /// content, and is capped at about 256 KB plus one previous file. Logging failures are ignored.
 /// </summary>
@@ -22,7 +22,7 @@ public sealed class DiagnosticsLog(string filePath, long maxBytes = 256 * 1024) 
     private readonly object _gate = new();
 
     public static string DefaultPath => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ContextSnap", "logs", "contextsnap.log");
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Snapctx", "logs", "snapctx.log");
 
     public static DiagnosticsLog CreateDefault() => new(DefaultPath);
 

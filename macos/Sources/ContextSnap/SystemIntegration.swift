@@ -94,7 +94,7 @@ enum LaunchAtLogin {
     }
 }
 
-/// Remembers which app was active before ContextSnap's menu was used, so "Capture" from the menu
+/// Remembers which app was active before Snapctx's menu was used, so "Capture" from the menu
 /// reads the app the user was working in. Only the app's identity is kept, never its content.
 final class LastActiveApp {
     static let shared = LastActiveApp()

@@ -130,7 +130,7 @@ public struct GitRunner: Sendable {
     /// Config keys of filter drivers, which Git runs as shell commands while reading working-tree files.
     public static let filterKeyPattern = #"^filter\..+\.(clean|smudge|process|required)$"#
 
-    public static let unsafeFilterMessage = "This repository defines a Git filter that ContextSnap cannot disable safely, so Git was not run."
+    public static let unsafeFilterMessage = "This repository defines a Git filter that Snapctx cannot disable safely, so Git was not run."
 
     /// `-c` options that replace each configured filter driver with an empty command, which Git treats
     /// as "no filter". Nil when a filter name cannot be written as a `-c key=value` option.

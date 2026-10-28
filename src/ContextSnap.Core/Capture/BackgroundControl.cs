@@ -3,11 +3,11 @@ using ContextSnap.Platform;
 
 namespace ContextSnap.Capture;
 
-/// <summary>Decisions for running ContextSnap as a background process.</summary>
+/// <summary>Decisions for running Snapctx as a background process.</summary>
 public static class BackgroundPolicy
 {
     /// <summary>
-    /// Closing the window keeps ContextSnap running (hidden) only while the global shortcut works or a
+    /// Closing the window keeps Snapctx running (hidden) only while the global shortcut works or a
     /// notification-area icon offers a way back; otherwise closing quits, so nothing invisible and useless keeps running.
     /// </summary>
     public static bool KeepRunningAfterClose(bool exitRequested, bool hotkeyRegistered, bool trayIconShown) =>
@@ -30,11 +30,11 @@ public sealed class BackgroundCommands(SettingsStore store, StartupRegistration 
             case RunMode.Exit:
                 if (requestExitOfRunningInstance())
                 {
-                    output.WriteLine("Asked the running ContextSnap to quit. It unregisters its shortcut and exits.");
+                    output.WriteLine("Asked the running Snapctx to quit. It unregisters its shortcut and exits.");
                     return 0;
                 }
 
-                output.WriteLine("ContextSnap is not running.");
+                output.WriteLine("Snapctx is not running.");
                 return 0;
 
             case RunMode.EnableStartup:

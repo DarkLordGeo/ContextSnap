@@ -1,5 +1,8 @@
 {
   "cleanUrls": true,
+  "redirects": [
+    { "source": "/privacy", "destination": "/#privacy", "permanent": true }
+  ],
   "headers": [
     {
       "source": "/(.*)",
