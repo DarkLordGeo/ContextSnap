@@ -48,6 +48,7 @@
     timers.forEach(clearTimeout);
     timers = [];
     flyLayer.replaceChildren();
+    button.classList.remove("is-receiving");
     playing = false;
   };
 
@@ -86,6 +87,27 @@
       { transform: `translateY(-3px) scale(${big ? 1.16 : 1.09})`, offset: 0.6 },
       { transform: "translateY(0) scale(1)" },
     ], { duration: big ? 480 : 320, easing: "ease-out" });
+  };
+
+  // The icon receiving cards: the clip opens while they are on their way and closes after the last one.
+  const sheet = button.querySelector(".cb-sheet");
+  const lines = button.querySelector(".cb-lines");
+  const ripple = button.querySelector(".collector-ripple");
+  const receiving = (on) => button.classList.toggle("is-receiving", on);
+  // A card goes in: a sheet slides under the clip, the lines are written again, a ring goes out, and the
+  // badge counts up to this card's share of the snapshot's parts.
+  const land = (k, n, total) => {
+    badge.hidden = false;
+    badge.textContent = String(Math.max(1, Math.round((total * k) / n)));
+    badge.animate([{ transform: "scale(1)" }, { transform: "scale(1.35)", offset: 0.35 }, { transform: "scale(1)" }], { duration: 300, easing: "ease-out" });
+    sheet.animate([
+      { transform: "translateY(-9px) scaleY(0.6)", opacity: 0 },
+      { transform: "translateY(1px) scaleY(1)", opacity: 1, offset: 0.6 },
+      { transform: "translateY(0) scaleY(1)", opacity: 0 },
+    ], { duration: 420, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
+    lines.animate([{ strokeDasharray: "3 3", strokeDashoffset: 3 }, { strokeDasharray: "3 3", strokeDashoffset: 0 }], { duration: 360, easing: "ease-out" });
+    ripple.animate([{ transform: "scale(1)", opacity: 0.35 }, { transform: "scale(1.55)", opacity: 0 }], { duration: 520, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
+    bump(k === n);
   };
 
   // The timeline, in ms from the moment the cards appear.
@@ -163,11 +185,11 @@
       });
       card.animate([...curve, { offset: 1, transform: pose(tucked.x, tucked.y, 0, 0.14), opacity: 0 }],
         { duration: T.travel, delay: leave, easing: PATH, fill: "forwards" });
-      // Each card that slides in bumps the icon; card 0, the farthest, lands last and arrive() gives it
-      // the bigger bump.
-      later(done - 60, () => { if (i > 0) bump(); });
+      // Each card that slides in lands in the icon; card 0, the farthest, lands last.
+      later(done - 60, () => land(n - i, n, snap.parts.length));
       later(done, () => card.remove());
     });
+    later(T.read - 120, () => receiving(true));
     later(finish + 20, () => arrive(snap));
   };
 
@@ -180,7 +202,7 @@
     delivered = snap;
     setCount(snap);
     render();
-    bump(true);
+    receiving(false);
     playing = false;
     later(reduce.matches ? 0 : 320, next);
   }
