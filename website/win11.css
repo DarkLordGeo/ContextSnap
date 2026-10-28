@@ -18,19 +18,30 @@
 .desk-bar { display: flex; align-items: center; gap: 8px 16px; min-height: 40px; padding: 0 4px; }
 .desk-bar h2 { font-size: 15px; line-height: 20px; white-space: nowrap; }
 .desk-actions { display: flex; align-items: center; gap: 8px; }
-.flow { display: flex; align-items: center; gap: 2px; margin: 0 auto; padding: 0; list-style: none; counter-reset: step; }
+/* Steps: a circle per step, the label beside it. Dashes sit exactly in the middle of the gap between two
+   steps. Labels that are hidden (narrow screens) collapse and expand smoothly instead of jumping. */
+.flow { --flow-gap: 14px; display: flex; align-items: center; gap: var(--flow-gap); margin: 0 auto; padding: 0; list-style: none; counter-reset: step; }
 .flow li {
-  counter-increment: step; display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; border-radius: 999px;
-  color: var(--text-3); font-size: 13px; line-height: 20px; white-space: nowrap; transition: background-color 250ms var(--ease-out), color 250ms var(--ease-out);
+  counter-increment: step; position: relative; display: flex; align-items: center; padding: 4px 10px 4px 4px; border-radius: 999px;
+  color: var(--text-3); font-size: 13px; line-height: 20px; white-space: nowrap;
+  transition: background-color 300ms var(--ease-out), color 300ms var(--ease-out), padding 360ms var(--ease-out);
+}
+.flow li span {
+  display: block; max-width: 90px; margin-left: 6px; overflow: hidden; opacity: 1;
+  transition: max-width 360ms var(--ease-out), margin 360ms var(--ease-out), opacity 240ms var(--ease-out);
 }
 .flow li::before {
   content: counter(step); display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
   box-shadow: inset 0 0 0 1px var(--line-strong); font-size: 11px; font-weight: 600;
 }
-.flow li + li { position: relative; margin-left: 10px; }
-.flow li + li::after { content: ""; position: absolute; left: -9px; top: 50%; width: 6px; height: 1px; background: var(--line-strong); }
+.flow li + li::after {
+  content: ""; position: absolute; top: 50%; left: calc(var(--flow-gap) / -2); width: 6px; height: 1px;
+  background: var(--line-strong); transform: translate(-50%, -50%);
+}
+.flow li::before { transition: background-color 300ms var(--ease-out), color 300ms var(--ease-out), box-shadow 300ms var(--ease-out); }
 .flow li.is-done { color: var(--text-2); }
-.flow li.is-done::before { content: "✓"; background: var(--surface-2); box-shadow: none; }
+.flow li.is-done::before { content: "✓"; background: var(--surface-2); box-shadow: none; animation: step-done 360ms var(--spring); }
+@keyframes step-done { from { transform: scale(0.6); } }
 .flow li.is-active { background: var(--text); color: #fff; }
 .flow li.is-active::before { background: #fff; color: var(--text); box-shadow: none; }
 
@@ -399,7 +410,7 @@
   .desk-bar h2 { display: none; }
 }
 @media (max-width: 960px) {
-  .flow li:not(.is-active) span { display: none; }
+  .flow li:not(.is-active) span { max-width: 0; margin-left: 0; opacity: 0; }
   .flow li:not(.is-active) { padding-right: 4px; }
 }
 
@@ -412,9 +423,8 @@
   .desk-bar h2, .desk-actions .tag { display: none; }
   .flow { order: 2; width: 100%; justify-content: space-between; margin: 0; }
   .flow li { padding: 2px; font-size: 12px; }
-  .flow li + li { margin-left: 4px; }
   .flow li + li::after { display: none; }
-  .flow li:not(.is-active) span { display: none; }
+  .flow li:not(.is-active) span { max-width: 0; margin-left: 0; opacity: 0; }
   .flow li.is-active { padding-right: 10px; }
   .desk-actions { margin-left: auto; }
   .tb-sim, .cap-max, [data-date] { display: none; }
@@ -432,4 +442,5 @@
   .win:not([hidden]), .start-menu, .tray-menu, .ca-menu, .ca-msg, .ca-attach.is-new .ca-file { animation: none; }
   .os-keys, .os-pill { transition: opacity 150ms ease; transform: translate(-50%, 0); }
   .t-caret, .ca-dots, .ca-dots::before, .ca-dots::after { animation: none; }
+  .flow li, .flow li span, .flow li::before { transition: none; animation: none; }
 }
