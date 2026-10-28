@@ -419,6 +419,7 @@ h3 { font-size: 18px; line-height: 28px; letter-spacing: -0.01em; }
 
 .downloads { display: flex; align-items: stretch; gap: 16px; } /* one row, equal heights; each card opens on its own */
 .downloads > .download { flex: 1 1 0; min-width: 0; }
+.downloads:has(.dl-more[open]) { align-items: flex-start; } /* an open card grows alone; the other keeps its own height */
 .dl-body [data-variant][hidden] { display: none; } /* only the installer or the ZIP steps */
 .download { display: flex; flex-direction: column; gap: 20px; padding: 24px; border-radius: 22px; background: #fff; box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgba(29, 29, 31, 0.04), 0 18px 40px -28px rgba(29, 29, 31, 0.35); }
 .dl-top { display: flex; align-items: center; gap: 16px; }
