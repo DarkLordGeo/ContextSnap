@@ -417,7 +417,9 @@ h3 { font-size: 18px; line-height: 28px; letter-spacing: -0.01em; }
 .get-tags a { display: block; }
 .get-tags a:hover { color: var(--text); box-shadow: inset 0 0 0 1px var(--text-3); }
 
-.downloads { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; } /* equal heights; each card opens on its own */
+.downloads { display: flex; align-items: stretch; gap: 16px; } /* one row, equal heights; each card opens on its own */
+.downloads > .download { flex: 1 1 0; min-width: 0; }
+.dl-body [data-variant][hidden] { display: none; } /* only the installer or the ZIP steps */
 .download { display: flex; flex-direction: column; gap: 20px; padding: 24px; border-radius: 22px; background: #fff; box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgba(29, 29, 31, 0.04), 0 18px 40px -28px rgba(29, 29, 31, 0.35); }
 .dl-top { display: flex; align-items: center; gap: 16px; }
 .os-logo { width: 48px; height: 48px; flex: none; object-fit: contain; }
@@ -630,7 +632,8 @@ h3 { font-size: 18px; line-height: 28px; letter-spacing: -0.01em; }
   /* While the cookie banner is up, the collector waits (a capture then fills it without the flight). */
   html:has(#consent-banner) .collector { display: none; }
   html:has(#consent-banner) .suggest { display: none; }
-  .downloads, .privacy-list { grid-template-columns: minmax(0, 1fr); }
+  .downloads { flex-direction: column; }
+  .privacy-list { grid-template-columns: minmax(0, 1fr); }
   .get, .privacy { padding-top: 64px; }
   .download { padding: 20px; }
   .dl-specs div { padding: 10px; }
