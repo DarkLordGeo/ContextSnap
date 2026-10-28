@@ -334,42 +334,7 @@
             <div><dt>Architecture</dt><dd>x64</dd></div>
           </dl>
           <a class="button dark dl-button" aria-disabled="true">Download not yet available</a>
-          <details class="dl-more">
-            <summary>Install steps, requirements, and checksum</summary>
-            <div class="dl-body">
-              <section class="dl-group" aria-label="Windows install steps">
-                <h4>Install</h4>
-                <ol class="dl-steps" data-variant="installer" hidden>
-                  <li>Run <code>Snapctx-Setup.exe</code>. It is not code-signed yet, so if SmartScreen says “Windows protected your PC”, choose <b>More info</b> → <b>Run anyway</b>.</li>
-                  <li>Choose whether Snapctx starts when you sign in. No administrator rights are needed.</li>
-                  <li>Snapctx starts when setup finishes. Press <kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Shift</kbd><kbd>C</kbd> in any app, then paste.</li>
-                </ol>
-                <ol class="dl-steps" data-variant="zip">
-                  <li>Extract the ZIP to a folder you keep; the app runs from there.</li>
-                  <li>Open <code data-exe>ContextSnap.exe</code>. It is not code-signed yet, so if SmartScreen says “Windows protected your PC”, choose <b>More info</b> → <b>Run anyway</b>.</li>
-                  <li>Press <kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Shift</kbd><kbd>C</kbd> in any app, then paste into your AI chat.</li>
-                </ol>
-              </section>
-              <section class="dl-group" aria-label="Windows requirements">
-                <h4>Requirements</h4>
-                <ul class="dl-reqs" data-variant="installer" hidden>
-                  <li>Windows 10 or 11, 64-bit (x64)</li>
-                  <li>Everything else is included; no .NET install needed</li>
-                </ul>
-                <ul class="dl-reqs" data-variant="zip">
-                  <li>Windows 10 or 11, 64-bit (x64)</li>
-                  <li><a href="https://dotnet.microsoft.com/download/dotnet/10.0" rel="noopener">.NET 10 Desktop Runtime</a></li>
-                </ul>
-              </section>
-              <section class="dl-group" aria-label="Windows checksum">
-                <h4>Checksum (SHA-256)</h4>
-                <code class="checksum" data-spec="sha256">Listed with the release on GitHub</code>
-                <p class="dl-hint">Verify in PowerShell:</p>
-                <pre class="dl-code"><code>Get-FileHash <span data-file>ContextSnap-1.0.1-windows-x64.zip</span></code></pre>
-              </section>
-              <p class="install-note"></p>
-            </div>
-          </details>
+          <button type="button" class="dl-more" aria-expanded="false" aria-controls="dl-windows-details" data-details-toggle="windows">Install steps, requirements, and checksum</button>
         </article>
         <article class="download" data-platform="linux" aria-labelledby="dl-linux">
           <div class="dl-top">
@@ -385,38 +350,73 @@
             <div><dt>Architecture</dt><dd>x64</dd></div>
           </dl>
           <a class="button dark dl-button" aria-disabled="true">Download not yet available</a>
-          <details class="dl-more">
-            <summary>Install steps, requirements, and checksum</summary>
-            <div class="dl-body">
-              <section class="dl-group" aria-label="Linux install steps">
-                <h4>Install</h4>
-                <ol class="dl-steps">
-                  <li>In a terminal in your downloads folder, extract it and set up the shortcut once:
-                    <pre class="dl-code"><code data-linux-steps>tar -xzf ContextSnap-1.0.1-linux-x64.tar.gz
-./contextsnap-1.0.1-linux-x64/contextsnap --install</code></pre>
-                  </li>
-                  <li>Press <kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Shift</kbd><kbd>C</kbd>, then paste. On Wayland desktops other than GNOME, <code>--install</code> prints a command to add as a shortcut in your keyboard settings.</li>
-                </ol>
-              </section>
-              <section class="dl-group" aria-label="Linux requirements">
-                <h4>Requirements</h4>
-                <ul class="dl-reqs">
-                  <li>64-bit (x64) Linux, X11 or Wayland. No .NET install needed.</li>
-                  <li><code>wl-clipboard</code> (Wayland) or <code>xclip</code> (X11) to copy, and <code>wmctrl</code> to list windows:
-                    <pre class="dl-code"><code>sudo apt install wl-clipboard xclip wmctrl</code></pre>
-                  </li>
-                </ul>
-              </section>
-              <section class="dl-group" aria-label="Linux checksum">
-                <h4>Checksum (SHA-256)</h4>
-                <code class="checksum" data-spec="sha256">Listed with the release on GitHub</code>
-                <p class="dl-hint">Verify in a terminal:</p>
-                <pre class="dl-code"><code>sha256sum <span data-file>ContextSnap-1.0.1-linux-x64.tar.gz</span></code></pre>
-              </section>
-              <p class="install-note"></p>
-            </div>
-          </details>
+          <button type="button" class="dl-more" aria-expanded="false" aria-controls="dl-linux-details" data-details-toggle="linux">Install steps, requirements, and checksum</button>
         </article>
+      </div>
+      <div class="dl-panel">
+        <section class="dl-body" id="dl-windows-details" data-details="windows" aria-label="Windows: install steps, requirements, and checksum" hidden>
+          <p class="dl-body-title">Windows</p>
+          <section class="dl-group" aria-label="Windows install steps">
+            <h4>Install</h4>
+            <ol class="dl-steps" data-variant="installer" hidden>
+              <li>Run <code>Snapctx-Setup.exe</code>. It is not code-signed yet, so if SmartScreen says “Windows protected your PC”, choose <b>More info</b> → <b>Run anyway</b>.</li>
+              <li>Choose whether Snapctx starts when you sign in. No administrator rights are needed.</li>
+              <li>Snapctx starts when setup finishes. Press <kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Shift</kbd><kbd>C</kbd> in any app, then paste.</li>
+            </ol>
+            <ol class="dl-steps" data-variant="zip">
+              <li>Extract the ZIP to a folder you keep; the app runs from there.</li>
+              <li>Open <code data-exe>ContextSnap.exe</code>. It is not code-signed yet, so if SmartScreen says “Windows protected your PC”, choose <b>More info</b> → <b>Run anyway</b>.</li>
+              <li>Press <kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Shift</kbd><kbd>C</kbd> in any app, then paste into your AI chat.</li>
+            </ol>
+          </section>
+          <section class="dl-group" aria-label="Windows requirements">
+            <h4>Requirements</h4>
+            <ul class="dl-reqs" data-variant="installer" hidden>
+              <li>Windows 10 or 11, 64-bit (x64)</li>
+              <li>Everything else is included; no .NET install needed</li>
+            </ul>
+            <ul class="dl-reqs" data-variant="zip">
+              <li>Windows 10 or 11, 64-bit (x64)</li>
+              <li><a href="https://dotnet.microsoft.com/download/dotnet/10.0" rel="noopener">.NET 10 Desktop Runtime</a></li>
+            </ul>
+          </section>
+          <section class="dl-group" aria-label="Windows checksum">
+            <h4>Checksum (SHA-256)</h4>
+            <code class="checksum" data-spec="sha256">Listed with the release on GitHub</code>
+            <p class="dl-hint">Verify in PowerShell:</p>
+            <pre class="dl-code"><code>Get-FileHash <span data-file>ContextSnap-1.0.1-windows-x64.zip</span></code></pre>
+          </section>
+          <p class="install-note"></p>
+        </section>
+        <section class="dl-body" id="dl-linux-details" data-details="linux" aria-label="Linux: install steps, requirements, and checksum" hidden>
+          <p class="dl-body-title">Linux</p>
+          <section class="dl-group" aria-label="Linux install steps">
+            <h4>Install</h4>
+            <ol class="dl-steps">
+              <li>In a terminal in your downloads folder, extract it and set up the shortcut once:
+                <pre class="dl-code"><code data-linux-steps>tar -xzf ContextSnap-1.0.1-linux-x64.tar.gz
+./contextsnap-1.0.1-linux-x64/contextsnap --install</code></pre>
+              </li>
+              <li>Press <kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Shift</kbd><kbd>C</kbd>, then paste. On Wayland desktops other than GNOME, <code>--install</code> prints a command to add as a shortcut in your keyboard settings.</li>
+            </ol>
+          </section>
+          <section class="dl-group" aria-label="Linux requirements">
+            <h4>Requirements</h4>
+            <ul class="dl-reqs">
+              <li>64-bit (x64) Linux, X11 or Wayland. No .NET install needed.</li>
+              <li><code>wl-clipboard</code> (Wayland) or <code>xclip</code> (X11) to copy, and <code>wmctrl</code> to list windows:
+                <pre class="dl-code"><code>sudo apt install wl-clipboard xclip wmctrl</code></pre>
+              </li>
+            </ul>
+          </section>
+          <section class="dl-group" aria-label="Linux checksum">
+            <h4>Checksum (SHA-256)</h4>
+            <code class="checksum" data-spec="sha256">Listed with the release on GitHub</code>
+            <p class="dl-hint">Verify in a terminal:</p>
+            <pre class="dl-code"><code>sha256sum <span data-file>ContextSnap-1.0.1-linux-x64.tar.gz</span></code></pre>
+          </section>
+          <p class="install-note"></p>
+        </section>
       </div>
     </div>
   </section>
