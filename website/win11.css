@@ -38,7 +38,7 @@
 .os {
   position: relative; height: clamp(540px, calc(100svh - var(--header-h) - 80px), 760px); overflow: hidden; isolation: isolate; border-radius: 12px;
   color: var(--win-text); font-family: var(--font); line-height: 1.4; /* no backdrop: nothing dark shows at the rounded corners */
-  box-shadow: 0 24px 48px -28px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.14), 0 24px 48px -28px rgba(0, 0, 0, 0.45); /* the thin frame border */
   -webkit-user-select: none; user-select: none;
 }
 .os-inner { position: absolute; inset: 0; display: flex; flex-direction: column; overflow: hidden; border-radius: inherit; }
