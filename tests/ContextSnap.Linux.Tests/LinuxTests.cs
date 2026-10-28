@@ -455,8 +455,9 @@ public class LinuxSetupTests
     [LinuxFact] // Linux paths: "/cfg" is not an absolute path on Windows.
     public void AutostartFile_HonorsAnAbsoluteXdgConfigHome()
     {
-        Assert.Equal("/cfg/autostart/contextsnap.desktop", Setup(new() { ["XDG_CONFIG_HOME"] = "/cfg" }).AutostartFile);
-        Assert.EndsWith("/.config/autostart/contextsnap.desktop", Setup(new() { ["XDG_CONFIG_HOME"] = "relative" }).AutostartFile, StringComparison.Ordinal);
+        Assert.Equal("/cfg/autostart/snapctx.desktop", Setup(new() { ["XDG_CONFIG_HOME"] = "/cfg" }).AutostartFile);
+        Assert.Equal("/cfg/autostart/contextsnap.desktop", Setup(new() { ["XDG_CONFIG_HOME"] = "/cfg" }).LegacyAutostartFile);
+        Assert.EndsWith("/.config/autostart/snapctx.desktop", Setup(new() { ["XDG_CONFIG_HOME"] = "relative" }).AutostartFile, StringComparison.Ordinal);
     }
 
     [Fact]
