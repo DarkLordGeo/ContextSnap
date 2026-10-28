@@ -495,12 +495,22 @@ h3 { font-size: 18px; line-height: 28px; letter-spacing: -0.01em; }
 }
 .collector:hover { background: #fff; box-shadow: 0 0 0 1px var(--text-3), 0 10px 28px -10px rgba(29, 29, 31, 0.4); }
 .collector:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
-.collector-ic { width: 22px; height: 22px; }
+.collector-ic { width: 22px; height: 22px; overflow: visible; }
+/* While cards fly in, the clip lifts open and the board leans toward them; it snaps shut at the end. */
+.cb-clip, .cb-sheet { transform-box: fill-box; }
+.cb-clip { transform-origin: 50% 100%; transition: transform 420ms var(--spring); }
+.cb-sheet { transform-origin: 50% 0; opacity: 0; }
+.collector-ic { transition: transform 420ms var(--spring); }
+.collector.is-receiving { background: #fff; box-shadow: 0 0 0 1px var(--text-3), 0 14px 32px -12px rgba(29, 29, 31, 0.5); }
+.collector.is-receiving .collector-ic { transform: translateY(1px) rotate(-6deg); }
+.collector.is-receiving .cb-clip { transform: translateY(-2.4px) rotate(-16deg); transition-duration: 260ms; }
+.collector-ripple { position: absolute; inset: 0; border-radius: inherit; box-shadow: 0 0 0 1.5px var(--text); opacity: 0; pointer-events: none; }
 .collector-badge {
   position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
   background: var(--text); color: #fff; font: 600 11px/18px var(--font); text-align: center; box-shadow: 0 0 0 2px #fbfaf8;
 }
 .collector-badge[hidden] { display: none; }
+@media (prefers-reduced-motion: reduce) { .cb-clip, .collector-ic { transition: none; } }
 .collect-fly { position: fixed; inset: 0; z-index: 47; overflow: hidden; pointer-events: none; }
 /* A collected card in flight: a small document with a thin border, a label, and a few lines as captured. */
 .fly-card {
