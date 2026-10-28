@@ -1,7 +1,7 @@
 // The page's context collector: a small icon at the bottom right. Each capture of the keyboard demo at
 // the top of the page hands it that snapshot (the Windows demo is not connected to it). A row of
-// document cards made from the snapshot appears in the middle of the screen, lifts and fans, settles,
-// gathers into a stack, and the stack is filed into the icon card by card, as if tucked under its clip.
+// document cards made from the snapshot appears in the middle of the screen; after a moment each card
+// flies from its place in the row into the icon, one after another, as if tucked under its clip.
 // Opening the icon sends the same cards back out of it into the overlay.
 // Clicking the icon opens the collected parts as cards over a blurred page. Everything shown is the
 // sample desktop's data; nothing is read from the visitor's computer.
@@ -89,9 +89,9 @@
   };
 
   // The timeline, in ms from the moment the cards appear.
-  const T = { appear: 280, inStep: 60, read: 700, gather: 1050, gatherStep: 50, hold: 140, travel: 820, travelStep: 90 };
+  const T = { appear: 280, inStep: 60, read: 950, travel: 760, travelStep: 160 };
   const SOFT = "cubic-bezier(0.2, 0.8, 0.2, 1)";
-  const SWAY = "cubic-bezier(0.45, 0, 0.55, 1)";
+
   const PATH = "cubic-bezier(0.35, 0, 0.45, 1)";
 
   const play = (snap, from) => {
@@ -135,40 +135,36 @@
       card.style.top = `${Math.round(Y - h / 2)}px`;
       card.style.zIndex = String(i + 1);
       const to = (point) => ({ x: point.x - center.x, y: point.y - center.y });
-      const stack = to({ x: X + (i - c) * 3, y: Y - 6 - i * 3 });
+      const start = { x: 0, y: 0 }; // its own place in the row
       const end = to(above);
       const tucked = to(tuck);
       // The curve to the icon: up and over, a little different for each card.
-      const bend = { x: (stack.x + end.x) / 2 + (i - c) * 14, y: Math.max(Math.min(stack.y, end.y) - 110 - i * 8, 24 - center.y) };
+      const bend = { x: (start.x + end.x) / 2 + (i - c) * 14, y: Math.max(Math.min(start.y, end.y) - 120 - i * 10, 24 - center.y) };
       const t0 = i * T.inStep;
-      const gathered = T.gather + i * T.gatherStep;
-      const leave = gathered + T.hold + (n - 1 - i) * T.travelStep; // the top of the stack goes first
+      const leave = T.read + (n - 1 - i) * T.travelStep; // the card nearest the icon goes first
       const done = leave + T.travel;
       finish = Math.max(finish, done);
       const at = (t) => (t - t0) / (leave - t0);
-      const stacked = pose(stack.x, stack.y, (i - c) * 2, 0.94);
-      // In place: appear in the row, stay a moment to be read, then stack on each other.
+      // In place: appear in the row and stay there to be read until its turn.
       card.animate([
         { offset: 0, transform: pose(0, 12, 0, 0.92), opacity: 0, easing: SOFT },
         { offset: at(t0 + T.appear), transform: pose(0, 0, 0, 1), opacity: 1 },
-        { offset: at(T.read), transform: pose(0, 0, 0, 1), opacity: 1, easing: SWAY },
-        { offset: at(gathered), transform: stacked, opacity: 1 },
-        { offset: 1, transform: stacked, opacity: 1 },
+        { offset: 1, transform: pose(0, 0, 0, 1), opacity: 1 },
       ], { duration: leave - t0, delay: t0, fill: "forwards" });
       // To the icon: one easing over the whole trip (no stop halfway), along the curve, then down under
-      // the clip. It starts exactly where the stack left the card.
+      // the clip. It starts from the card's place in the row.
       const curve = [0, 0.2, 0.4, 0.6, 0.8, 1].map((t) => {
         const u = 1 - t;
         return {
           offset: t * 0.93,
-          transform: pose(u * u * stack.x + 2 * u * t * bend.x + t * t * end.x, u * u * stack.y + 2 * u * t * bend.y + t * t * end.y, (i - c) * 2 * u, 0.94 - 0.74 * t),
+          transform: pose(u * u * start.x + 2 * u * t * bend.x + t * t * end.x, u * u * start.y + 2 * u * t * bend.y + t * t * end.y, (i - c) * 3 * Math.sin(Math.PI * t), 1 - 0.8 * t),
           opacity: 1,
         };
       });
       card.animate([...curve, { offset: 1, transform: pose(tucked.x, tucked.y, 0, 0.14), opacity: 0 }],
         { duration: T.travel, delay: leave, easing: PATH, fill: "forwards" });
-      // Each card that slides in bumps the icon; card 0, the bottom of the stack, lands last and
-      // arrive() gives it the bigger bump.
+      // Each card that slides in bumps the icon; card 0, the farthest, lands last and arrive() gives it
+      // the bigger bump.
       later(done - 60, () => { if (i > 0) bump(); });
       later(done, () => card.remove());
     });

@@ -417,8 +417,11 @@ h3 { font-size: 18px; line-height: 28px; letter-spacing: -0.01em; }
 .get-tags a { display: block; }
 .get-tags a:hover { color: var(--text); box-shadow: inset 0 0 0 1px var(--text-3); }
 
-.downloads { display: flex; align-items: stretch; gap: 16px; } /* one row, equal heights; each card opens on its own */
-.downloads > .download { flex: 1 1 0; min-width: 0; }
+/* Two columns: the cards in the first row (one height), each card's details under it in the second. */
+.downloads { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
+.downloads > .download { grid-row: 1; min-width: 0; }
+.downloads > [data-platform="linux"], #dl-linux-details { grid-column: 2; }
+.downloads > .dl-body { grid-row: 2; align-self: start; }
 .dl-body [data-variant][hidden] { display: none; } /* only the installer or the ZIP steps */
 .download { display: flex; flex-direction: column; gap: 20px; padding: 24px; border-radius: 22px; background: #fff; box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgba(29, 29, 31, 0.04), 0 18px 40px -28px rgba(29, 29, 31, 0.35); }
 .dl-top { display: flex; align-items: center; gap: 16px; }
@@ -441,8 +444,7 @@ h3 { font-size: 18px; line-height: 28px; letter-spacing: -0.01em; }
 .dl-more[aria-expanded="true"]::after { margin-bottom: -3px; transform: rotate(225deg); }
 .dl-more:hover { color: var(--text); }
 .dl-more:focus-visible { outline: 2px solid var(--text); outline-offset: 4px; border-radius: 4px; }
-.dl-panel { margin-top: 16px; }
-.dl-body { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr); gap: 24px; padding: 24px; border-radius: 22px; background: #fff; box-shadow: 0 0 0 1px var(--line), 0 18px 40px -28px rgba(29, 29, 31, 0.35); animation: msg-in 300ms var(--ease-out) both; }
+.dl-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; padding: 24px; border-radius: 22px; background: #fff; box-shadow: 0 0 0 1px var(--line), 0 18px 40px -28px rgba(29, 29, 31, 0.35); animation: msg-in 300ms var(--ease-out) both; }
 .dl-body[hidden] { display: none; }
 .dl-body-title { grid-column: 1 / -1; margin-bottom: -8px; font: 600 16px/22px var(--font); }
 .dl-body .install-note { grid-column: 1 / -1; }
@@ -638,8 +640,11 @@ h3 { font-size: 18px; line-height: 28px; letter-spacing: -0.01em; }
   /* While the cookie banner is up, the collector waits (a capture then fills it without the flight). */
   html:has(#consent-banner) .collector { display: none; }
   html:has(#consent-banner) .suggest { display: none; }
-  .downloads { flex-direction: column; }
-  .dl-body { grid-template-columns: minmax(0, 1fr); padding: 20px; }
+  .downloads { grid-template-columns: minmax(0, 1fr); }
+  .downloads > .download, .downloads > .dl-body, .downloads > [data-platform="linux"], #dl-linux-details { grid-column: 1; grid-row: auto; }
+  .downloads > [data-platform="linux"] { order: 2; }
+  #dl-linux-details { order: 3; }
+  .dl-body { padding: 20px; }
   .privacy-list { grid-template-columns: minmax(0, 1fr); }
   .get, .privacy { padding-top: 64px; }
   .download { padding: 20px; }
