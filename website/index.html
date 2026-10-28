@@ -283,7 +283,7 @@
       </div>
 
       <nav class="taskbar" aria-label="Taskbar">
-        <span class="tb-sim">Website simulation</span>
+        <span class="tb-sim" aria-hidden="true"></span>
         <div class="tb-center">
           <button type="button" class="tb-btn tb-start" aria-label="Start" aria-expanded="false" data-start><svg aria-hidden="true"><use href="#ic-start"/></svg></button>
           <button type="button" class="tb-btn tb-app" data-app="files" aria-label="File Explorer"><svg aria-hidden="true"><use href="#ic-folder"/></svg></button>
@@ -449,6 +449,7 @@
   </section>
 </main>
 <button type="button" class="collector" data-collector aria-haspopup="dialog" aria-label="Collected context: nothing yet" title="Collected context"><svg class="collector-ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="3.5" width="15" height="18" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/><rect class="cb-sheet" x="6.8" y="6.2" width="10.4" height="13" rx="1" fill="#e6e2dc"/><path class="cb-lines" pathLength="3" d="M8.2 10h7.6M8.2 13.3h7.6M8.2 16.6h4.6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><rect class="cb-clip" x="8.5" y="2" width="7" height="3.6" rx="1.2" fill="currentColor"/></svg><span class="collector-ripple" aria-hidden="true"></span><span class="collector-badge" data-collector-count hidden></span></button>
+<div class="capture is-icon" aria-hidden="true"><div class="capture-scan"></div></div>
 <div class="collect-fly" aria-hidden="true"></div>
 <dialog class="collect" data-collect aria-labelledby="collect-title">
   <h2 id="collect-title" class="visually-hidden">Collected context</h2>

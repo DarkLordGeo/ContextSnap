@@ -36,8 +36,13 @@ window.contextSnapFX = (() => {
   // Color: mostly white, a touch darker at the edge, a little transparent; a few bars are a shade
   // darker than their neighbors (TONES) so the edge does not read as one flat band.
   const TONES = [1, 0.93, 0.86];
-  const shade = (k, rows, tone) => {
+  // `dark` draws the same bars in ink tones, for small targets on the light page (the collector icon).
+  const shade = (k, rows, tone, dark = false) => {
     const f = rows > 1 ? k / (rows - 1) : 1;
+    if (dark) {
+      const c = Math.round(29 + 60 * (1 - TONES[tone]) * 4);
+      return `rgba(${c}, ${c}, ${c + 2}, ${(0.18 + 0.4 * f).toFixed(3)})`;
+    }
     const c = Math.round((205 + 50 * f) * TONES[tone]);
     return `rgba(${c}, ${c}, ${Math.min(255, c + 2)}, ${(0.55 + 0.35 * f).toFixed(3)})`;
   };
@@ -74,7 +79,7 @@ window.contextSnapFX = (() => {
 
   const runs = new WeakMap(); // layer -> stop function of its current run
 
-  const play = (layer, { width, height, zoom = null, origin = "50% 50%" }) => {
+  const play = (layer, { width, height, zoom = null, origin = "50% 50%", dark = false, pixel = 0 }) => {
     runs.get(layer)?.();
     const quiet = reduce.matches;
     const scan = layer.querySelector(".capture-scan");
@@ -88,12 +93,12 @@ window.contextSnapFX = (() => {
     const context = canvas.getContext("2d");
     context.scale(ratio, ratio);
 
-    const size = width < 600 ? 4 : 5; // pixel
+    const size = pixel || (width < 600 ? 4 : 5); // pixel
     const pitch = size + 2;
     const inset = 3;
     const { bars, rows } = makeBars(width, height, size, pitch, inset);
     // One fill color per (depth row, tone): index row * TONES.length + tone.
-    const colors = Array.from({ length: (rows + 1) * TONES.length }, (_, i) => shade(Math.floor(i / TONES.length), rows, i % TONES.length));
+    const colors = Array.from({ length: (rows + 1) * TONES.length }, (_, i) => shade(Math.floor(i / TONES.length), rows, i % TONES.length, dark));
     const total = quiet ? 700 : DURATION;
 
     // Where pixel n of a bar sits, counted from its edge inward.

@@ -10,17 +10,45 @@ const isReleaseAsset = (value) => {
   }
 };
 
-// Install details: one platform at a time, in the panel under both cards (so the cards keep one height).
+// Install details: one platform at a time, opening out of the bottom of its card (the cards keep one
+// height). Opening and closing animate the panel's height; switching closes one while the other opens.
 const toggles = [...document.querySelectorAll("[data-details-toggle]")];
+const stillMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+const panelOf = (toggle) => document.getElementById(toggle.getAttribute("aria-controls"));
+// From nothing to the panel's full height (or back), padding included.
+const frames = (panel) => {
+  const style = getComputedStyle(panel);
+  return [
+    { height: "0px", paddingTop: "0px", paddingBottom: "0px", opacity: 0 },
+    { height: `${panel.offsetHeight}px`, paddingTop: style.paddingTop, paddingBottom: style.paddingBottom, opacity: 1 },
+  ];
+};
+const setOpen = (toggle, open) => {
+  const panel = panelOf(toggle);
+  const card = toggle.closest(".download");
+  if (open === (toggle.getAttribute("aria-expanded") === "true")) return;
+  toggle.setAttribute("aria-expanded", String(open));
+  panel.getAnimations().forEach((animation) => animation.cancel());
+  if (open) {
+    card.classList.add("is-expanded");
+    panel.hidden = false;
+    if (!stillMotion.matches) panel.animate(frames(panel), { duration: 360, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
+    return;
+  }
+  const done = () => {
+    panel.hidden = true;
+    card.classList.remove("is-expanded");
+  };
+  if (stillMotion.matches) {
+    done();
+    return;
+  }
+  panel.animate(frames(panel).reverse(), { duration: 260, easing: "cubic-bezier(0.4, 0, 0.8, 0.6)" }).onfinish = done;
+};
 for (const toggle of toggles) {
   toggle.addEventListener("click", () => {
     const opening = toggle.getAttribute("aria-expanded") !== "true";
-    for (const other of toggles) {
-      const open = opening && other === toggle;
-      other.setAttribute("aria-expanded", String(open));
-      document.getElementById(other.getAttribute("aria-controls")).hidden = !open;
-    }
-    if (opening) document.getElementById(toggle.getAttribute("aria-controls")).scrollIntoView({ block: "nearest", behavior: "smooth" });
+    for (const other of toggles) setOpen(other, opening && other === toggle);
   });
 }
 
