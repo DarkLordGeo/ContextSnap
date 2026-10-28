@@ -510,14 +510,17 @@ h3 { font-size: 18px; line-height: 28px; letter-spacing: -0.01em; }
 .cb-clip { transform-origin: 50% 100%; transition: transform 420ms var(--spring); }
 .cb-sheet { transform-origin: 50% 0; opacity: 0; }
 .collector-ic { transition: transform 420ms var(--spring); }
-.collector.is-receiving { background: #fff; box-shadow: 0 0 0 1px var(--text-3), 0 14px 32px -12px rgba(29, 29, 31, 0.5); }
+.collector.is-receiving { box-shadow: 0 0 0 1px #1d1d1f, 0 14px 32px -12px rgba(29, 29, 31, 0.5); }
 .collector.is-receiving .collector-ic { transform: translateY(1px) rotate(-6deg); }
 .collector.is-receiving .cb-clip { transform: translateY(-2.4px) rotate(-16deg); transition-duration: 260ms; }
-/* The window-edge pixel bars, drawn around the collector icon while cards land in it (capture-fx.js). */
-.capture.is-icon {
-  inset: auto; right: calc(max(20px, env(safe-area-inset-right)) - 16px); bottom: calc(max(20px, env(safe-area-inset-bottom)) - 16px);
-  width: 80px; height: 80px; z-index: 44;
-}
+/* While cards land, the icon turns into a tiny dark screen and the same white pixel bars as the window
+   edges grow in from its edges (capture-fx.js). */
+.collector .capture.is-icon { position: absolute; inset: 0; z-index: 0; border-radius: inherit; }
+.collector-ic, .collector-badge { position: relative; z-index: 1; }
+.collector-badge { position: absolute; }
+.collector { transition: background-color 260ms var(--ease-out), color 260ms var(--ease-out), box-shadow 200ms var(--ease-out); }
+.collector.is-receiving { background: #1d1d1f; color: #fff; }
+.collector.is-receiving .cb-sheet { fill: #4a4a4e; }
 .collector-ripple { position: absolute; inset: 0; border-radius: inherit; box-shadow: 0 0 0 1.5px var(--text); opacity: 0; pointer-events: none; }
 .collector-badge {
   position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
