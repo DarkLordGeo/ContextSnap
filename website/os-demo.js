@@ -27,9 +27,9 @@
   // with its official mark); answers are still scripted locally from the snapshot, whichever is picked.
   // Keep this list current as model names change.
   const MODELS = [
-    { provider: "OpenAI", product: "ChatGPT", mark: "chatgpt", placeholder: "Ask anything", models: ["GPT-5", "GPT-5 mini", "o3"] },
-    { provider: "Anthropic", product: "Claude", mark: "claude", placeholder: "Reply to Claude…", models: ["Claude Sonnet 5.5", "Claude Opus 5.5", "Claude Haiku 5.5"] },
-    { provider: "Google", product: "Gemini", mark: "gemini", placeholder: "Ask Gemini", models: ["Gemini 2.5 Pro", "Gemini 2.5 Flash"] },
+    { provider: "OpenAI", product: "ChatGPT", mark: "chatgpt", placeholder: "Ask anything", models: ["ChatGPT"] },
+    { provider: "Anthropic", product: "Claude", mark: "claude", placeholder: "Reply to Claude…", models: ["Claude"] },
+    { provider: "Google", product: "Gemini", mark: "gemini", placeholder: "Ask Gemini", models: ["Gemini"] },
   ];
 
   // Small helpers --------------------------------------------------------------------------------------
@@ -691,29 +691,29 @@
     current.replaceChildren(sim.appIcon(model.mark, "pv-logo"));
     current.setAttribute("aria-hidden", "true");
     $(".ca").dataset.skin = model.mark;
+    // The browser window is that product's tab: its title and icon follow (and so does the snapshot).
+    desk.APPS.assistant.title = () => `${model.product} - Microsoft Edge`;
+    desk.APPS.assistant.name = model.product;
+    $('[data-app="assistant"] .win-ic use').setAttribute("href", `#ic-${model.mark}`);
+    render();
     $("[data-model-name]").textContent = model.name;
     modelButton.setAttribute("aria-label", `Model: ${model.name} by ${model.provider} (shown as ${model.product}). Change model`);
     input.placeholder = model.placeholder;
     for (const option of $$("[role=option]", modelMenu)) option.setAttribute("aria-selected", String(option.dataset.model === model.name));
   };
+  // One row per chat: its logo and name.
   for (const entry of MODELS) {
-    const group = el("div", "ca-group");
-    group.setAttribute("role", "group");
-    const label = el("p", "ca-group-label");
-    label.append(mark(entry), entry.provider);
-    group.setAttribute("aria-label", entry.provider);
-    group.append(label);
     for (const name of entry.models) {
-      const option = el("div", "ca-option", name);
+      const option = el("div", "ca-option ca-option-product");
+      option.append(mark(entry), el("span", "", name));
       option.setAttribute("role", "option");
       option.tabIndex = -1;
       option.dataset.model = name;
       option.dataset.provider = entry.provider;
-      group.append(option);
+      modelMenu.append(option);
     }
-    modelMenu.append(group);
   }
-  modelMenu.append(el("p", "ca-menu-note", "Website demo: answers are scripted from the snapshot. No model is called."));
+  modelMenu.append(el("p", "ca-menu-note", "Demo: answers are scripted. No AI is called."));
   const options = () => $$("[role=option]", modelMenu);
   function closeModelMenu(focusButton) {
     if (modelMenu.hidden) return;

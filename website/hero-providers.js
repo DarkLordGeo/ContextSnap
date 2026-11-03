@@ -41,13 +41,15 @@
   const canPlay = () => !still.matches && inView && !chat.matches(":hover") && !document.hidden && Date.now() >= heldUntil && !sim.busy;
   const progressOf = (i) => tabs[i].querySelector(".provider-progress");
 
-  // Headline: "Give [logo] ChatGPT the context it's missing." The logo and name fade over to the next AI
-  // while the slot eases to the new width, so the line never jumps.
+  // Headline: "Give [logo] ChatGPT the context it's missing." The name cycles on its own clock, independent
+  // of the chat: the logo and name fade over to the next AI while the slot eases to the new width, so the
+  // line never jumps. With reduced motion it stays "your AI".
   const slot = document.querySelector("[data-h1-ai]");
   const NS = "http://www.w3.org/2000/svg";
   const nameItem = (provider) => {
     const item = document.createElement("span");
     item.className = "h1-ai-item";
+    item.dataset.provider = provider.id;
     const logo = document.createElementNS(NS, "svg");
     logo.setAttribute("class", "h1-ai-logo");
     const use = document.createElementNS(NS, "use");
@@ -85,9 +87,8 @@
   };
 
   // Skin -----------------------------------------------------------------------------------------------
-  const apply = (i, animate = true) => {
+  const apply = (i) => {
     const provider = PROVIDERS[i];
-    headline(provider, animate);
     chat.dataset.provider = provider.id;
     titleEl.textContent = provider.title;
     markEl.setAttribute("href", `#pv-${provider.id}`);
@@ -213,6 +214,15 @@
 
   window.snapctxHero = { flyIn, hold };
 
-  apply(0, false);
+  apply(0);
+  if (!still.matches) {
+    let named = 0;
+    headline(PROVIDERS[named], false);
+    window.setInterval(() => {
+      if (document.hidden) return;
+      named = (named + 1) % PROVIDERS.length;
+      headline(PROVIDERS[named], true);
+    }, 2600);
+  }
   if (!still.matches) later(cycle, 1400);
 })();
