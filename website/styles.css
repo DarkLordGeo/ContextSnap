@@ -367,6 +367,127 @@ html:has(#consent-banner) { --reserve: 112px; }
 @keyframes attach-in { from { opacity: 0; transform: translateY(6px) scale(0.96); } }
 @keyframes caret { 50% { opacity: 0; } }
 
+/* AI chat skins (hero-providers.js) ------------------------------------------------------------- */
+/* One chat, dressed as ChatGPT, Claude, Gemini, or Cursor: each skin sets the colors, type, message
+   shapes, and composer of that product. The provider marks in the header switch between them. */
+.chat {
+  --c-bg: #fff; --c-text: #0d0d0d; --c-muted: #8f8f8f; --c-line: rgba(0, 0, 0, 0.08);
+  --c-user: #f4f4f4; --c-user-text: #0d0d0d; --c-user-radius: 18px;
+  --c-box: #fff; --c-box-line: rgba(0, 0, 0, 0.1); --c-box-radius: 26px;
+  --c-send: #0d0d0d; --c-send-fg: #fff; --c-send-radius: 50%; --c-code: rgba(0, 0, 0, 0.06);
+  --c-font: ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; --c-ai-font: var(--c-font);
+  --c-size: 14px; --c-lh: 22px;
+  background: var(--c-bg); color: var(--c-text); font-family: var(--c-font);
+}
+.chat-head { gap: 6px; color: var(--c-text); box-shadow: 0 1px 0 var(--c-line); }
+.chat-mark { width: 18px; height: 18px; flex: none; color: var(--c-text); }
+.chat-title { font: 600 15px/20px var(--c-font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-caret { width: 6px; height: 6px; flex: none; margin: 0 0 4px 3px; border: solid var(--c-muted); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
+.chat .chat-day, .chat .chat-sub { color: var(--c-muted); }
+.chat .msg { font-size: var(--c-size); line-height: var(--c-lh); }
+.chat .msg-ai { color: var(--c-text); font-family: var(--c-ai-font); }
+.chat .msg-me, .chat .msg-user .question { background: var(--c-user); color: var(--c-user-text); border-radius: var(--c-user-radius); }
+.chat .msg-ai code, .chat .msg-user code { background: var(--c-code); color: inherit; }
+.chat .chat-slot { background: var(--c-user); color: var(--c-muted); }
+.chat .chip { background: var(--c-box); color: var(--c-text); box-shadow: inset 0 0 0 1px var(--c-box-line); }
+.chat .chip:hover { background: var(--c-user); }
+.chat .chat-composer { border-radius: var(--c-box-radius); background: var(--c-box); box-shadow: 0 0 0 1px var(--c-box-line), 0 4px 14px -6px rgba(0, 0, 0, 0.12); }
+.chat .chat-composer.is-focused { box-shadow: 0 0 0 1px var(--c-box-line), 0 6px 18px -6px rgba(0, 0, 0, 0.2); }
+.chat .composer-text { color: var(--c-muted); font-family: var(--c-font); }
+.chat .composer-text.is-typed { color: var(--c-text); }
+.chat .chat-composer.is-focused .composer-text.is-typed::after { background: var(--c-text); }
+.chat .composer-plus { box-shadow: inset 0 0 0 1px var(--c-box-line); }
+.chat .composer-plus::before, .chat .composer-plus::after { background: var(--c-muted); }
+.chat .send { border-radius: var(--c-send-radius); background: color-mix(in srgb, var(--c-send) 22%, transparent); }
+.chat .send::after { border-color: var(--c-send-fg); }
+.chat .chat-composer.is-ready .send { background: var(--c-send); }
+.chat .composer-attach, .chat .ctx { background: var(--c-box); box-shadow: inset 0 0 0 1px var(--c-box-line); }
+.chat .ctx-head { box-shadow: 0 1px 0 var(--c-line); color: var(--c-text); }
+.chat .ctx-md { background: var(--c-user); }
+.chat .md, .chat .ctx-md .ln.is-heading, .chat .ctx-md .ln.is-strong { color: var(--c-text); }
+.chat .attach-text b { color: var(--c-text); }
+.chat .chat-log { scrollbar-color: color-mix(in srgb, var(--c-text) 20%, transparent) transparent; }
+
+/* ChatGPT: plain white, gray rounded user bubbles, no assistant avatar, a pill composer. */
+.chat[data-provider="chatgpt"] .msg-ai { padding-left: 0; }
+.chat[data-provider="chatgpt"] .msg-ai::before, .chat[data-provider="chatgpt"] .msg-ai::after { display: none; }
+
+/* Claude: warm paper, serif answers, beige user bubbles, the orange send button. */
+.chat[data-provider="claude"] {
+  --c-bg: #faf9f5; --c-text: #3d3929; --c-muted: #8a8678; --c-line: rgba(61, 57, 41, 0.1);
+  --c-user: #f0eee6; --c-user-text: #3d3929; --c-user-radius: 14px;
+  --c-box: #fff; --c-box-line: rgba(61, 57, 41, 0.14); --c-box-radius: 18px;
+  --c-send: #c96442; --c-send-radius: 9px; --c-code: rgba(61, 57, 41, 0.08);
+  --c-ai-font: ui-serif, Georgia, Cambria, "Times New Roman", serif; --c-size: 15px; --c-lh: 24px;
+}
+.chat[data-provider="claude"] .msg-ai { padding-left: 0; }
+.chat[data-provider="claude"] .msg-ai::before, .chat[data-provider="claude"] .msg-ai::after { display: none; }
+.chat[data-provider="claude"] .msg-reply:last-child::after {
+  display: block; position: static; content: ""; width: 18px; height: 18px; margin-top: 8px; border: 0; transform: none;
+  background: radial-gradient(circle, #d97757 0 2px, transparent 2.5px), conic-gradient(from 0deg, #d97757 0 6deg, transparent 6deg 30deg, #d97757 30deg 36deg, transparent 36deg 60deg, #d97757 60deg 66deg, transparent 66deg 90deg, #d97757 90deg 96deg, transparent 96deg 120deg, #d97757 120deg 126deg, transparent 126deg 150deg, #d97757 150deg 156deg, transparent 156deg 180deg, #d97757 180deg 186deg, transparent 186deg 210deg, #d97757 210deg 216deg, transparent 216deg 240deg, #d97757 240deg 246deg, transparent 246deg 270deg, #d97757 270deg 276deg, transparent 276deg 300deg, #d97757 300deg 306deg, transparent 306deg 330deg, #d97757 330deg 336deg, transparent 336deg);
+  -webkit-mask: radial-gradient(circle, #000 8.5px, transparent 9px); mask: radial-gradient(circle, #000 8.5px, transparent 9px);
+}
+.chat[data-provider="claude"] .chat-title { font-weight: 500; }
+
+/* Gemini: the four-point sparkle beside each answer, soft blue-gray prompts, a filled pill composer. */
+.chat[data-provider="gemini"] {
+  --c-text: #1f1f1f; --c-muted: #747775; --c-user: #e9eef6; --c-user-text: #1f1f1f; --c-user-radius: 22px 6px 22px 22px;
+  --c-box: #f0f4f9; --c-box-line: transparent; --c-box-radius: 28px; --c-send: #0b57d0; --c-code: #eef1f6;
+  --c-size: 14.5px; --c-lh: 23px;
+}
+.chat[data-provider="gemini"] .chat-composer { box-shadow: none; }
+.chat[data-provider="gemini"] .chat-composer.is-focused { box-shadow: 0 0 0 1px #c4d7f5; }
+.chat[data-provider="gemini"] .msg-ai::before {
+  width: 20px; height: 20px; border-radius: 0; background: linear-gradient(45deg, #4b7cf3, #8a73e6 55%, #d36aa9);
+  clip-path: polygon(50% 0, 59% 41%, 100% 50%, 59% 59%, 50% 100%, 41% 59%, 0 50%, 41% 41%);
+}
+.chat[data-provider="gemini"] .msg-ai::after { display: none; }
+.chat[data-provider="gemini"] .chat-title { font-weight: 500; font-size: 17px; }
+
+/* Cursor: the dark editor pane, bordered prompt boxes, compact monospace-friendly type. */
+.chat[data-provider="cursor"] {
+  --c-bg: #181818; --c-text: #e4e4e4; --c-muted: #8b8b8b; --c-line: #2b2b2b;
+  --c-user: #232323; --c-user-text: #e4e4e4; --c-user-radius: 8px;
+  --c-box: #1f1f1f; --c-box-line: #353535; --c-box-radius: 10px; --c-send: #e4e4e4; --c-send-fg: #181818;
+  --c-code: #2c2c2c; --c-size: 13px; --c-lh: 20px;
+}
+.chat[data-provider="cursor"] .msg-ai { padding-left: 0; }
+.chat[data-provider="cursor"] .msg-ai::before, .chat[data-provider="cursor"] .msg-ai::after { display: none; }
+.chat[data-provider="cursor"] .msg-me, .chat[data-provider="cursor"] .msg-user .question { align-self: stretch; width: auto; max-width: none; box-shadow: inset 0 0 0 1px #353535; }
+.chat[data-provider="cursor"] .msg-user { width: 100%; }
+.chat[data-provider="cursor"] .chat-title { font-size: 13px; font-weight: 500; }
+.chat[data-provider="cursor"] .composer-plus { width: auto; height: 22px; padding: 0 8px; border-radius: 6px; box-shadow: none; background: #2a2a2a; color: #cfcfcf; font: 500 11px/22px var(--c-font); }
+.chat[data-provider="cursor"] .composer-plus::before { content: "\221E  Agent"; position: static; width: auto; height: auto; margin: 0; background: none; white-space: pre; }
+.chat[data-provider="cursor"] .composer-plus::after { display: none; }
+.chat[data-provider="cursor"] .send { width: 24px; height: 24px; }
+.chat[data-provider="cursor"] .send::after { left: 8px; top: 9px; width: 6px; height: 6px; }
+
+/* Provider marks in the header: the switcher, with the turn's progress under the active mark. */
+.providers { display: flex; gap: 2px; margin-left: auto; padding: 3px; border-radius: 999px; background: color-mix(in srgb, var(--c-text) 6%, transparent); }
+.provider {
+  position: relative; display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%;
+  background: none; color: var(--c-text); cursor: pointer; opacity: 0.5; overflow: hidden;
+  transition: opacity 200ms var(--ease-out), background-color 200ms var(--ease-out);
+}
+.provider svg { width: 16px; height: 16px; }
+.provider:hover { opacity: 0.85; }
+.provider[aria-selected="true"] { opacity: 1; background: var(--c-bg); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12); }
+.provider:focus-visible { outline: 2px solid var(--c-text); outline-offset: 1px; }
+.provider-progress { position: absolute; left: 7px; right: 7px; bottom: 3px; height: 2px; border-radius: 1px; background: currentColor; opacity: 0.55; transform: scaleX(0); transform-origin: left; }
+
+/* The Snapctx.md card that flies from the C key into the composer. */
+.snap-fly {
+  position: absolute; left: 0; top: 0; z-index: 6; display: grid; gap: 5px; width: 150px; padding: 10px 12px 12px; border-radius: 12px;
+  background: #fff; box-shadow: 0 0 0 1px rgba(29, 29, 31, 0.12), 0 14px 30px -12px rgba(29, 29, 31, 0.45); pointer-events: none; will-change: transform, opacity;
+}
+.snap-fly[hidden] { display: none; }
+.snap-fly b { display: flex; align-items: center; gap: 6px; font: 600 12px/16px var(--font); color: var(--text); }
+.snap-fly .ctx-icon { width: 16px; height: 16px; border-radius: 4px; font-size: 10px; }
+.snap-fly i { display: block; height: 4px; border-radius: 2px; background: #e4e1dc; }
+.snap-fly i:nth-of-type(2) { width: 80%; }
+.snap-fly i:nth-of-type(3) { width: 55%; }
+@media (prefers-reduced-motion: reduce) { .snap-fly { display: none; } }
+
 /* Capture effect ------------------------------------------------------------------------------- */
 /* Layers above everything in the frame, below nothing outside it: scrim (5), pixels (6), wash (7),
    status pill (8). keyboard-demo.js adds the pixels for one run and removes them afterwards. */

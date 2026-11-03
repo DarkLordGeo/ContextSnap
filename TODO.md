@@ -88,3 +88,14 @@ Not verified:
 - Installer on a clean Windows without .NET (the bundled runtime was confirmed loaded from the install folder, but no clean VM was available), Windows 10, and after a real reboot.
 - Linux rename and migration on a real Linux desktop (unit tests only); macOS changes not built (no Mac).
 - The Release workflow's Inno Setup step on GitHub runners (not run).
+
+## Website hero: AI chat showcase (2026-11-03)
+
+Done and checked in the browser (1366/800/375 px):
+- Headline "Give your AI the context it's missing." with "Capture your desktop context. Send it to your favorite AI. One shortcut."
+- The hero chat rotates through ChatGPT, Claude, Gemini, and Cursor skins (hero-providers.js + CSS skins): colors, type, message shapes, composer, and placeholder per product; provider marks in the header switch chats and show each turn's progress.
+- Each turn: the keyboard taps Ctrl+Alt+Shift+C silently, a Snapctx.md card flies from the C key into the composer, the question is typed and sent, and the answer streams in; then the next chat cross-fades in (about 12 s per chat).
+- Pauses on hover, while the visitor's own shortcut run or a suggested question plays, off screen, and in hidden tabs. Reduced motion: no rotation or flight; tabs switch instantly.
+- The provider marks are simplified local SVG drawings, and the switcher's label says the chats are illustrations and Snapctx is not affiliated with them.
+
+Limitations: the provider interfaces are approximations drawn from memory, not pixel copies; no external fonts are loaded, so product typefaces fall back to system fonts.

@@ -402,7 +402,7 @@
   const attachMeta = chat.querySelector("[data-attach-meta]");
   const composer = chat.querySelector("[data-composer]");
   const suggest = chat.querySelector("[data-suggest]");
-  const PLACEHOLDER = composer.textContent;
+  let placeholder = composer.textContent; // each AI chat skin sets its own (hero-providers.js)
   const motionless = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   let timers = [];
@@ -424,7 +424,7 @@
   const metaOf = (snap) => `${snap.count} ${snap.count === 1 ? "source" : "sources"} · ${LEVELS[snap.level].name}`;
 
   const setComposer = (text) => {
-    composer.textContent = text || PLACEHOLDER;
+    composer.textContent = text || placeholder;
     composer.classList.toggle("is-typed", Boolean(text));
     box.classList.toggle("is-ready", Boolean(text) || !attach.hidden);
   };
@@ -590,6 +590,11 @@
       busy = true;
       setChips(true);
     },
+    setPlaceholder(text) {
+      placeholder = text;
+      if (!composer.classList.contains("is-typed")) composer.textContent = text;
+    },
+    get busy() { return busy; },
     deliver(snap) {
       lastSnap = snap;
       return exchange(QUESTIONS[0], snap);
