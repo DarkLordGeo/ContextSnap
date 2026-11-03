@@ -121,112 +121,146 @@
     collectLayer = null;
   }
 
-  // The collection beside the keyboard: a small ContextSnap panel and three mock source cards (browser,
-  // PDF, notes). Each card is highlighted in turn and slides into its slot, where it stays; the panel then
-  // shows "3 sources collected". Illustrative cards only, not windows. Calls `done(panelRect)` when complete,
-  // or `done(null)` straight away when there is no room beside the keyboard (narrow layouts).
+  // The collection beside the keyboard, with the same clipboard as the sample desktop below: it appears
+  // beside the keyboard, three page-shaped mock cards (browser, PDF, notes) rise from the keyboard in a
+  // quick ripple and land on it at the page's size, stacking; then it carries the stack into the chat.
+  // Illustrative cards only, not windows. Returns false (and does nothing) when there is no room beside
+  // the keyboard (narrow layouts), so the caller falls back to the card from the C key.
   const SOURCES = [
     { label: "Browser context", icon: "chrome" },
     { label: "PDF document", icon: "pdf" },
     { label: "Notes", icon: "notes" },
   ];
+  const TILT = "rotateX(16deg) rotateY(-12deg) rotateZ(-3deg)";
+  const SPRING = "cubic-bezier(0.34, 1.4, 0.64, 1)";
+  const BARS = [92, 76, 84, 58, 70];
+  const node = (tag, className, text) => {
+    const element = document.createElement(tag);
+    if (className) element.className = className;
+    if (text !== undefined) element.textContent = text;
+    return element;
+  };
   const collect = (done) => {
     const area = demo.getBoundingClientRect();
     const chatBox = chat.getBoundingClientRect();
     const room = chatBox.left - area.left; // the keyboard's visible part, left of the chat
-    const PANEL = 196;
-    const CARD = 136;
-    if (room < PANEL + CARD + 64 || chatBox.top > area.top + 40) {
-      done(null);
-      return;
-    }
+    if (room < 300 || chatBox.top > area.top + 40) return false;
     const later2 = (ms, fn) => collectTimers.push(window.setTimeout(fn, ms));
-    const layer = document.createElement("div");
-    layer.className = "hc";
+    const layer = node("div", "hc");
     layer.setAttribute("aria-hidden", "true");
-    const panel = document.createElement("div");
-    panel.className = "hc-panel";
-    const head = document.createElement("p");
-    head.className = "hc-head";
-    const logo = document.createElement("img");
-    logo.src = "favicon.svg";
-    logo.alt = "";
-    const count = document.createElement("p");
-    count.className = "hc-count";
-    count.textContent = "Collecting…";
-    head.append(logo, "ContextSnap");
-    panel.append(head);
-    const iconOf = (name) => sim.appIcon(name, "hc-ic");
-    const slots = SOURCES.map(() => {
-      const slot = document.createElement("div");
-      slot.className = "hc-slot";
-      panel.append(slot);
-      return slot;
-    });
-    panel.append(count);
-    layer.append(panel);
-    const cards = SOURCES.map((source) => {
-      const card = document.createElement("div");
-      card.className = "hc-card";
-      card.append(iconOf(source.icon), Object.assign(document.createElement("b"), { textContent: source.label }));
-      layer.append(card);
-      return card;
-    });
     demo.append(layer);
     collectLayer = layer;
 
-    // Placement: the panel against the chat, the cards in a column to its left, over the keyboard's top rows.
-    const panelX = room - PANEL - 22;
-    const panelY = 20;
-    panel.style.left = `${panelX}px`;
-    panel.style.top = `${panelY}px`;
-    const cardsTop = panelY + (panel.offsetHeight - (SOURCES.length * 36 + (SOURCES.length - 1) * 8)) / 2;
-    cards.forEach((card, i) => {
-      card.style.left = `${panelX - CARD - 26}px`;
-      card.style.top = `${Math.round(cardsTop + i * 44)}px`;
-    });
-    const ease = "cubic-bezier(0.22, 0.8, 0.24, 1)";
-    panel.animate([{ opacity: 0, transform: "translateY(8px) scale(0.96)" }, { opacity: 1, transform: "none" }], { duration: 280, easing: ease, fill: "both" });
-    cards.forEach((card, i) => card.animate([{ opacity: 0, transform: "translateX(-10px)" }, { opacity: 1, transform: "none" }], { duration: 240, delay: 60 + i * 50, easing: ease, fill: "both" }));
+    // The clipboard: against the chat, in the middle of the desk.
+    const W = 104;
+    const H = Math.round(W * 1.28);
+    const C = { x: room - W / 2 - 34, y: area.height * 0.46 };
+    const holder = node("div", "clipb");
+    holder.style.width = `${W}px`;
+    holder.style.height = `${H}px`;
+    holder.style.left = `${Math.round(C.x - W / 2)}px`;
+    holder.style.top = `${Math.round(C.y - H / 2)}px`;
+    const board = node("div", "clipb-board");
+    const papers = node("div", "clipb-papers");
+    const clip = node("span", "clipb-clip");
+    const label = node("p", "clipb-label");
+    const labelText = node("span", "", "ContextSnap");
+    label.append(node("span", "clipb-check"), labelText);
+    board.append(papers, clip, label);
+    holder.append(board);
+    layer.append(holder);
+    const paper = { w: W * 0.82, h: H * 0.67 };
+    const P = { x: C.x, y: C.y - H / 2 + H * (0.16 + 0.67 / 2) };
+    board.animate([{ transform: `translateY(20px) ${TILT} scale(0.72)`, opacity: 0 }, { transform: `${TILT} scale(1)`, opacity: 1 }], { duration: 420, easing: SPRING, fill: "forwards" });
 
-    // One after another: highlight, slide into the slot, fill the slot.
+    const addPage = (source) => {
+      const page = node("span", "clipb-paper");
+      page.style.setProperty("--i", String(papers.children.length));
+      page.append(sim.appIcon(source.icon, "clipb-ic"));
+      for (const width of BARS) {
+        const bar = node("i", "clipb-bar");
+        bar.style.width = `${width}%`;
+        page.append(bar);
+      }
+      papers.append(page);
+      clip.animate([{ transform: "scaleY(0.8)" }, { transform: "scaleY(1)" }], { duration: 220, easing: SPRING });
+      board.animate([{ transform: `translateY(3px) ${TILT} scale(0.97)` }, { transform: `${TILT} scale(1)` }], { duration: 300, easing: SPRING, fill: "forwards" });
+    };
+
+    // The cards: page-shaped, rising from the keyboard's top rows, one right after another.
+    const cw = 112;
+    const ch = Math.round(cw * (paper.h / paper.w));
+    const STEP = 170;
+    const PULL = 560;
     SOURCES.forEach((source, i) => {
-      const t = 360 + i * 300;
-      later2(t, () => cards[i].classList.add("is-on"));
-      later2(t + 110, () => {
-        const a = cards[i].getBoundingClientRect();
-        const b = slots[i].getBoundingClientRect();
-        cards[i].animate([
-          { transform: "none", opacity: 1 },
-          { transform: `translate(${b.left - a.left}px, ${b.top - a.top}px) scale(${b.height / a.height})`, opacity: 1 },
-        ], { duration: 360, easing: "cubic-bezier(0.4, 0, 0.2, 1)", fill: "forwards" });
-      });
-      later2(t + 470, () => {
-        cards[i].remove();
-        slots[i].append(iconOf(source.icon), Object.assign(document.createElement("b"), { textContent: source.label }));
-        slots[i].classList.add("is-filled");
-        count.textContent = `${i + 1} of ${SOURCES.length}`;
+      const card = node("div", "cdata");
+      card.style.width = `${cw}px`;
+      card.style.height = `${ch}px`;
+      const head = node("p", "cdata-head");
+      head.append(sim.appIcon(source.icon, "cdata-ic"), node("b", "", source.label));
+      card.append(head, ...BARS.slice(0, 3).map((width) => {
+        const bar = node("i", "cdata-bar");
+        bar.style.width = `${width}%`;
+        return bar;
+      }));
+      layer.append(card);
+      const x0 = room * (0.16 + i * 0.2) - cw / 2;
+      const y0 = area.height * 0.34 - ch / 2;
+      card.style.left = `${Math.round(x0)}px`;
+      card.style.top = `${Math.round(y0)}px`;
+      const dx = P.x - (x0 + cw / 2);
+      const dy = P.y - (y0 + ch / 2);
+      const k = paper.w / cw;
+      card.animate([
+        { transform: "translate3d(0px, 14px, 0px) scale(0.9)", opacity: 0 },
+        { transform: "translate3d(0px, -6px, 0px) scale(1)", opacity: 1, offset: 0.3 },
+        { transform: `translate3d(${dx * 0.5}px, ${dy * 0.5 - 30}px, 20px) rotateX(8deg) rotateY(-6deg) scale(${(1 + k) / 2})`, opacity: 1, offset: 0.65 },
+        { transform: `translate3d(${dx}px, ${dy}px, 2px) ${TILT} scale(${k})`, opacity: 1 },
+      ], { duration: PULL, delay: i * STEP, easing: "cubic-bezier(0.4, 0, 0.2, 1)", fill: "both" });
+      later2(i * STEP + PULL, () => {
+        card.remove();
+        addPage(source);
+        labelText.textContent = `${source.label} · ${i + 1}/${SOURCES.length}`;
+        label.classList.add("is-done");
       });
     });
-    const complete = 360 + (SOURCES.length - 1) * 300 + 470 + 80;
+
+    // Complete, then the clipboard carries the stack into the composer.
+    const complete = (SOURCES.length - 1) * STEP + PULL + 120;
     later2(complete, () => {
-      count.textContent = `${SOURCES.length} sources collected`;
-      panel.classList.add("is-done");
-      panel.animate([{ transform: "scale(1)" }, { transform: "scale(1.03)", offset: 0.4 }, { transform: "scale(1)" }], { duration: 320, easing: "ease-out" });
+      labelText.textContent = `${SOURCES.length} sources`;
+      board.animate([{ transform: `${TILT} scale(1)` }, { transform: `${TILT} scale(1.05)`, offset: 0.4 }, { transform: `${TILT} scale(1)` }], { duration: 340, easing: "ease-out", fill: "forwards" });
     });
-    later2(complete + 520, () => done(panel.getBoundingClientRect()));
+    later2(complete + 480, () => {
+      const to = composerBox.getBoundingClientRect();
+      const from = holder.getBoundingClientRect();
+      const dx = to.left + 70 - (from.left + from.width / 2);
+      const dy = to.top + 24 - (from.top + from.height / 2);
+      board.animate([{ transform: `${TILT} scale(1)` }, { transform: "none" }], { duration: 520, easing: "cubic-bezier(0.45, 0, 0.2, 1)", fill: "forwards" });
+      holder.animate([
+        { transform: "none", opacity: 1 },
+        { transform: `translate(${dx * 0.9}px, ${dy * 0.9 - 14}px) scale(0.62)`, opacity: 1, offset: 0.75 },
+        { transform: `translate(${dx}px, ${dy}px) scale(0.36)`, opacity: 0 },
+      ], { duration: 620, easing: "cubic-bezier(0.45, 0, 0.2, 1)", fill: "forwards" });
+    });
+    later2(complete + 480 + 600, () => {
+      layer.remove();
+      if (collectLayer === layer) collectLayer = null;
+      done();
+    });
+    return true;
   };
 
-  // Flies a ContextSnap.md card into the composer, then calls `done`: from the collection panel when there
-  // is one, otherwise from the C key. Without motion (or when either end is not visible) it calls `done`
-  // straight away.
+  // Flies a ContextSnap.md card into the composer, then calls `done`: through the clipboard beside the
+  // keyboard when there is room, otherwise from the C key. Without motion (or when either end is not
+  // visible) it calls `done` straight away.
   const flyIn = (done) => {
     cancelFlight();
     if (still.matches) {
       done();
       return;
     }
-    collect((panelRect) => flyFrom(panelRect, done));
+    if (!collect(done)) flyFrom(null, done);
   };
   const flyFrom = (panelRect, done) => {
     const key = document.querySelector('#kb [data-code="KeyC"]');
