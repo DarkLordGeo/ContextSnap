@@ -567,21 +567,19 @@
       desk.focusApp("browser");
     });
     announce("Replaying: a research session in a browser, a paper, and notes is captured with Snapctx and summarized by the AI chat.");
-    // Each source in turn: the browser flips through two of its tabs, then the paper, then the notes.
+    // Each source in turn, as it is: the browser (on its open tab), then the paper, then the notes.
     const spot = (app) => {
       for (const win of Object.values(wins)) win.classList.toggle("is-spot", win.dataset.app === app);
     };
     const quick = reduce.matches;
     const beats = [
-      [quick ? 0 : 500, () => { spot("browser"); scriptedChange((state) => { state.tab = 0; desk.focusApp("browser"); }); }],
-      [quick ? 0 : 1300, () => scriptedChange((state) => { state.tab = 2; })],
-      [quick ? 0 : 2100, () => scriptedChange((state) => { state.tab = 1; })],
-      [quick ? 0 : 2900, () => { spot("pdf"); scriptedChange(() => desk.focusApp("pdf")); }],
-      [quick ? 0 : 3900, () => { spot("notes"); scriptedChange(() => desk.focusApp("notes")); }],
-      [quick ? 0 : 4900, () => spot(null)],
+      [quick ? 0 : 500, () => { spot("browser"); scriptedChange(() => desk.focusApp("browser")); }],
+      [quick ? 0 : 1700, () => { spot("pdf"); scriptedChange(() => desk.focusApp("pdf")); }],
+      [quick ? 0 : 2900, () => { spot("notes"); scriptedChange(() => desk.focusApp("notes")); }],
+      [quick ? 0 : 4100, () => spot(null)],
     ];
     for (const [ms, step] of beats) at(ms, step);
-    at(quick ? 300 : 5300, () => shortcut("auto"));
+    at(quick ? 300 : 4500, () => shortcut("auto"));
   }
 
   // The visitor took over (changed the desktop, typed, or chose something): stop driving the sequence.
