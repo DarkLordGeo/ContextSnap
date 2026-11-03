@@ -946,14 +946,7 @@
       paste();
     }
   }, true);
-  // ContextSnap itself takes the C press when it is running (see keyboard-demo.js); only its release reaches us.
-  let cDown = false;
-  document.addEventListener("keydown", (event) => { if (event.code === "KeyC") cDown = true; }, true);
-  document.addEventListener("keyup", (event) => {
-    const handedOff = event.code === "KeyC" && event.ctrlKey && event.altKey && event.shiftKey && !cDown;
-    if (event.code === "KeyC") cDown = false;
-    if (handedOff && inView) shortcut("physical");
-  }, true);
+  // When ContextSnap itself is running it takes the shortcut (see keyboard-demo.js), so the desktop does not play.
 
   // The replay plays once by itself the first time the desktop is mostly on screen.
   let played = false;

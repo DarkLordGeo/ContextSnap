@@ -329,9 +329,9 @@
     syncHintKeys();
   };
 
-  let cDown = false; // a C keydown reached the page (see the keyup handler)
+  // When ContextSnap itself is running, Windows hands it Ctrl+Alt+Shift+C (RegisterHotKey), so its press never
+  // reaches the page and the demo does not play: that capture is the visitor's real one, not this demo's.
   document.addEventListener("keydown", (event) => {
-    if (event.code === "KeyC") cDown = true;
     if (isTyping(event.target)) return;
     if (window.contextSnapOS?.ownsKeyboard()) return; // the sample desktop is on screen and handles it
     Sound.unlock();
@@ -351,17 +351,6 @@
   });
 
   document.addEventListener("keyup", (event) => {
-    // When ContextSnap itself is running, Windows hands it Ctrl+Alt+Shift+C (RegisterHotKey) and the page
-    // only sees C come back up. That release still means the shortcut was pressed, so show the press.
-    const handedOff = event.code === "KeyC" && event.ctrlKey && event.altKey && event.shiftKey && !cDown;
-    if (event.code === "KeyC") cDown = false;
-    if (handedOff && !isTyping(event.target) && !window.contextSnapOS?.ownsKeyboard()) {
-      runShortcut("physical");
-      if (inView) {
-        press(combo.c);
-        setTimeout(() => release(combo.c), 160);
-      }
-    }
     syncPhysicalModifiers(event);
     if (!physicalKeys.has(event.code)) return;
     physicalKeys.delete(event.code);
