@@ -125,12 +125,13 @@ h1 { padding-bottom: 0.08em; font-size: 40px; line-height: 1; letter-spacing: -0
 .fine { margin-top: 16px; color: var(--text-3); font-size: 14px; line-height: 20px; }
 
 /* Home page: header, the keyboard-and-chat stage, and the download section. */
-.stage { padding: calc(var(--header-h) + 16px) 0 16px; background: linear-gradient(180deg, #f3f2ef 0%, var(--bg-warm) 70%, #fbfaf8 100%); }
+.stage { padding: calc(var(--header-h) + 16px) 0 calc(16px + var(--consent)); background: linear-gradient(180deg, #f3f2ef 0%, var(--bg-warm) 70%, #fbfaf8 100%); }
 /* The first screen is one viewport tall: headline, the two buttons, and the demo, centered in it. While
-   the cookie banner is up, the hero leaves room for it (--reserve) so it never covers the demo. */
-:root { --reserve: 0px; }
-html:has(#consent-banner) { --reserve: 112px; }
-.stage > .wrap { max-width: none; padding: 0; display: grid; align-content: center; min-height: calc(100svh - var(--header-h) - 32px - var(--reserve)); }
+   the cookie banner is up, the demo shrinks to stay clear of it (--consent) and the hero's bottom padding
+   grows by the same amount, so the hero keeps its height and the sections below never move. */
+:root { --reserve: 0px; --consent: 0px; }
+html.consent-open { --consent: 112px; } /* set by gtag.js before the first paint */
+.stage > .wrap { max-width: none; padding: 0; display: grid; align-content: center; min-height: calc(100svh - var(--header-h) - 32px - var(--reserve) - var(--consent)); }
 .stage-head { margin-bottom: 16px; padding: 0 24px; text-align: center; }
 .stage-head h1 { font-size: clamp(28px, 3vw, 40px); }
 .stage-head .lead { margin: 8px auto 0; }
@@ -151,7 +152,7 @@ html:has(#consent-banner) { --reserve: 112px; }
    chat's messages never make the demo taller; they scroll inside it. */
 .demo.is-home {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); justify-self: center; width: min(90%, 1180px);
-  height: clamp(340px, calc(100svh - var(--header-h) - 250px - var(--reserve)), 560px); margin-top: 0; contain: size;
+  height: clamp(340px, calc(100svh - var(--header-h) - 250px - var(--reserve) - var(--consent)), 560px); margin-top: 0; contain: size;
   background: none; box-shadow: none;
 }
 .is-home .demo-desk {
@@ -561,6 +562,15 @@ h3 { font-size: 18px; line-height: 28px; letter-spacing: -0.01em; }
 
 /* Downloads, privacy, and the closing call to action ------------------------------------------- */
 .get, .privacy, .closing { background: #fbfaf8; }
+/* The sections below the first screen skip style, layout, and paint until they come near the viewport,
+   which keeps the first layout small and makes the sample desktop's replay free while it is off screen.
+   The sizes are estimates used only until each section has been rendered once. */
+.desk-section, .get, .privacy, .closing { content-visibility: auto; }
+.desk-section { contain-intrinsic-size: auto 760px; }
+.get { contain-intrinsic-size: auto 480px; }
+.privacy { contain-intrinsic-size: auto 460px; }
+.closing { contain-intrinsic-size: auto 260px; }
+.privacy-note { max-width: 680px; margin-left: auto; margin-right: auto; text-align: center; }
 .get, .privacy { padding: 88px 0 0; }
 .get-head { max-width: 560px; margin: 0 auto 32px; text-align: center; }
 .get-head h2 { font-size: clamp(28px, 3vw, 36px); line-height: 1.15; }
@@ -799,16 +809,16 @@ h3 { font-size: 18px; line-height: 28px; letter-spacing: -0.01em; }
   .site-header { padding: 8px 8px 0; }
   .nav-bar { width: auto; height: 48px; padding: 0 4px 0 12px; }
   .nav-links a { padding: 0 8px; }
-  .stage { padding-top: calc(var(--header-h) + 12px); padding-bottom: 16px; }
+  .stage { padding-top: calc(var(--header-h) + 12px); padding-bottom: calc(16px + var(--consent)); }
   /* The hero fills the screen above the reserved bottom edge exactly: headline, then the demo takes the
      rest. The reserve keeps the collector (and the cookie banner, while it shows) clear of the chat. */
   :root { --reserve: 64px; }
-  .stage > .wrap { height: calc(100svh - var(--header-h) - 28px - var(--reserve)); min-height: 520px; grid-template-rows: auto minmax(0, 1fr); align-content: stretch; }
+  .stage > .wrap { height: calc(100svh - var(--header-h) - 28px - var(--reserve) - var(--consent)); min-height: calc(520px - var(--consent)); grid-template-rows: auto minmax(0, 1fr); align-content: stretch; }
   .stage-head { margin-bottom: 12px; padding: 0 16px; }
   .stage-head h1 { font-size: 26px; line-height: 30px; }
   .stage-head .lead { font-size: 14px; line-height: 20px; }
   /* Stacked on a phone: a strip of the keyboard above the chat. */
-  html:has(#consent-banner) { --reserve: 150px; }
+  html.consent-open { --consent: 86px; }
   /* A shorter cookie banner on phones, so the hero above it keeps enough room. */
   .consent { gap: 10px 12px; padding: 12px 14px; }
   .consent p { flex-basis: 100%; font-size: 13px; line-height: 18px; }
@@ -819,8 +829,8 @@ h3 { font-size: 18px; line-height: 28px; letter-spacing: -0.01em; }
   .demo-desk.is-crop .kb { --u: 40px; left: 14px; top: calc(126px - 5.6 * var(--u)); transform: none; }
   .is-home .chat { grid-row: 2; grid-column: 1; margin: -16px 10px 10px; border-radius: 16px; }
   /* While the cookie banner is up, the collector waits (a capture then fills it without the flight). */
-  html:has(#consent-banner) .collector { display: none; }
-  html:has(#consent-banner) .suggest { display: none; }
+  html.consent-open .collector { display: none; }
+  html.consent-open .suggest { display: none; }
   .downloads { grid-template-columns: minmax(0, 1fr); }
   .downloads > .download, .downloads > .dl-body, .downloads > [data-platform="linux"], #dl-linux-details { grid-column: 1; grid-row: auto; }
   .downloads > [data-platform="linux"] { order: 2; }
@@ -829,6 +839,9 @@ h3 { font-size: 18px; line-height: 28px; letter-spacing: -0.01em; }
   .dl-body { padding: 8px 20px 20px; }
   .privacy-list { grid-template-columns: minmax(0, 1fr); }
   .get, .privacy { padding-top: 64px; }
+  .get { contain-intrinsic-size: auto 780px; }
+  .privacy { contain-intrinsic-size: auto 830px; }
+  .closing { contain-intrinsic-size: auto 330px; }
   .download { padding: 20px; }
   .dl-specs div { padding: 10px; }
   .privacy-list li { padding: 18px 20px; }

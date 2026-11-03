@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Download stats</title>
+<!-- The Convex deployment whose /stats endpoint this page reads (convex/http.ts). -->
+<meta name="contextsnap-downloads" content="https://notable-cow-268.convex.site">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="stats.css">
+<script src="stats.js" defer></script>
+</head>
+<body>
+<main class="viz-root">
+  <header class="top">
+    <h1>Download stats</h1>
+    <p class="muted">Clicks on the website's download buttons (attempts, not completed downloads).</p>
+  </header>
+
+  <form class="unlock" data-unlock>
+    <label for="token">Dashboard token</label>
+    <div class="unlock-row">
+      <input id="token" name="token" type="password" autocomplete="off" spellcheck="false" required>
+      <button type="submit">Show stats</button>
+    </div>
+    <p class="muted small">The token is the <code>STATS_TOKEN</code> environment variable of the Convex deployment. It stays in this tab only.</p>
+  </form>
+  <p class="status" data-status role="status"></p>
+
+  <section class="report" data-report hidden>
+    <div class="toolbar">
+      <label for="range">Range</label>
+      <select id="range" data-range>
+        <option value="14">Last 14 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="90">Last 90 days</option>
+      </select>
+      <button type="button" class="ghost" data-lock>Forget token</button>
+    </div>
+
+    <div class="tiles">
+      <div class="tile"><p class="tile-label">Download attempts</p><p class="tile-value" data-total>–</p><p class="muted small">all time</p></div>
+      <div class="tile"><p class="tile-label">Estimated unique downloaders</p><p class="tile-value" data-unique>–</p><p class="muted small">distinct browsers, all time</p></div>
+    </div>
+
+    <section class="card" aria-labelledby="platform-title">
+      <h2 id="platform-title">Windows and Linux</h2>
+      <div class="split" data-split aria-hidden="true"></div>
+      <ul class="legend" data-platforms></ul>
+    </section>
+
+    <section class="card" aria-labelledby="daily-title">
+      <h2 id="daily-title">Attempts per day <span class="muted small">(UTC)</span></h2>
+      <ul class="legend legend-inline">
+        <li><span class="swatch s-windows"></span>Windows</li>
+        <li><span class="swatch s-linux"></span>Linux</li>
+      </ul>
+      <div class="chart" data-chart></div>
+      <details class="table-view">
+        <summary>Show as a table</summary>
+        <table><thead><tr><th scope="col">Day</th><th scope="col">Windows</th><th scope="col">Linux</th><th scope="col">Total</th></tr></thead><tbody data-daily-rows></tbody></table>
+      </details>
+    </section>
+
+    <section class="card" aria-labelledby="version-title">
+      <h2 id="version-title">By release version</h2>
+      <table class="versions"><thead><tr><th scope="col">Version</th><th scope="col">Windows</th><th scope="col">Linux</th><th scope="col">Total</th></tr></thead><tbody data-versions></tbody></table>
+    </section>
+  </section>
+</main>
+</body>
+</html>

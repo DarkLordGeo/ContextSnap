@@ -52,6 +52,68 @@ for (const toggle of toggles) {
   });
 }
 
+// Download counting (convex/http.ts): a click on a download button sends the platform, the release
+// version, and a random per-browser ID to the Convex deployment named in the page's
+// <meta name="contextsnap-downloads"> tag. It is a download attempt, not a completed download. The link
+// itself is untouched, so the download never waits for this or depends on it: the beacon is queued and
+// the browser follows the link as usual. A visitor who declined analytics in the cookie banner is still
+// counted, but without the ID.
+const countDownload = (() => {
+  const endpoint = (() => {
+    try {
+      const url = new URL("/downloads", document.querySelector('meta[name="contextsnap-downloads"]')?.content);
+      const local = url.hostname === "127.0.0.1" || url.hostname === "localhost";
+      return url.protocol === "https:" || (local && location.hostname === url.hostname) ? url.href : null;
+    } catch {
+      return null; // not configured
+    }
+  })();
+  const VISITOR_KEY = "contextsnap-download-visitor";
+  const declined = () => {
+    try { return localStorage.getItem("contextsnap-analytics-consent") === "denied"; } catch { return false; }
+  };
+  const newId = () => {
+    if (crypto.randomUUID) return crypto.randomUUID();
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = [...bytes].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  };
+  const visitorId = () => {
+    try {
+      if (declined()) {
+        localStorage.removeItem(VISITOR_KEY);
+        return undefined;
+      }
+      let id = localStorage.getItem(VISITOR_KEY);
+      if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id)) {
+        id = newId();
+        localStorage.setItem(VISITOR_KEY, id);
+      }
+      return id;
+    } catch {
+      return undefined; // storage blocked: counted without an ID
+    }
+  };
+  // A second click on the same button within a few seconds (a double click) is not counted again.
+  const lastSent = new Map();
+  return (platform, version) => {
+    if (!endpoint) return;
+    try {
+      const now = Date.now();
+      if (now - (lastSent.get(platform) ?? 0) < 4000) return;
+      lastSent.set(platform, now);
+      const body = JSON.stringify({ platform, version, visitorId: visitorId() });
+      // text/plain keeps it a simple request (no CORS preflight); the beacon outlives the page.
+      const sent = navigator.sendBeacon?.(endpoint, new Blob([body], { type: "text/plain;charset=UTF-8" }));
+      if (!sent) fetch(endpoint, { method: "POST", body, keepalive: true, mode: "no-cors", headers: { "Content-Type": "text/plain;charset=UTF-8" } }).catch(() => {});
+    } catch {
+      /* counting never gets in the way of the download */
+    }
+  };
+})();
+
 if (document.querySelector(".download")) {
   fetch("downloads.json", { cache: "no-store" })
     .then((response) => (response.ok ? response.json() : Promise.reject(new Error(response.statusText))))
@@ -89,6 +151,13 @@ if (document.querySelector(".download")) {
         button.href = platform.file;
         button.textContent = `Download for ${platform.label}`;
         button.removeAttribute("aria-disabled");
+        const platformName = card.dataset.platform;
+        if (button.dataset.counted === undefined && (platformName === "windows" || platformName === "linux") && typeof data.version === "string") {
+          button.dataset.counted = "";
+          const count = (event) => { if (event.type === "click" || event.button === 1) countDownload(platformName, data.version); };
+          button.addEventListener("click", count);
+          button.addEventListener("auxclick", count); // middle click opens it in a new tab
+        }
       }
     })
     .catch(() => {});

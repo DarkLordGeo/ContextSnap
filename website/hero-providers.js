@@ -314,22 +314,31 @@
   };
 
   // The rotation ---------------------------------------------------------------------------------------
+  // The keyboard tap and the context flying into the chat play once, after the page loads; each later chat
+  // in the rotation already has the context attached and just answers.
+  let captured = false;
+  const answer = () => {
+    const length = sim.deliver(sim.home.snapshot());
+    progressOf(index).animate([{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }], { duration: length + HOLD, easing: "linear", fill: "forwards" });
+    later(next, length + HOLD);
+  };
   const cycle = () => {
     if (!canPlay()) {
       later(cycle, 800);
       return;
     }
+    if (captured) {
+      answer();
+      return;
+    }
+    captured = true;
     const tapped = window.contextSnapKeyboard?.tap() ?? 0;
     later(() => {
       if (!canPlay()) {
         later(cycle, 800);
         return;
       }
-      flyIn(() => {
-        const length = sim.deliver(sim.home.snapshot());
-        progressOf(index).animate([{ transform: "scaleX(0)" }, { transform: "scaleX(1)" }], { duration: length + HOLD, easing: "linear", fill: "forwards" });
-        later(next, length + HOLD);
-      });
+      flyIn(answer);
     }, tapped);
   };
   const next = () => {
@@ -373,11 +382,15 @@
   window.contextSnapHero = { flyIn, hold };
 
   apply(0);
+  let headlineInView = true;
+  if (slot && "IntersectionObserver" in window) {
+    new IntersectionObserver(([entry]) => { headlineInView = entry.isIntersecting; }).observe(slot);
+  }
   if (!still.matches) {
     let named = 0;
     headline(PROVIDERS[named], false);
     window.setInterval(() => {
-      if (document.hidden) return;
+      if (document.hidden || !headlineInView) return; // nothing to see: no layout work off screen
       named = (named + 1) % PROVIDERS.length;
       headline(PROVIDERS[named], true);
     }, 2600);
