@@ -77,7 +77,8 @@ kbd {
 .site-header { position: fixed; top: 0; left: 0; right: 0; z-index: var(--z-header); padding: 12px 24px 0; pointer-events: none; }
 .nav-bar {
   position: relative; isolation: isolate; display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  max-width: var(--content); height: 52px; margin: 0 auto; padding: 0 8px 0 16px; border-radius: 14px; pointer-events: auto;
+  /* As wide as the hero demo and the sample desktop (90% of the page, at most 1180px). */
+  width: min(calc((100% + 48px) * 0.9), 1180px); height: 52px; /* 100% + 48px: the header padding back in */ margin: 0 auto; padding: 0 8px 0 16px; border-radius: 14px; pointer-events: auto;
 }
 .nav-bar::before {
   content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
@@ -776,7 +777,7 @@ h3 { font-size: 18px; line-height: 28px; letter-spacing: -0.01em; }
 @media (max-width: 767px) {
   :root { --header-h: 60px; }
   .site-header { padding: 8px 8px 0; }
-  .nav-bar { height: 48px; padding: 0 4px 0 12px; }
+  .nav-bar { width: auto; height: 48px; padding: 0 4px 0 12px; }
   .nav-links a { padding: 0 8px; }
   .stage { padding-top: calc(var(--header-h) + 12px); padding-bottom: 16px; }
   /* The hero fills the screen above the reserved bottom edge exactly: headline, then the demo takes the
