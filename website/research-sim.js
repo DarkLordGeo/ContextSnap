@@ -71,7 +71,7 @@
     const listeners = new Set();
     const APPS = {
       browser: { process: "msedge", name: "Edge", app: "Microsoft Edge", icon: "edge", title: () => `${TABS[state.tab].title} - Microsoft Edge` },
-      pdf: { process: "PDFReader", name: "PDF Reader", app: "PDF Reader", icon: "pdf", title: () => `${PAPER.file} - PDF Reader` },
+      pdf: { process: "Acrobat", name: "Acrobat Reader", app: "Adobe Acrobat Reader", icon: "pdf", title: () => `${PAPER.file} - Adobe Acrobat Reader` },
       notes: { process: "Notepad", name: "Notepad", app: "Notepad", icon: "notes", title: () => "research-notes.txt - Notepad" },
       assistant: { process: "msedge", name: "Assistant", app: "Microsoft Edge", icon: "chat", title: () => "ChatGPT - Microsoft Edge" },
     };
