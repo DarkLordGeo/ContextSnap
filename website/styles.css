@@ -383,6 +383,7 @@ html:has(#consent-banner) { --reserve: 112px; }
   --c-font: ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; --c-ai-font: var(--c-font);
   --c-size: 14px; --c-lh: 22px;
   background: var(--c-bg); color: var(--c-text); font-family: var(--c-font);
+  transition: background-color 280ms var(--ease-out), color 280ms var(--ease-out);
 }
 .chat-head { gap: 6px; color: var(--c-text); box-shadow: 0 1px 0 var(--c-line); }
 .chat-mark { width: 18px; height: 18px; flex: none; color: var(--c-text); }
