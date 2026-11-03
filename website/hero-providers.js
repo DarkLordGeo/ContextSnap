@@ -13,10 +13,10 @@
   if (!demo || !chat || !sim) return;
 
   const PROVIDERS = [
-    { id: "chatgpt", title: "ChatGPT", placeholder: "Ask anything" },
-    { id: "claude", title: "Billing API 404s", placeholder: "Reply to Claude…" },
-    { id: "gemini", title: "Gemini", placeholder: "Ask Gemini" },
-    { id: "cursor", title: "Billing API 404s", placeholder: "Plan, search, build anything" },
+    { id: "chatgpt", name: "ChatGPT", title: "ChatGPT", placeholder: "Ask anything" },
+    { id: "claude", name: "Claude", title: "Billing API 404s", placeholder: "Reply to Claude…" },
+    { id: "gemini", name: "Gemini", title: "Gemini", placeholder: "Ask Gemini" },
+    { id: "cursor", name: "Cursor", title: "Billing API 404s", placeholder: "Plan, search, build anything" },
   ];
   const HOLD = 2600; // ms the finished answer stays before the next chat
   const FLIGHT = 900; // ms for the card from the keyboard to the composer
@@ -41,9 +41,53 @@
   const canPlay = () => !still.matches && inView && !chat.matches(":hover") && !document.hidden && Date.now() >= heldUntil && !sim.busy;
   const progressOf = (i) => tabs[i].querySelector(".provider-progress");
 
+  // Headline: "Give [logo] ChatGPT the context it's missing." The logo and name fade over to the next AI
+  // while the slot eases to the new width, so the line never jumps.
+  const slot = document.querySelector("[data-h1-ai]");
+  const NS = "http://www.w3.org/2000/svg";
+  const nameItem = (provider) => {
+    const item = document.createElement("span");
+    item.className = "h1-ai-item";
+    const logo = document.createElementNS(NS, "svg");
+    logo.setAttribute("class", "h1-ai-logo");
+    const use = document.createElementNS(NS, "use");
+    use.setAttribute("href", `#pv-${provider.id}`);
+    logo.append(use);
+    const text = document.createElement("span");
+    text.className = "h1-ai-text";
+    text.textContent = provider.name;
+    item.append(logo, text);
+    return item;
+  };
+  const headline = (provider, animate) => {
+    if (!slot) return;
+    const old = slot.querySelector(".h1-ai-item:not(.is-leaving)");
+    const item = nameItem(provider);
+    if (!animate || still.matches || !old) {
+      slot.replaceChildren(item);
+      return;
+    }
+    slot.querySelectorAll(".is-leaving").forEach((node) => node.remove());
+    const from = slot.getBoundingClientRect().width;
+    old.classList.add("is-leaving");
+    slot.append(item);
+    const to = item.getBoundingClientRect().width;
+    const ease = "cubic-bezier(0.2, 0.8, 0.2, 1)";
+    slot.animate([{ width: `${from}px` }, { width: `${to}px` }], { duration: 520, easing: ease });
+    old.animate([
+      { opacity: 1, transform: "none", filter: "blur(0)" },
+      { opacity: 0, transform: "translateY(-0.3em)", filter: "blur(6px)" },
+    ], { duration: 320, easing: "cubic-bezier(0.4, 0, 1, 1)", fill: "forwards" }).onfinish = () => old.remove();
+    item.animate([
+      { opacity: 0, transform: "translateY(0.3em)", filter: "blur(6px)" },
+      { opacity: 1, transform: "none", filter: "blur(0)" },
+    ], { duration: 520, delay: 140, easing: ease, fill: "backwards" });
+  };
+
   // Skin -----------------------------------------------------------------------------------------------
-  const apply = (i) => {
+  const apply = (i, animate = true) => {
     const provider = PROVIDERS[i];
+    headline(provider, animate);
     chat.dataset.provider = provider.id;
     titleEl.textContent = provider.title;
     markEl.setAttribute("href", `#pv-${provider.id}`);
@@ -179,6 +223,6 @@
 
   window.snapctxHero = { flyIn, hold };
 
-  apply(0);
+  apply(0, false);
   if (!still.matches) later(cycle, 1400);
 })();

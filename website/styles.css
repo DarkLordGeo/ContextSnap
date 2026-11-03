@@ -128,6 +128,11 @@ html:has(#consent-banner) { --reserve: 112px; }
 .stage-head { margin-bottom: 16px; padding: 0 24px; text-align: center; }
 .stage-head h1 { font-size: clamp(28px, 3vw, 40px); }
 .stage-head .lead { margin: 8px auto 0; }
+/* The AI named in the headline (hero-providers.js): its logo and name fade over to the next one. */
+.h1-ai { position: relative; display: inline-block; white-space: nowrap; vertical-align: bottom; text-align: left; }
+.h1-ai-item { display: inline-flex; align-items: center; gap: 0.2em; }
+.h1-ai-item.is-leaving { position: absolute; left: 0; top: 0; pointer-events: none; }
+.h1-ai-logo { width: 0.8em; height: 0.8em; flex: none; color: var(--text); }
 .stage-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 18px; }
 /* One desk: the keyboard is the anchor on the left; the chat is a window standing on the right of the
    same desk, over the end of the keyboard, where the captured context lands. Size containment: the
