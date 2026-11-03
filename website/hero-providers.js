@@ -382,11 +382,15 @@
   window.contextSnapHero = { flyIn, hold };
 
   apply(0);
+  let headlineInView = true;
+  if (slot && "IntersectionObserver" in window) {
+    new IntersectionObserver(([entry]) => { headlineInView = entry.isIntersecting; }).observe(slot);
+  }
   if (!still.matches) {
     let named = 0;
     headline(PROVIDERS[named], false);
     window.setInterval(() => {
-      if (document.hidden) return;
+      if (document.hidden || !headlineInView) return; // nothing to see: no layout work off screen
       named = (named + 1) % PROVIDERS.length;
       headline(PROVIDERS[named], true);
     }, 2600);

@@ -44,7 +44,13 @@
     }
   };
 
+  // While the banner is up, <html> carries "consent-open" so the hero leaves room for it (styles.css).
+  // It is set here, before the first paint, rather than when the banner is added after parsing, so the
+  // page never re-lays out (or shifts) when the banner appears.
+  const markOpen = (open) => document.documentElement.classList.toggle("consent-open", open);
+
   const showBanner = (focus) => {
+    markOpen(true);
     let banner = document.getElementById("consent-banner");
     if (!banner) {
       banner = document.createElement("section");
@@ -64,6 +70,7 @@
         saveChoice(choice);
         if (choice === "granted") enable(); else disable();
         banner.remove();
+        markOpen(false);
       });
       document.body.appendChild(banner);
     }
@@ -71,6 +78,7 @@
   };
 
   if (readChoice() === "granted") enable();
+  if (readChoice() === null) markOpen(true);
 
   document.addEventListener("DOMContentLoaded", () => {
     if (readChoice() === null) showBanner(false);
