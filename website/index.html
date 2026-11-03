@@ -8,6 +8,8 @@
 <title>ContextSnap: Give your AI the context it's missing</title>
 <meta name="description" content="ContextSnap captures what you are working on as readable, redacted Markdown and copies it to your clipboard with Ctrl + Alt + Shift + C. Processed locally on Windows and Linux.">
 <meta name="theme-color" content="#f7f5f2">
+<!-- Where download clicks are counted (app.js, convex/http.ts). Remove it to turn counting off. -->
+<meta name="contextsnap-downloads" content="https://colorful-chickadee-319.convex.site">
 <meta property="og:title" content="ContextSnap">
 <meta property="og:description" content="One shortcut turns your current context into Markdown on your clipboard. Processed on your machine. You choose where to paste it.">
 <meta property="og:type" content="website">
@@ -433,6 +435,7 @@
         <li><h3>Sensitive information is redacted</h3><p>Keys, tokens, passwords, and email addresses are replaced before copying. It can miss things, so look before you paste.</p></li>
         <li><h3>Private data stays untouched</h3><p>It never reads file contents, password fields, cookies, browser history, or environment variables.</p></li>
       </ul>
+      <p class="fine">This website counts clicks on its download buttons: the platform, the version, the time, and a random ID kept in your browser to estimate unique downloads (left out if you decline cookies). No names, emails, or IP addresses are stored, and the apps themselves never send anything.</p>
       <p class="fine get-links"><a href="https://github.com/DarkLordGeo/ContextSnap" rel="noopener">Read the source</a><button type="button" class="link-button" data-consent-open>Cookie settings</button></p>
     </div>
   </section>

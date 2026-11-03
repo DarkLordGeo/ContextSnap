@@ -1,0 +1,14 @@
+{
+  "name": "contextsnap-download-analytics",
+  "private": true,
+  "description": "Convex backend that counts download attempts from the ContextSnap website. Not part of the desktop app.",
+  "scripts": {
+    "convex:dev": "convex dev",
+    "convex:deploy": "convex deploy",
+    "typecheck": "tsc -p convex --noEmit"
+  },
+  "devDependencies": {
+    "convex": "1.49.0",
+    "typescript": "5.9.3"
+  }
+}

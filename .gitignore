@@ -44,3 +44,7 @@ website/downloads/
 *.provisionprofile
 .env
 .env.*
+
+# Convex download analytics (convex/): dependencies and local state
+node_modules/
+.convex/
