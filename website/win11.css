@@ -89,10 +89,57 @@
 .win:not([hidden]) { animation: win-in 180ms var(--ease-out); }
 .win.is-active { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18), 0 32px 64px rgba(0, 0, 0, 0.28), 0 2px 21px rgba(0, 0, 0, 0.2); }
 .win.is-max { left: 0 !important; top: 0 !important; width: 100% !important; height: 100% !important; border-radius: 0; }
-.win[data-app="editor"] { left: 2%; top: 3%; width: 50%; height: 62%; }
-.win[data-app="terminal"] { left: 12%; top: 46%; width: 44%; height: 50%; }
-.win[data-app="files"] { left: 45%; top: 7%; width: 20%; height: 42%; }
-.win[data-app="system"] { left: 45%; top: 52%; width: 20%; height: 34%; }
+.win[data-app="browser"] { left: 2%; top: 3%; width: 50%; height: 60%; }
+.win[data-app="pdf"] { left: 13%; top: 38%; width: 40%; height: 58%; }
+.win[data-app="notes"] { left: 44%; top: 10%; width: 23%; height: 48%; }
+/* During the replay each source is briefly in the spotlight. */
+.win.is-spot { box-shadow: 0 0 0 2px var(--accent), 0 32px 64px rgba(0, 0, 0, 0.28), 0 0 0 8px rgba(0, 103, 192, 0.18); }
+
+/* Edge: tabs in the title bar, then the address bar and the page. */
+.br-bar { gap: 0; padding-left: 6px; background: #ebebeb; }
+.win:not(.is-active) .br-bar { background: #f3f3f3; }
+.br-tabs { display: flex; flex: 1; align-self: flex-end; gap: 2px; min-width: 0; height: 28px; }
+.br-tab {
+  display: flex; align-items: center; gap: 6px; flex: 0 1 170px; min-width: 0; padding: 0 10px; border: 0; border-radius: 8px 8px 0 0;
+  background: none; color: #3d3d3d; font: 12px/16px var(--font); cursor: default;
+}
+.br-tab:hover { background: rgba(255, 255, 255, 0.5); }
+.br-tab[aria-selected="true"] { background: #fff; color: #1b1b1b; box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.04); }
+.br-tab-title { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.br-fav { display: grid; place-items: center; width: 14px; height: 14px; flex: none; border-radius: 3px; background: #2f6fc6; color: #fff; font: 700 8px/1 var(--font); }
+.br-tab:nth-child(2) .br-fav { background: #16a34a; }
+.br-tab:nth-child(3) .br-fav { background: #6b7280; }
+.br-tab:nth-child(4) .br-fav { background: #c2410c; }
+.br-toolbar { display: flex; flex: none; align-items: center; gap: 10px; height: 36px; padding: 0 10px; background: #fff; box-shadow: inset 0 -1px 0 #ececec; }
+.br-nav { display: flex; gap: 12px; }
+.br-nav i { width: 8px; height: 8px; border: solid #8a8a8a; border-width: 1.5px 1.5px 0 0; transform: rotate(-135deg); }
+.br-nav i:nth-child(2) { transform: rotate(45deg); }
+.br-nav i:nth-child(3) { border-radius: 50%; border-width: 1.5px; border-right-color: transparent; transform: none; }
+.br-url { flex: 1; min-width: 0; height: 26px; padding: 0 12px; border-radius: 999px; background: #f1f1f1; color: #5c5c5c; font-size: 12px; line-height: 26px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.br-host { color: #1b1b1b; }
+.br-page { flex: 1; min-height: 0; overflow: auto; padding: 18px 24px; background: #fff; color: #1b1b1b; }
+.br-site { margin: 0 0 4px; color: #5c5c5c; font-size: 11px; line-height: 16px; text-transform: uppercase; letter-spacing: 0.04em; }
+.br-h { margin: 0 0 10px; font: 600 19px/25px var(--font); }
+.br-p { margin: 0 0 10px; font-size: 13px; line-height: 20px; color: #333; }
+
+/* PDF reader: a toolbar and a white page on gray. */
+.pdf-tools { display: flex; flex: none; align-items: center; gap: 16px; height: 34px; padding: 0 12px; background: #f9f9f9; color: #5c5c5c; font-size: 11.5px; box-shadow: inset 0 -1px 0 #e5e5e5; }
+.pdf-hl-tool { margin-left: auto; padding: 2px 8px; border-radius: 4px; background: #fff3a8; color: #5c4a00; }
+.pdf-view { flex: 1; min-height: 0; overflow: auto; padding: 16px; background: #e7e7e7; }
+.pdf-page { max-width: 520px; margin: 0 auto; padding: 22px 26px; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15); color: #222; font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif; }
+.pdf-journal { margin: 0 0 6px; color: #777; font: 10.5px/14px var(--font); }
+.pdf-title { margin: 0 0 6px; font: 600 16px/21px ui-serif, Georgia, Cambria, "Times New Roman", serif; }
+.pdf-authors { margin: 0 0 12px; color: #555; font-size: 11.5px; font-style: italic; }
+.pdf-h { margin: 12px 0 4px; font: 600 12px/16px var(--font); }
+.pdf-p { margin: 0; font-size: 12.5px; line-height: 19px; }
+.pdf-mark { padding: 0 1px; background: #fff3a8; color: inherit; }
+.win.is-spot .pdf-mark { animation: mark-on 900ms var(--ease-out); }
+@keyframes mark-on { from { background: transparent; } }
+
+/* Notepad (Windows 11): a menu row, plain text, a status bar. */
+.np-menu { display: flex; flex: none; gap: 14px; height: 30px; padding: 0 12px; align-items: center; background: #f9f9f9; color: #1b1b1b; font-size: 12px; }
+.np-text { flex: 1; min-height: 0; margin: 0; padding: 10px 14px; overflow: auto; background: #fff; color: #1b1b1b; font: 12.5px/20px "Cascadia Mono", Consolas, var(--mono); white-space: pre-wrap; box-shadow: inset 0 1px 0 #ececec; }
+.np-status { display: flex; flex: none; gap: 16px; height: 24px; padding: 0 12px; align-items: center; background: #f3f3f3; color: #5c5c5c; font-size: 11px; }
 .win[data-app="assistant"] { left: 66%; top: 3%; width: 33%; height: 94%; }
 @keyframes win-in { from { opacity: 0; transform: scale(0.97); } }
 

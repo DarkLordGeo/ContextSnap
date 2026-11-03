@@ -99,3 +99,9 @@ Done and checked in the browser (1366/800/375 px):
 - The provider marks are simplified local SVG drawings, and the switcher's label says the chats are illustrations and Snapctx is not affiliated with them.
 
 Limitations: the provider interfaces are approximations drawn from memory, not pixel copies; no external fonts are loaded, so product typefaces fall back to system fonts.
+
+## Website: research scenario on the sample desktop (2026-11-03)
+
+- The sample Windows desktop now shows a research session: Edge with four renewable-energy tabs, a paper in a PDF reader with highlighted findings, Notepad notes, and the AI chat (research-sim.js; os-demo.js renders it). The replay spotlights each source, presses the shortcut, captures, attaches Snapctx.md, and the assistant summarizes across sources using only what was captured (other tabs are titles only).
+- All sources, authors, and figures are sample content written for the demo. The hero keyboard demo still uses the coding scenario.
+- Checked at 1100 and 375 px; full sequence runs without console errors.
