@@ -332,176 +332,161 @@
     at(Math.max(0, fx.duration - 320), () => extract(snap, source));
   }
 
-  // The sheets are the snapshot's parts, the same ones as the context cards on the page, at most five.
-  const sheetsFor = (snap) => snap.parts.slice(0, 5).map((part) => ({
-    // The window the part was read from: the active one for the header, none for system context.
-    app: part.group === "head" ? snap.active : part.group === "system" ? null : part.id,
-    label: part.category,
-    icon: part.source.icon,
-    lines: sim.previewLines(part),
-  }));
-  const sheetElement = (sheet, w, h) => {
-    const element = el("div", "sheet");
-    element.style.width = `${w}px`;
-    element.style.height = `${h}px`;
-    const label = el("p", "sheet-label");
-    label.append(sim.appIcon(sheet.icon), el("span", "", `## ${sheet.label}`));
-    element.append(label, el("pre", "sheet-lines", sheet.lines.join("\n")));
-    return element;
+  // Stage B: progressive collection. One source window at a time glows and shows a small "Collecting"
+  // tag; a compact card with what was read lifts off it and travels into the ContextSnap panel in the
+  // middle of the screen, where it becomes a labeled item. Items accumulate in order (browser, PDF,
+  // notes), the panel confirms, then hands everything to the chat. A fixed timeline; no randomness.
+  const COLLECT = {
+    browser: { label: "Browser context", icon: "chrome", detail: () => `${content.TABS.length} tabs · ${content.TABS[desk.state.tab].title}` },
+    pdf: { label: "PDF document", icon: "pdf", detail: () => `${content.PAPER.file} · ${content.PAPER.highlights.length} highlights` },
+    notes: { label: "Notes", icon: "notes", detail: () => `research-notes.txt · ${content.NOTES.filter(Boolean).length} lines` },
   };
+  const firstLines = (text) => text.split("\n").map((line) => line.trim()).filter(Boolean).slice(0, 2);
+  const EASE = "cubic-bezier(0.22, 0.8, 0.24, 1)";
 
-  // Stage B and C: sheets lift out of the captured window in a shallow fan, fly onto a small clipboard
-  // and slide under its clip, stacking into one document, ContextSnap.md (the real app copies to the
-  // clipboard). The clipboard then carries it to the chat, where it becomes the attachment.
-  const TILT = "rotateX(16deg) rotateY(-12deg) rotateZ(-3deg)";
-  const SPRING = "cubic-bezier(0.34, 1.4, 0.64, 1)";
-  function extract(snap, source) {
+  function extract(snap) {
     phase = "transfer";
     setStep("extract");
-    setPill("Extracting context");
-    announce("Extracting context into a Markdown snapshot.");
+    setPill("");
+    announce("ContextSnap is collecting context from each open window.");
+    const apps = ["browser", "pdf", "notes"].filter((app) => app in snap.textOf);
     const box = relTo(screen);
-    const fromWin = source && desk.visible(source) ? relTo(wins[source]) : { x: box.w * 0.3, y: box.h * 0.3, w: box.w * 0.4, h: box.h * 0.4 };
-    // The chat comes forward now, so the document has somewhere to go.
-    scriptedChange(() => desk.focusApp("assistant"));
-    if (reduce.matches) {
-      clearOverlays();
+
+    // The panel, centered on the screen, with one slot per source (filled as each one arrives).
+    const pw = Math.round(Math.min(300, Math.max(220, box.w * 0.28), box.w - 32));
+    const panel = el("div", "cpanel");
+    panel.style.width = `${pw}px`;
+    const head = el("p", "cpanel-head");
+    const logo = el("img", "cpanel-logo");
+    logo.src = "favicon.svg";
+    logo.alt = "";
+    const state = el("span", "cpanel-state", "Collecting context…");
+    head.append(logo, el("b", "", "ContextSnap"), state);
+    const list = el("ul", "cpanel-items");
+    const items = apps.map((app) => {
+      const item = el("li", "cpanel-item is-pending");
+      const text = el("span", "cpanel-text");
+      text.append(el("b", "", COLLECT[app].label), el("small", "", COLLECT[app].detail()));
+      item.append(sim.appIcon(COLLECT[app].icon, "cpanel-ic"), text, el("span", "cpanel-check"));
+      list.append(item);
+      return item;
+    });
+    const count = el("p", "cpanel-foot", `0 of ${apps.length} sources`);
+    panel.append(head, list, count);
+    stage.append(panel);
+    const ph = panel.offsetHeight;
+    panel.style.left = `${Math.round(box.w / 2 - pw / 2)}px`;
+    panel.style.top = `${Math.round(Math.min(box.h - ph - 16, Math.max(16, box.h * 0.52 - ph / 2)))}px`;
+    panel.style.opacity = "0";
+
+    if (reduce.matches || !apps.length) {
+      panel.style.opacity = "1";
+      items.forEach((item) => item.classList.remove("is-pending"));
+      count.textContent = `${apps.length} ${apps.length === 1 ? "source" : "sources"} collected`;
+      state.textContent = "Context ready";
       copied(snap);
-      setPill("Assembling snapshot");
-      at(250, () => attached(snap));
+      at(reduce.matches ? 600 : 300, () => handoff(snap, panel));
       return;
     }
-    const sheets = sheetsFor(snap);
-    const n = sheets.length;
-    const w = Math.round(Math.min(190, Math.max(130, box.w * 0.15)));
-    const h = Math.round(w * 0.64);
-    // Origin: the middle of the captured window, kept far enough from the screen edges for the fan.
-    const S = {
-      x: Math.min(Math.max(fromWin.x + fromWin.w / 2, w * 1.8), box.w - w * 1.8),
-      y: Math.min(Math.max(fromWin.y + fromWin.h / 2, h * 1.6), box.h - h * 0.9),
-    };
+
+    let t = 0;
+    apps.forEach((app, i) => {
+      const start = t;
+      const showCard = start + 450;
+      const travel = start + (i === 0 ? 1150 : 800);
+      const land = travel + 850;
+      t = land + 300;
+
+      // The window: brought forward, glowing, with a small "Collecting" tag in its corner.
+      at(start, () => {
+        scriptedChange(() => desk.focusApp(app));
+        wins[app].classList.add("is-reading");
+        const win = relTo(wins[app]);
+        const tag = el("span", "cselect");
+        tag.append(el("i"), "Collecting");
+        tag.style.left = `${Math.round(win.x + 10)}px`;
+        tag.style.top = `${Math.round(win.y + 40)}px`;
+        tag.dataset.app = app;
+        stage.append(tag);
+        move(tag, [{ opacity: 0, transform: "translateY(-4px) scale(0.9)" }, { opacity: 1, transform: "none" }], { duration: 260, easing: EASE });
+      });
+
+      // The extracted card rises out of the window's middle.
+      let card = null;
+      at(showCard, () => {
+        const win = relTo(wins[app]);
+        card = el("div", "ccard");
+        const label = el("p", "ccard-label");
+        label.append(sim.appIcon(COLLECT[app].icon, "ccard-ic"), el("b", "", COLLECT[app].label));
+        card.append(label, ...firstLines(snap.textOf[app]).map((line) => el("p", "ccard-line", line)));
+        stage.append(card);
+        const cw = card.offsetWidth;
+        const chh = card.offsetHeight;
+        card.style.left = `${Math.round(win.x + win.w / 2 - cw / 2)}px`;
+        card.style.top = `${Math.round(win.y + win.h / 2 - chh / 2)}px`;
+        move(card, [
+          { opacity: 0, transform: "translateY(10px) scale(0.86)" },
+          { opacity: 1, transform: "translateY(-6px) scale(1)" },
+        ], { duration: 420, easing: EASE });
+      });
+
+      // The panel fades in once, after the first card is out.
+      if (i === 0) at(start + 800, () => move(panel, [{ opacity: 0, transform: "translateY(12px) scale(0.96)" }, { opacity: 1, transform: "none" }], { duration: 420, easing: EASE }));
+
+      // The card travels on a gentle arc into its slot and shrinks to the item's size.
+      at(travel, () => {
+        if (!card) return;
+        const from = relTo(card);
+        const slot = relTo(items[i]);
+        const dx = slot.x + slot.w / 2 - (from.x + from.w / 2);
+        const dy = slot.y + slot.h / 2 - (from.y + from.h / 2);
+        const k = Math.min(1, slot.h / from.h);
+        move(card, [
+          { transform: "translateY(-6px) scale(1)", opacity: 1 },
+          { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 40}px) scale(${(1 + k) / 2})`, opacity: 1, offset: 0.55 },
+          { transform: `translate(${dx}px, ${dy}px) scale(${k})`, opacity: 0.2 },
+        ], { duration: 850, easing: "cubic-bezier(0.45, 0, 0.25, 1)" });
+      });
+
+      // Landing: the slot fills in, the panel nudges, the window's glow and tag go.
+      at(land, () => {
+        card?.remove();
+        items[i].classList.remove("is-pending");
+        count.textContent = `${i + 1} of ${apps.length} sources`;
+        move(panel, [{ transform: "scale(1)" }, { transform: "scale(1.015)", offset: 0.4 }, { transform: "scale(1)" }], { duration: 300, easing: "ease-out" });
+        wins[app].classList.remove("is-reading");
+        stage.querySelector(`.cselect[data-app="${app}"]`)?.remove();
+      });
+    });
+
+    // Complete: every source is in.
+    at(t, () => {
+      count.textContent = `${apps.length} ${apps.length === 1 ? "source" : "sources"} collected`;
+      count.classList.add("is-done");
+      state.textContent = "Context ready";
+      copied(snap);
+    });
+    at(t + 1300, () => handoff(snap, panel));
+  }
+
+  // Stage C: the panel carries the collected context into the chat, where it becomes the attachment.
+  function handoff(snap, panel) {
+    scriptedChange(() => desk.focusApp("assistant"));
+    if (reduce.matches) {
+      panel.remove();
+      attached(snap);
+      return;
+    }
+    const from = relTo(panel);
     const slot = relTo(composer);
-    const T = { x: slot.x + 8 + Math.min(200, slot.w - 16) / 2, y: slot.y + 26 };
-
-    // The clipboard: halfway between the window and the chat, compact, tilted toward the viewer.
-    const W = Math.round(Math.min(122, Math.max(92, box.w * 0.095)));
-    const H = Math.round(W * 1.28);
-    const C = {
-      x: Math.min(Math.max(S.x + (T.x - S.x) * 0.5, W / 2 + 14), box.w - W / 2 - 14),
-      y: Math.min(Math.max((S.y + T.y) / 2 - H * 0.3, H / 2 + 14), box.h - H / 2 - 14),
-    };
-    const holder = el("div", "clipb");
-    holder.style.width = `${W}px`;
-    holder.style.height = `${H}px`;
-    holder.style.left = `${Math.round(C.x - W / 2)}px`;
-    holder.style.top = `${Math.round(C.y - H / 2)}px`;
-    const board = el("div", "clipb-board");
-    const papers = el("div", "clipb-papers");
-    const clip = el("span", "clipb-clip");
-    const label = el("p", "clipb-label");
-    label.append(el("b", "", "ContextSnap.md"), el("span", "clipb-check"));
-    board.append(papers, clip, label);
-    holder.append(board);
-    stage.append(holder);
-    move(board, [
-      { transform: `translateY(20px) ${TILT} scale(0.72)`, opacity: 0 },
-      { transform: `${TILT} scale(1)`, opacity: 1 },
-    ], { duration: 480, easing: SPRING });
-
-    const c = (n - 1) / 2;
-    const fan = sheets.map((_, i) => ({
-      x: (i - c) * w * 0.66,
-      y: -h * 0.62 + Math.abs(i - c) * 12,
-      z: 36 + i * 22,
-      ry: -14 + (i - c) * 4,
-      rz: (i - c) * 2.6,
-    }));
-    const fanned = (f) => `translate3d(${f.x}px, ${f.y}px, ${f.z}px) rotateX(16deg) rotateY(${f.ry}deg) rotateZ(${f.rz}deg) scale(1)`;
-    // Each sheet peels off the window it was read from, one window at a time: the window lights up, a
-    // layer the size of the window lifts off it, shrinks to a sheet, and joins the fan.
-    const LIFT = 760;
-    const GAP = 170;
-    const elements = sheets.map((sheet, i) => {
-      const element = sheetElement(sheet, w, h);
-      element.style.left = `${Math.round(S.x - w / 2)}px`;
-      element.style.top = `${Math.round(S.y - h / 2)}px`;
-      element.style.zIndex = String(i + 2);
-      stage.append(element);
-      const from = sheet.app && wins[sheet.app] && desk.visible(sheet.app) ? relTo(wins[sheet.app]) : null;
-      const delay = 80 + i * GAP;
-      if (from) {
-        const dx = from.x + from.w / 2 - S.x;
-        const dy = from.y + from.h / 2 - S.y;
-        const k = Math.min(3.2, Math.max(1, Math.min(from.w / w, from.h / h) * 0.86));
-        at(delay, () => wins[sheet.app].classList.add("is-reading"));
-        at(delay + LIFT * 0.7, () => wins[sheet.app].classList.remove("is-reading"));
-        move(element, [
-          { transform: `translate3d(${dx}px, ${dy}px, 0px) rotateX(0deg) scale(${k})`, opacity: 0 },
-          { transform: `translate3d(${dx}px, ${dy - 10}px, 20px) rotateX(6deg) scale(${k * 0.98})`, opacity: 0.9, offset: 0.22 },
-          { transform: `translate3d(${dx * 0.4 + fan[i].x * 0.6}px, ${dy * 0.4 + fan[i].y * 0.6 - 26}px, ${fan[i].z}px) rotateX(12deg) scale(${(k + 1) / 2})`, opacity: 1, offset: 0.62 },
-          { transform: fanned(fan[i]), opacity: 1 },
-        ], { duration: LIFT, delay, easing: "cubic-bezier(0.3, 0.7, 0.2, 1)" });
-      } else {
-        move(element, [
-          { transform: "translate3d(0px, 14px, 0px) rotateX(0deg) scale(0.62)", opacity: 0 },
-          { transform: fanned(fan[i]), opacity: 1 },
-        ], { duration: 560, delay, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
-      }
-      return element;
-    });
-    const emerged = 80 + LIFT + (n - 1) * GAP;
-
-    // Each sheet takes its own arc onto the clipboard, ends just above the paper, then slides under the clip.
-    at(emerged + 140, () => {
-      setPill("Assembling snapshot");
-      const P = { x: C.x, y: C.y + H * 0.08 }; // the middle of the paper, below the clip
-      const k = (W * 0.8) / w;
-      const FLIGHT = 700;
-      const STEP = 110;
-      elements.forEach((element, i) => {
-        const arc = 34 + i * 12;
-        const side = (i - c) * w * 0.22;
-        move(element, [
-          { transform: fanned(fan[i]), opacity: 1 },
-          { transform: `translate3d(${(fan[i].x + P.x - S.x) * 0.5 + side}px, ${(fan[i].y + P.y - S.y) * 0.5 - arc}px, ${fan[i].z * 0.6}px) rotateX(12deg) rotateY(${(fan[i].ry - 12) / 2}deg) rotateZ(${fan[i].rz}deg) scale(${(1 + k) / 2})`, opacity: 1, offset: 0.55 },
-          { transform: `translate3d(${P.x - S.x}px, ${P.y - S.y - H * 0.16}px, 6px) ${TILT} scale(${k})`, opacity: 1, offset: 0.86 },
-          { transform: `translate3d(${P.x - S.x}px, ${P.y - S.y}px, 2px) ${TILT} scale(${k})`, opacity: 1 },
-        ], { duration: FLIGHT, delay: i * STEP, easing: "cubic-bezier(0.45, 0, 0.25, 1)" });
-        // Landing: the sheet becomes a page of the stack, the clip snaps, the board gives a little.
-        at(FLIGHT + i * STEP, () => {
-          move(element, [{ opacity: 1 }, { opacity: 0 }], { duration: 90 });
-          const page = el("span", "clipb-paper");
-          page.style.setProperty("--i", String(papers.children.length));
-          papers.append(page);
-          move(clip, [{ transform: "scaleY(0.82)" }, { transform: "scaleY(1)" }], { duration: 220, easing: SPRING, fill: "none" });
-          move(board, [{ transform: `translateY(2px) ${TILT} scale(0.985)` }, { transform: `${TILT} scale(1)` }], { duration: 260, easing: SPRING });
-        });
-      });
-
-      // Stacked: the top page shows the start of the real Markdown, the clipboard confirms.
-      at(FLIGHT + (n - 1) * STEP + 160, () => {
-        const top = papers.lastElementChild;
-        const preview = el("pre", "clipb-md");
-        sim.renderMarkdown(preview, snap.markdown.split("\n").filter((line) => line.trim() && !line.startsWith("```")).slice(0, 7).join("\n"));
-        top?.append(preview);
-        label.classList.add("is-done");
-        copied(snap);
-        move(board, [{ transform: `${TILT} scale(1)` }, { transform: `${TILT} scale(1.04)`, offset: 0.4 }, { transform: `${TILT} scale(1)` }], { duration: 360, easing: "ease-out" });
-
-        // Then the clipboard carries the document to the chat and hands it over as the attachment.
-        at(620, () => {
-          const dx = T.x - C.x;
-          const dy = T.y - C.y;
-          move(board, [{ transform: `${TILT} scale(1)` }, { transform: "none" }], { duration: 560, easing: "cubic-bezier(0.45, 0, 0.2, 1)" });
-          move(holder, [
-            { transform: "none", opacity: 1 },
-            { transform: `translate(${dx * 0.9}px, ${dy * 0.9 - 14}px) scale(0.62)`, opacity: 1, offset: 0.75 },
-            { transform: `translate(${dx}px, ${dy}px) scale(0.36)`, opacity: 0 },
-          ], { duration: 640, easing: "cubic-bezier(0.45, 0, 0.2, 1)" });
-          at(520, () => attached(snap));
-        });
-      });
-    });
+    const dx = slot.x + 24 + 60 - (from.x + from.w / 2);
+    const dy = slot.y + 24 - (from.y + from.h / 2);
+    move(panel, [
+      { transform: "none", opacity: 1 },
+      { transform: `translate(${dx * 0.85}px, ${dy * 0.85}px) scale(0.5)`, opacity: 0.9, offset: 0.7 },
+      { transform: `translate(${dx}px, ${dy}px) scale(0.3)`, opacity: 0 },
+    ], { duration: 760, easing: "cubic-bezier(0.45, 0, 0.2, 1)" });
+    at(560, () => attached(snap));
   }
 
   // On the clipboard now: the tray icon shows it, and Ctrl+V in the chat can paste it again.
@@ -567,19 +552,8 @@
       desk.focusApp("browser");
     });
     announce("Replaying: a research session in a browser, a paper, and notes is captured with ContextSnap and summarized by the AI chat.");
-    // Each source in turn, as it is: the browser (on its open tab), then the paper, then the notes.
-    const spot = (app) => {
-      for (const win of Object.values(wins)) win.classList.toggle("is-spot", win.dataset.app === app);
-    };
-    const quick = reduce.matches;
-    const beats = [
-      [quick ? 0 : 500, () => { spot("browser"); scriptedChange(() => desk.focusApp("browser")); }],
-      [quick ? 0 : 1700, () => { spot("pdf"); scriptedChange(() => desk.focusApp("pdf")); }],
-      [quick ? 0 : 2900, () => { spot("notes"); scriptedChange(() => desk.focusApp("notes")); }],
-      [quick ? 0 : 4100, () => spot(null)],
-    ];
-    for (const [ms, step] of beats) at(ms, step);
-    at(quick ? 300 : 4500, () => shortcut("auto"));
+    // The desktop as it is for a moment, then the shortcut; the collection highlights each window in turn.
+    at(reduce.matches ? 300 : 1400, () => shortcut("auto"));
   }
 
   // The visitor took over (changed the desktop, typed, or chose something): stop driving the sequence.
