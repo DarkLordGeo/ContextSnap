@@ -20,7 +20,7 @@
 .desk-actions { display: flex; align-items: center; gap: 8px; }
 /* Steps: a circle per step, the label beside it. Dashes sit exactly in the middle of the gap between two
    steps. Labels that are hidden (narrow screens) collapse and expand smoothly instead of jumping. */
-.flow { --flow-gap: 14px; display: flex; align-items: center; gap: var(--flow-gap); margin: 0 auto; padding: 0; list-style: none; counter-reset: step; }
+.flow { --flow-gap: 20px; display: flex; align-items: center; gap: var(--flow-gap); margin: 0 auto; padding: 0; list-style: none; counter-reset: step; }
 .flow li {
   counter-increment: step; position: relative; display: flex; align-items: center; padding: 4px 10px 4px 4px; border-radius: 999px;
   color: var(--text-3); font-size: 13px; line-height: 20px; white-space: nowrap;
@@ -34,14 +34,22 @@
   content: counter(step); display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
   box-shadow: inset 0 0 0 1px var(--line-strong); font-size: 11px; font-weight: 600;
 }
+/* The connector before a step fills in, left to right, once that step is reached: a progress line. */
 .flow li + li::after {
-  content: ""; position: absolute; top: 50%; left: calc(var(--flow-gap) / -2); width: 6px; height: 1px;
-  background: var(--line-strong); transform: translate(-50%, -50%);
+  content: ""; position: absolute; top: 50%; left: calc(var(--flow-gap) / -2); width: 12px; height: 2px; border-radius: 1px;
+  background: linear-gradient(var(--text), var(--text)) left center / 0% 100% no-repeat, var(--line-strong);
+  transform: translate(-50%, -50%); transition: background-size 420ms var(--ease-out);
 }
+.flow li.is-done::after, .flow li.is-active::after { background-size: 100% 100%; }
 .flow li::before { transition: background-color 300ms var(--ease-out), color 300ms var(--ease-out), box-shadow 300ms var(--ease-out); }
 .flow li.is-done { color: var(--text-2); }
 .flow li.is-done::before { content: "✓"; background: var(--surface-2); box-shadow: none; animation: step-done 360ms var(--spring); }
 @keyframes step-done { from { transform: scale(0.6); } }
+/* The step that becomes active springs in after its connector fills, and its number sends out one ring. */
+.flow li.is-active { animation: step-on 520ms var(--spring) 160ms backwards; }
+.flow li.is-active::before { animation: step-ring 900ms var(--ease-out) 260ms; }
+@keyframes step-on { from { transform: scale(0.9); } }
+@keyframes step-ring { from { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.55); } to { box-shadow: 0 0 0 7px rgba(255, 255, 255, 0); } }
 .flow li.is-active { background: var(--text); color: #fff; }
 .flow li.is-active::before { background: #fff; color: var(--text); box-shadow: none; }
 
@@ -455,5 +463,5 @@
   .win:not([hidden]), .start-menu, .tray-menu, .ca-menu, .ca-msg, .ca-attach.is-new .ca-file { animation: none; }
   .os-keys, .os-pill { transition: opacity 150ms ease; transform: translate(-50%, 0); }
   .t-caret, .ca-dots, .ca-dots::before, .ca-dots::after { animation: none; }
-  .flow li, .flow li span, .flow li::before { transition: none; animation: none; }
+  .flow li, .flow li span, .flow li::before, .flow li::after { transition: none; animation: none; }
 }
