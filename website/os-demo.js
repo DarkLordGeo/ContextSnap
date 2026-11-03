@@ -406,11 +406,14 @@
       { transform: `${TILT} scale(1)`, opacity: 1 },
     ], { duration: 420, easing: SPRING });
 
-    const STEP = 1050;
+    // Back to back: the next window starts while the previous card is still on its way.
+    const STEP = 480;
+    const LEAD = 180; // first window, after the clipboard appears
+    const RISE = 130; // glow first, then the card
+    const PULL = 560; // card flight
     apps.forEach((app, i) => {
-      const start = 260 + i * STEP;
-      const pull = start + 220;
-      const PULL = 700;
+      const start = LEAD + i * STEP;
+      const pull = start + RISE;
 
       at(start, () => {
         scriptedChange(() => desk.focusApp(app));
@@ -469,9 +472,9 @@
       });
     });
 
-    const done = 260 + (apps.length - 1) * STEP + 220 + 700 + 160;
+    const done = LEAD + (apps.length - 1) * STEP + RISE + PULL + 140;
     at(done, finish);
-    at(done + 700, () => handoff(snap, holder, board));
+    at(done + 500, () => handoff(snap, holder, board));
   }
 
   // Stage C: the clipboard carries the collected context to the chat and hands it over as the attachment.
