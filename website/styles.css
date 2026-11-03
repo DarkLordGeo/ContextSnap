@@ -443,10 +443,10 @@ html:has(#consent-banner) { --reserve: 112px; }
 }
 .chat[data-provider="claude"] .msg-ai { padding-left: 0; }
 .chat[data-provider="claude"] .msg-ai::before, .chat[data-provider="claude"] .msg-ai::after { display: none; }
+/* Claude's spark under the latest answer, as in Claude's own chat. */
 .chat[data-provider="claude"] .msg-reply:last-child::after {
-  display: block; position: static; content: ""; width: 18px; height: 18px; margin-top: 8px; border: 0; transform: none;
-  background: radial-gradient(circle, #d97757 0 2px, transparent 2.5px), conic-gradient(from 0deg, #d97757 0 6deg, transparent 6deg 30deg, #d97757 30deg 36deg, transparent 36deg 60deg, #d97757 60deg 66deg, transparent 66deg 90deg, #d97757 90deg 96deg, transparent 96deg 120deg, #d97757 120deg 126deg, transparent 126deg 150deg, #d97757 150deg 156deg, transparent 156deg 180deg, #d97757 180deg 186deg, transparent 186deg 210deg, #d97757 210deg 216deg, transparent 216deg 240deg, #d97757 240deg 246deg, transparent 246deg 270deg, #d97757 270deg 276deg, transparent 276deg 300deg, #d97757 300deg 306deg, transparent 306deg 330deg, #d97757 330deg 336deg, transparent 336deg);
-  -webkit-mask: radial-gradient(circle, #000 8.5px, transparent 9px); mask: radial-gradient(circle, #000 8.5px, transparent 9px);
+  display: block; position: static; content: ""; width: 18px; height: 18px; margin-top: 8px; border: 0; border-radius: 0; transform: none;
+  background: url("claude.svg") center / contain no-repeat;
 }
 .chat[data-provider="claude"] .chat-title { font-weight: 500; }
 
@@ -503,6 +503,9 @@ html:has(#consent-banner) { --reserve: 112px; }
   box-shadow: 0 0 0 1px var(--line-strong), 0 12px 24px -12px rgba(29, 29, 31, 0.45);
 }
 .hc-card b { overflow: hidden; text-overflow: ellipsis; }
+.hc-card { overflow: hidden; }
+/* The attachment's face, fading in over the top card as it arrives. */
+.hc-face { position: absolute; inset: 0; margin: 0; width: auto; max-width: none; animation: none; }
 .hc-ic { width: 16px; height: 16px; flex: none; }
 
 /* The ContextSnap.md card that flies from the C key into the composer. */

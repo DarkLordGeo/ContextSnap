@@ -150,15 +150,34 @@
     const CW = 160;
     const CH = 42;
     const G = { x: room - CW / 2 - 30, y: area.height * 0.42 }; // where they compress, beside the chat
-    // Where the attachment chip will sit once it is shown (measured with it briefly shown, before paint).
+    // The attachment chip as it will look once shown: its details filled in as the chat will fill them,
+    // measured with it briefly shown (before paint, without its pop-in), and copied as the face the stack
+    // turns into. Measured just before the glide, once the capture's pulse on the chat has settled.
     const attach = composerBox.querySelector("[data-attach]");
-    const wasHidden = attach.hidden;
-    attach.hidden = false;
-    const chip = attach.getBoundingClientRect();
-    attach.hidden = wasHidden;
-    // The chip grows once its details are filled in, so the stack lines up with its left edge, not its middle.
-    const landScale = Math.min(1, chip.height / CH);
-    const T = { x: chip.left + (CW * landScale) / 2 - area.left, y: chip.top + chip.height / 2 - area.top };
+    const LOOK = ["background-color", "color", "box-shadow", "border-radius", "padding", "font", "gap", "display", "align-items", "flex-direction", "white-space", "overflow", "text-overflow"];
+    const copyLook = (from, to) => {
+      const style = getComputedStyle(from);
+      for (const name of LOOK) to.style.setProperty(name, style.getPropertyValue(name));
+      [...from.children].forEach((child, k) => to.children[k] && copyLook(child, to.children[k]));
+    };
+    const measureChip = () => {
+      const snapNow = sim.home.snapshot();
+      attach.querySelector("[data-attach-meta]").textContent = `${snapNow.count} ${snapNow.count === 1 ? "source" : "sources"} · ${sim.LEVELS[snapNow.level].name}`;
+      const wasHidden = attach.hidden;
+      attach.hidden = false;
+      attach.style.animation = "none";
+      const rect = attach.getBoundingClientRect();
+      // The copy lives outside the chat, so it takes the real chip's computed look (each AI skin styles it).
+      const face = attach.cloneNode(true);
+      copyLook(attach, face);
+      attach.style.animation = "";
+      attach.hidden = wasHidden;
+      face.removeAttribute("data-attach");
+      face.hidden = false;
+      face.style.animation = "";
+      face.classList.add("hc-face");
+      return { rect, face };
+    };
     // Each run they rise from different spots over the keyboard, near the stack rather than far away.
     const spot = () => ({
       x: Math.min(room - CW - 8, Math.max(8, room * (0.18 + Math.random() * 0.5) - CW / 2)),
@@ -174,7 +193,7 @@
     const COMPRESS = 380;
     const GLIDE_AT = COMPRESS_AT + COMPRESS;
     const GLIDE = 520;
-    const END = GLIDE_AT + GLIDE;
+    const cards = [];
     SOURCES.forEach((source, i) => {
       const card = node("div", "hc-card");
       card.append(sim.appIcon(source.icon, "hc-ic"), node("b", "", source.label));
@@ -186,20 +205,47 @@
       const y = p0.y + CH / 2;
       const sx = Math.round(G.x - x + (i - 1) * 6); // stacked at full size, each a little offset so the stack reads
       const sy = Math.round(G.y - y - i * 6);
-      const ex = Math.round(T.x - x);
-      const ey = Math.round(T.y - y);
       const rest = "translate(0px, 0px) scale(1)";
       const stacked = `translate(${sx}px, ${sy}px) scale(1)`;
       card.animate([{ transform: "translate(0px, 16px) scale(0.92)", opacity: 0 }, { transform: rest, opacity: 1 }],
         { duration: RISE, delay: i * RISE_STEP, easing: "cubic-bezier(0.22, 0.8, 0.24, 1)", fill: "both" });
       card.animate([{ transform: rest }, { transform: stacked }],
         { duration: COMPRESS, delay: COMPRESS_AT, easing: "cubic-bezier(0.65, 0, 0.35, 1)", fill: "forwards" });
-      card.animate([{ transform: stacked, opacity: 1 }, { transform: `translate(${ex}px, ${ey}px) scale(${landScale})`, opacity: 1 }],
-        { duration: GLIDE, delay: GLIDE_AT, easing: "cubic-bezier(0.55, 0, 0.3, 1)", fill: "forwards" });
+      cards.push({ card, p0, stacked });
     });
-    // Landed on the chip's spot: the attachment appears in place at once (no pop-in) and the stack is
-    // swapped for it in the same moment, so nothing fades or vanishes.
-    later2(END, () => {
+    later2(GLIDE_AT, () => {
+      const box = demo.getBoundingClientRect();
+      const { rect: chip, face } = measureChip();
+      const glide = { duration: GLIDE, easing: "cubic-bezier(0.55, 0, 0.3, 1)", fill: "forwards" };
+      cards.forEach(({ card, p0, stacked }, i) => {
+        // The landing: every card's top-left on the chip's top-left (the cards behind are hidden by the top one).
+        const ex = Math.round(chip.left - box.left - p0.x);
+        const ey = Math.round(chip.top - box.top - p0.y);
+        const move = card.animate([{ transform: stacked }, { transform: `translate(${ex}px, ${ey}px) scale(1)` }], glide);
+        if (i === cards.length - 1) {
+          move.finished.then(handoff, () => {});
+          later2(GLIDE + 150, handoff); // in case animation frames are held back (a background tab)
+          // The top card becomes the attachment on the way: it takes the chip's size, and the chip's face
+          // fades in over its own, so it arrives looking exactly like the attachment.
+          card.animate([{ width: `${CW}px`, height: `${CH}px` }, { width: `${chip.width}px`, height: `${chip.height}px` }], glide);
+          // Its own label fades out first, then the face fades in, so the two never show through each other.
+          for (const part of card.querySelectorAll(".hc-ic, b")) {
+            part.animate([{ opacity: 1 }, { opacity: 0 }], { duration: GLIDE * 0.3, delay: GLIDE * 0.15, easing: "ease-in", fill: "forwards" });
+          }
+          card.append(face);
+          face.animate([{ opacity: 0 }, { opacity: 1 }], { duration: GLIDE * 0.45, delay: GLIDE * 0.45, easing: "ease-out", fill: "both" });
+        } else {
+          // The cards behind tuck under the top one as it narrows to the chip.
+          card.animate([{ opacity: 1 }, { opacity: 0 }], { duration: GLIDE * 0.5, delay: GLIDE * 0.45, easing: "ease-in", fill: "forwards" });
+        }
+      });
+    });
+    // Landed on the chip's spot (the moment the glide finishes): the attachment appears in place at once
+    // (no pop-in) and the stack, which by now looks exactly like it, is swapped for it.
+    let handedOff = false;
+    const handoff = () => {
+      if (collectLayer !== layer || handedOff) return; // cancelled meanwhile, or already handed off
+      handedOff = true;
       attach.classList.add("is-handoff");
       done(); // shows the attachment on the next tick
       later2(32, () => {
@@ -207,7 +253,7 @@
         if (collectLayer === layer) collectLayer = null;
       });
       later2(600, () => attach.classList.remove("is-handoff"));
-    });
+    };
     return true;
   };
 
