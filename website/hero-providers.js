@@ -157,14 +157,17 @@
       x: Math.min(room - CW - 8, Math.max(8, room * (0.18 + Math.random() * 0.5) - CW / 2)),
       y: area.height * (0.16 + Math.random() * 0.42) - CH / 2,
     });
-    // One continuous motion per card, no hand-over between animations: rise, a short hold, compress into
-    // the stack (all together), then the stack hops into the chat as one.
+    // Three smooth moves per card, each with a single easing so nothing speeds up or stalls midway: rise,
+    // compress into the stack (all together), then the stack glides straight into the chat as one. Each move
+    // starts exactly where the last one ended, and a later move only takes over once it begins (its fill
+    // is forwards only), so there is never a jump between them.
     const RISE_STEP = 80;
-    const RISE = 240;
+    const RISE = 260;
     const COMPRESS_AT = 560;
-    const HOP_AT = 940;
-    const END = 1460;
-    const frac = (ms, d, s0) => Math.min(1, Math.max(0, (ms - s0) / d));
+    const COMPRESS = 380;
+    const GLIDE_AT = COMPRESS_AT + COMPRESS;
+    const GLIDE = 520;
+    const END = GLIDE_AT + GLIDE;
     SOURCES.forEach((source, i) => {
       const card = node("div", "hc-card");
       card.append(sim.appIcon(source.icon, "hc-ic"), node("b", "", source.label));
@@ -174,20 +177,18 @@
       layer.append(card);
       const x = p0.x + CW / 2;
       const y = p0.y + CH / 2;
-      const sx = G.x - x + (i - 1) * 6; // stacked at full size, each a little offset so the stack reads
-      const sy = G.y - y - i * 6;
-      const ex = T.x - x;
-      const ey = T.y - y;
-      const start = i * RISE_STEP;
-      const d = END - start;
-      card.animate([
-        { offset: 0, transform: "translate(0px, 16px) scale(0.9)", opacity: 0, easing: "cubic-bezier(0.22, 0.8, 0.24, 1)" },
-        { offset: frac(start + RISE, d, start), transform: "translate(0px, 0px) scale(1)", opacity: 1 },
-        { offset: frac(COMPRESS_AT, d, start), transform: "translate(0px, 0px) scale(1)", opacity: 1, easing: "cubic-bezier(0.5, 0, 0.2, 1)" },
-        { offset: frac(HOP_AT, d, start), transform: `translate(${sx}px, ${sy}px) scale(1)`, opacity: 1, easing: "cubic-bezier(0.3, 0, 0.6, 1)" },
-        { offset: frac((HOP_AT + END) / 2, d, start), transform: `translate(${(sx + ex) / 2}px, ${(sy + ey) / 2}px) scale(0.78)`, opacity: 1, easing: "cubic-bezier(0.4, 0, 0.7, 1)" }, // straight, no lift
-        { offset: 1, transform: `translate(${ex}px, ${ey}px) scale(0.42)`, opacity: 0 },
-      ], { duration: d, delay: start, fill: "both" });
+      const sx = Math.round(G.x - x + (i - 1) * 6); // stacked at full size, each a little offset so the stack reads
+      const sy = Math.round(G.y - y - i * 6);
+      const ex = Math.round(T.x - x);
+      const ey = Math.round(T.y - y);
+      const rest = "translate(0px, 0px) scale(1)";
+      const stacked = `translate(${sx}px, ${sy}px) scale(1)`;
+      card.animate([{ transform: "translate(0px, 16px) scale(0.92)", opacity: 0 }, { transform: rest, opacity: 1 }],
+        { duration: RISE, delay: i * RISE_STEP, easing: "cubic-bezier(0.22, 0.8, 0.24, 1)", fill: "both" });
+      card.animate([{ transform: rest }, { transform: stacked }],
+        { duration: COMPRESS, delay: COMPRESS_AT, easing: "cubic-bezier(0.65, 0, 0.35, 1)", fill: "forwards" });
+      card.animate([{ transform: stacked, opacity: 1 }, { transform: `translate(${ex}px, ${ey}px) scale(0.42)`, opacity: 0 }],
+        { duration: GLIDE, delay: GLIDE_AT, easing: "cubic-bezier(0.55, 0, 0.3, 1)", fill: "forwards" });
     });
     later2(END + 40, () => {
       layer.remove();

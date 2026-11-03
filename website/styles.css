@@ -498,7 +498,7 @@ html:has(#consent-banner) { --reserve: 112px; }
 .hc { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
 .hc-card {
   position: absolute; display: flex; align-items: center; gap: 8px; width: 160px; height: 42px; padding: 0 12px; border-radius: 11px;
-  background: #fff; color: var(--text); font: 600 12px/16px var(--font); white-space: nowrap; opacity: 0;
+  background: #fff; color: var(--text); font: 600 12px/16px var(--font); white-space: nowrap; opacity: 0; will-change: transform, opacity;
   box-shadow: 0 0 0 1px var(--line-strong), 0 12px 24px -12px rgba(29, 29, 31, 0.45);
 }
 .hc-card b { overflow: hidden; text-overflow: ellipsis; }
