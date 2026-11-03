@@ -109,28 +109,146 @@
   };
 
   // The card from the keyboard to the composer ---------------------------------------------------------
+  let collectTimers = [];
+  let collectLayer = null;
   function cancelFlight() {
     flight?.cancel();
     flight = null;
     fly.hidden = true;
+    collectTimers.forEach(clearTimeout);
+    collectTimers = [];
+    collectLayer?.remove();
+    collectLayer = null;
   }
 
-  // Flies a ContextSnap.md card from the C key into the composer, then calls `done`. Without motion (or when
-  // either end is not visible) it calls `done` straight away.
+  // The collection beside the keyboard: a small ContextSnap panel and three mock source cards (browser,
+  // PDF, notes). Each card is highlighted in turn and slides into its slot, where it stays; the panel then
+  // shows "3 sources collected". Illustrative cards only, not windows. Calls `done(panelRect)` when complete,
+  // or `done(null)` straight away when there is no room beside the keyboard (narrow layouts).
+  const SOURCES = [
+    { label: "Browser context", icon: "chrome" },
+    { label: "PDF document", icon: "pdf" },
+    { label: "Notes", icon: "notes" },
+  ];
+  const collect = (done) => {
+    const area = demo.getBoundingClientRect();
+    const chatBox = chat.getBoundingClientRect();
+    const room = chatBox.left - area.left; // the keyboard's visible part, left of the chat
+    const PANEL = 196;
+    const CARD = 136;
+    if (room < PANEL + CARD + 64 || chatBox.top > area.top + 40) {
+      done(null);
+      return;
+    }
+    const later2 = (ms, fn) => collectTimers.push(window.setTimeout(fn, ms));
+    const layer = document.createElement("div");
+    layer.className = "hc";
+    layer.setAttribute("aria-hidden", "true");
+    const panel = document.createElement("div");
+    panel.className = "hc-panel";
+    const head = document.createElement("p");
+    head.className = "hc-head";
+    const logo = document.createElement("img");
+    logo.src = "favicon.svg";
+    logo.alt = "";
+    const count = document.createElement("p");
+    count.className = "hc-count";
+    count.textContent = "Collecting…";
+    head.append(logo, "ContextSnap");
+    panel.append(head);
+    const iconOf = (name) => sim.appIcon(name, "hc-ic");
+    const slots = SOURCES.map(() => {
+      const slot = document.createElement("div");
+      slot.className = "hc-slot";
+      panel.append(slot);
+      return slot;
+    });
+    panel.append(count);
+    layer.append(panel);
+    const cards = SOURCES.map((source) => {
+      const card = document.createElement("div");
+      card.className = "hc-card";
+      card.append(iconOf(source.icon), Object.assign(document.createElement("b"), { textContent: source.label }));
+      layer.append(card);
+      return card;
+    });
+    demo.append(layer);
+    collectLayer = layer;
+
+    // Placement: the panel against the chat, the cards in a column to its left, over the keyboard's top rows.
+    const panelX = room - PANEL - 22;
+    const panelY = 20;
+    panel.style.left = `${panelX}px`;
+    panel.style.top = `${panelY}px`;
+    const cardsTop = panelY + (panel.offsetHeight - (SOURCES.length * 36 + (SOURCES.length - 1) * 8)) / 2;
+    cards.forEach((card, i) => {
+      card.style.left = `${panelX - CARD - 26}px`;
+      card.style.top = `${Math.round(cardsTop + i * 44)}px`;
+    });
+    const ease = "cubic-bezier(0.22, 0.8, 0.24, 1)";
+    panel.animate([{ opacity: 0, transform: "translateY(8px) scale(0.96)" }, { opacity: 1, transform: "none" }], { duration: 280, easing: ease, fill: "both" });
+    cards.forEach((card, i) => card.animate([{ opacity: 0, transform: "translateX(-10px)" }, { opacity: 1, transform: "none" }], { duration: 240, delay: 60 + i * 50, easing: ease, fill: "both" }));
+
+    // One after another: highlight, slide into the slot, fill the slot.
+    SOURCES.forEach((source, i) => {
+      const t = 360 + i * 300;
+      later2(t, () => cards[i].classList.add("is-on"));
+      later2(t + 110, () => {
+        const a = cards[i].getBoundingClientRect();
+        const b = slots[i].getBoundingClientRect();
+        cards[i].animate([
+          { transform: "none", opacity: 1 },
+          { transform: `translate(${b.left - a.left}px, ${b.top - a.top}px) scale(${b.height / a.height})`, opacity: 1 },
+        ], { duration: 360, easing: "cubic-bezier(0.4, 0, 0.2, 1)", fill: "forwards" });
+      });
+      later2(t + 470, () => {
+        cards[i].remove();
+        slots[i].append(iconOf(source.icon), Object.assign(document.createElement("b"), { textContent: source.label }));
+        slots[i].classList.add("is-filled");
+        count.textContent = `${i + 1} of ${SOURCES.length}`;
+      });
+    });
+    const complete = 360 + (SOURCES.length - 1) * 300 + 470 + 80;
+    later2(complete, () => {
+      count.textContent = `${SOURCES.length} sources collected`;
+      panel.classList.add("is-done");
+      panel.animate([{ transform: "scale(1)" }, { transform: "scale(1.03)", offset: 0.4 }, { transform: "scale(1)" }], { duration: 320, easing: "ease-out" });
+    });
+    later2(complete + 520, () => done(panel.getBoundingClientRect()));
+  };
+
+  // Flies a ContextSnap.md card into the composer, then calls `done`: from the collection panel when there
+  // is one, otherwise from the C key. Without motion (or when either end is not visible) it calls `done`
+  // straight away.
   const flyIn = (done) => {
     cancelFlight();
-    const key = document.querySelector('#kb [data-code="KeyC"]');
-    const area = demo.getBoundingClientRect();
-    const from = key?.getBoundingClientRect();
-    const to = composerBox.getBoundingClientRect();
-    if (still.matches || !from || !from.width || !to.width) {
+    if (still.matches) {
       done();
       return;
+    }
+    collect((panelRect) => flyFrom(panelRect, done));
+  };
+  const flyFrom = (panelRect, done) => {
+    const key = document.querySelector('#kb [data-code="KeyC"]');
+    const area = demo.getBoundingClientRect();
+    const from = panelRect ?? key?.getBoundingClientRect();
+    const to = composerBox.getBoundingClientRect();
+    if (!from || !from.width || !to.width) {
+      cancelFlight();
+      done();
+      return;
+    }
+    if (collectLayer) {
+      const layer = collectLayer;
+      layer.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, easing: "ease-out", fill: "forwards" }).onfinish = () => layer.remove();
+      collectLayer = null;
     }
     fly.hidden = false;
     const w = fly.offsetWidth;
     const h = fly.offsetHeight;
-    const start = { x: from.left + from.width / 2 - area.left - w / 2, y: from.top - area.top - h * 0.7 };
+    const start = panelRect
+      ? { x: from.left + from.width / 2 - area.left - w / 2, y: from.top + from.height / 2 - area.top - h / 2 }
+      : { x: from.left + from.width / 2 - area.left - w / 2, y: from.top - area.top - h * 0.7 };
     const end = { x: to.left + 24 - area.left - w * 0.2, y: to.top + 8 - area.top - h * 0.2 };
     const lift = { x: start.x + 10, y: start.y - 46 };
     const pose = (p, scale, rotate, opacity) => ({ transform: `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px) rotate(${rotate}deg) scale(${scale})`, opacity });
