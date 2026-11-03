@@ -276,7 +276,7 @@
     os.classList.toggle("is-status", Boolean(text));
   };
   const clearOverlays = () => {
-    for (const win of Object.values(wins)) win.classList.remove("is-reading");
+    for (const win of Object.values(wins)) { win.classList.remove("is-reading"); win.style.transformOrigin = ""; }
     os.classList.remove("is-keys");
     setPill("");
     keys.forEach((key) => key.classList.remove("is-down"));
@@ -332,72 +332,84 @@
     at(Math.max(0, fx.duration - 320), () => extract(snap, source));
   }
 
-  // Stage B: progressive collection. One source window at a time glows and shows a small "Collecting"
-  // tag; a compact card with what was read lifts off it and travels into the ContextSnap panel in the
-  // middle of the screen, where it becomes a labeled item. Items accumulate in order (browser, PDF,
-  // notes), the panel confirms, then hands everything to the chat. A fixed timeline; no randomness.
+  // Stage B: the clipboard pulls the context out of each window in turn. The window glows and leans
+  // toward the clipboard; a window-sized layer is drawn out of it, accelerating as it shrinks, with a
+  // stream of data fragments, and slides under the clip as a page. A fixed timeline; no randomness.
   const COLLECT = {
-    browser: { label: "Browser context", icon: "chrome", detail: () => `${content.TABS.length} tabs · ${content.TABS[desk.state.tab].title}` },
-    pdf: { label: "PDF document", icon: "pdf", detail: () => `${content.PAPER.file} · ${content.PAPER.highlights.length} highlights` },
-    notes: { label: "Notes", icon: "notes", detail: () => `research-notes.txt · ${content.NOTES.filter(Boolean).length} lines` },
+    browser: { label: "Browser context", icon: "chrome" },
+    pdf: { label: "PDF document", icon: "pdf" },
+    notes: { label: "Notes", icon: "notes" },
   };
-  const firstLines = (text) => text.split("\n").map((line) => line.trim()).filter(Boolean).slice(0, 2);
+  const BARS = [92, 76, 84, 58, 70];
+  const TILT = "rotateX(16deg) rotateY(-12deg) rotateZ(-3deg)";
+  const SPRING = "cubic-bezier(0.34, 1.4, 0.64, 1)";
+  const SUCK = "cubic-bezier(0.55, 0, 0.85, 0.35)"; // slow start, then pulled in fast
   const EASE = "cubic-bezier(0.22, 0.8, 0.24, 1)";
 
   function extract(snap) {
     phase = "transfer";
     setStep("extract");
     setPill("");
-    announce("ContextSnap is collecting context from each open window.");
+    announce("ContextSnap is pulling the context out of each open window.");
     const apps = ["browser", "pdf", "notes"].filter((app) => app in snap.textOf);
     const box = relTo(screen);
 
-    // The panel, centered on the screen, with one slot per source (filled as each one arrives).
-    const pw = Math.round(Math.min(300, Math.max(220, box.w * 0.28), box.w - 32));
-    const panel = el("div", "cpanel");
-    panel.style.width = `${pw}px`;
-    const head = el("p", "cpanel-head");
-    const logo = el("img", "cpanel-logo");
-    logo.src = "favicon.svg";
-    logo.alt = "";
-    const state = el("span", "cpanel-state", "Collecting context…");
-    head.append(logo, el("b", "", "ContextSnap"), state);
-    const list = el("ul", "cpanel-items");
-    const items = apps.map((app) => {
-      const item = el("li", "cpanel-item is-pending");
-      const text = el("span", "cpanel-text");
-      text.append(el("b", "", COLLECT[app].label), el("small", "", COLLECT[app].detail()));
-      item.append(sim.appIcon(COLLECT[app].icon, "cpanel-ic"), text, el("span", "cpanel-check"));
-      list.append(item);
-      return item;
-    });
-    const count = el("p", "cpanel-foot", `0 of ${apps.length} sources`);
-    panel.append(head, list, count);
-    stage.append(panel);
-    const ph = panel.offsetHeight;
-    panel.style.left = `${Math.round(box.w / 2 - pw / 2)}px`;
-    panel.style.top = `${Math.round(Math.min(box.h - ph - 16, Math.max(16, box.h * 0.52 - ph / 2)))}px`;
-    panel.style.opacity = "0";
+    // The clipboard, in the middle of the screen, tilted toward the viewer.
+    const W = Math.round(Math.min(130, Math.max(96, box.w * 0.1)));
+    const H = Math.round(W * 1.28);
+    const C = { x: box.w * 0.5, y: Math.min(box.h - H / 2 - 18, Math.max(H / 2 + 18, box.h * 0.5)) };
+    const holder = el("div", "clipb");
+    holder.style.width = `${W}px`;
+    holder.style.height = `${H}px`;
+    holder.style.left = `${Math.round(C.x - W / 2)}px`;
+    holder.style.top = `${Math.round(C.y - H / 2)}px`;
+    const board = el("div", "clipb-board");
+    const papers = el("div", "clipb-papers");
+    const clip = el("span", "clipb-clip");
+    const label = el("p", "clipb-label");
+    const labelText = el("span", "", "ContextSnap");
+    label.append(el("span", "clipb-check"), labelText);
+    board.append(papers, clip, label);
+    holder.append(board);
+    stage.append(holder);
+    const P = { x: C.x, y: C.y + H * 0.06 }; // the paper, just below the clip
+
+    const addPage = () => {
+      const page = el("span", "clipb-paper");
+      page.style.setProperty("--i", String(papers.children.length));
+      // Text-like bars, not readable text: it reads as data without being words.
+      for (const width of BARS) {
+        const bar = el("i", "clipb-bar");
+        bar.style.width = `${width}%`;
+        page.append(bar);
+      }
+      papers.append(page);
+      move(clip, [{ transform: "scaleY(0.8)" }, { transform: "scaleY(1)" }], { duration: 220, easing: SPRING, fill: "none" });
+      move(board, [{ transform: `translateY(3px) ${TILT} scale(0.97)` }, { transform: `${TILT} scale(1)` }], { duration: 300, easing: SPRING });
+    };
+    const finish = () => {
+      labelText.textContent = `${apps.length} ${apps.length === 1 ? "source" : "sources"}`;
+      label.classList.add("is-done");
+      copied(snap);
+    };
 
     if (reduce.matches || !apps.length) {
-      panel.style.opacity = "1";
-      items.forEach((item) => item.classList.remove("is-pending"));
-      count.textContent = `${apps.length} ${apps.length === 1 ? "source" : "sources"} collected`;
-      state.textContent = "Context ready";
-      copied(snap);
-      at(reduce.matches ? 600 : 300, () => handoff(snap, panel));
+      apps.forEach(addPage);
+      finish();
+      at(reduce.matches ? 500 : 300, () => handoff(snap, holder, board));
       return;
     }
+    move(board, [
+      { transform: `translateY(20px) ${TILT} scale(0.72)`, opacity: 0 },
+      { transform: `${TILT} scale(1)`, opacity: 1 },
+    ], { duration: 420, easing: SPRING });
 
-    let t = 0;
+    const STEP = 1050;
     apps.forEach((app, i) => {
-      const start = t;
-      const showCard = start + 450;
-      const travel = start + (i === 0 ? 1150 : 800);
-      const land = travel + 850;
-      t = land + 300;
+      const start = 260 + i * STEP;
+      const pull = start + 220;
+      const PULL = 700;
 
-      // The window: brought forward, glowing, with a small "Collecting" tag in its corner.
       at(start, () => {
         scriptedChange(() => desk.focusApp(app));
         wins[app].classList.add("is-reading");
@@ -408,85 +420,98 @@
         tag.style.top = `${Math.round(win.y + 40)}px`;
         tag.dataset.app = app;
         stage.append(tag);
-        move(tag, [{ opacity: 0, transform: "translateY(-4px) scale(0.9)" }, { opacity: 1, transform: "none" }], { duration: 260, easing: EASE });
+        move(tag, [{ opacity: 0, transform: "translateY(-4px) scale(0.9)" }, { opacity: 1, transform: "none" }], { duration: 220, easing: EASE });
       });
 
-      // The extracted card rises out of the window's middle.
-      let card = null;
-      at(showCard, () => {
+      at(pull, () => {
         const win = relTo(wins[app]);
-        card = el("div", "ccard");
-        const label = el("p", "ccard-label");
-        label.append(sim.appIcon(COLLECT[app].icon, "ccard-ic"), el("b", "", COLLECT[app].label));
-        card.append(label, ...firstLines(snap.textOf[app]).map((line) => el("p", "ccard-line", line)));
-        stage.append(card);
-        const cw = card.offsetWidth;
-        const chh = card.offsetHeight;
-        card.style.left = `${Math.round(win.x + win.w / 2 - cw / 2)}px`;
-        card.style.top = `${Math.round(win.y + win.h / 2 - chh / 2)}px`;
-        move(card, [
-          { opacity: 0, transform: "translateY(10px) scale(0.86)" },
-          { opacity: 1, transform: "translateY(-6px) scale(1)" },
-        ], { duration: 420, easing: EASE });
+        const cx = win.x + win.w / 2;
+        const cy = win.y + win.h / 2;
+        // The window leans toward the clipboard while it is being emptied.
+        const origin = `${Math.round(((P.x - win.x) / win.w) * 100)}% ${Math.round(((P.y - win.y) / win.h) * 100)}%`;
+        wins[app].style.transformOrigin = origin;
+        move(wins[app], [{ transform: "none" }, { transform: "scale(0.985)", offset: 0.5 }, { transform: "none" }], { duration: PULL, easing: "ease-in-out", fill: "none" });
+
+        // The layer: the window's size, drawn out of it and squeezed into the clipboard.
+        const layer = el("div", "csuck");
+        layer.style.left = `${Math.round(win.x)}px`;
+        layer.style.top = `${Math.round(win.y)}px`;
+        layer.style.width = `${Math.round(win.w)}px`;
+        layer.style.height = `${Math.round(win.h)}px`;
+        for (const width of BARS) {
+          const bar = el("i", "csuck-bar");
+          bar.style.width = `${width}%`;
+          layer.append(bar);
+        }
+        stage.append(layer);
+        const dx = P.x - cx;
+        const dy = P.y - cy;
+        const sx = (W * 0.7) / win.w;
+        const sy = (H * 0.55) / win.h;
+        move(layer, [
+          { transform: "translate(0px, 0px) scale(1, 1)", opacity: 0 },
+          { transform: `translate(${dx * 0.08}px, ${dy * 0.08}px) scale(0.92, 0.88)`, opacity: 0.85, offset: 0.25 },
+          { transform: `translate(${dx * 0.6}px, ${dy * 0.6}px) scale(${0.25 + sx}, ${0.18 + sy})`, opacity: 0.9, offset: 0.75 },
+          { transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`, opacity: 0 },
+        ], { duration: PULL, easing: SUCK });
+
+        // The stream: fragments from across the window, pulled in behind the layer, stretching as they speed up.
+        for (let b = 0; b < 9; b++) {
+          const fx = win.x + win.w * (0.18 + (b % 3) * 0.32);
+          const fy = win.y + win.h * (0.25 + Math.floor(b / 3) * 0.25);
+          const width = 14 + ((b * 7) % 20);
+          const bit = el("i", "cbit");
+          bit.style.width = `${width}px`;
+          bit.style.left = `${Math.round(fx - width / 2)}px`;
+          bit.style.top = `${Math.round(fy)}px`;
+          stage.append(bit);
+          const tx = P.x - fx;
+          const ty = P.y - fy;
+          const angle = (Math.atan2(ty, tx) * 180) / Math.PI;
+          move(bit, [
+            { transform: `translate(0px, 0px) rotate(${angle}deg) scaleX(0.6)`, opacity: 0 },
+            { transform: `translate(${tx * 0.25}px, ${ty * 0.25}px) rotate(${angle}deg) scaleX(1)`, opacity: 0.95, offset: 0.35 },
+            { transform: `translate(${tx}px, ${ty}px) rotate(${angle}deg) scaleX(2.2)`, opacity: 0 },
+          ], { duration: PULL - 80, delay: 40 + b * 30, easing: SUCK });
+        }
       });
 
-      // The panel fades in once, after the first card is out.
-      if (i === 0) at(start + 800, () => move(panel, [{ opacity: 0, transform: "translateY(12px) scale(0.96)" }, { opacity: 1, transform: "none" }], { duration: 420, easing: EASE }));
-
-      // The card travels on a gentle arc into its slot and shrinks to the item's size.
-      at(travel, () => {
-        if (!card) return;
-        const from = relTo(card);
-        const slot = relTo(items[i]);
-        const dx = slot.x + slot.w / 2 - (from.x + from.w / 2);
-        const dy = slot.y + slot.h / 2 - (from.y + from.h / 2);
-        const k = Math.min(1, slot.h / from.h);
-        move(card, [
-          { transform: "translateY(-6px) scale(1)", opacity: 1 },
-          { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 40}px) scale(${(1 + k) / 2})`, opacity: 1, offset: 0.55 },
-          { transform: `translate(${dx}px, ${dy}px) scale(${k})`, opacity: 0.2 },
-        ], { duration: 850, easing: "cubic-bezier(0.45, 0, 0.25, 1)" });
-      });
-
-      // Landing: the slot fills in, the panel nudges, the window's glow and tag go.
-      at(land, () => {
-        card?.remove();
-        items[i].classList.remove("is-pending");
-        count.textContent = `${i + 1} of ${apps.length} sources`;
-        move(panel, [{ transform: "scale(1)" }, { transform: "scale(1.015)", offset: 0.4 }, { transform: "scale(1)" }], { duration: 300, easing: "ease-out" });
+      // In: a new page under the clip, the window lets go.
+      at(pull + PULL - 40, () => {
+        stage.querySelectorAll(".csuck, .cbit").forEach((node) => node.remove());
+        addPage();
+        labelText.textContent = `${COLLECT[app].label} · ${i + 1}/${apps.length}`;
+        label.classList.add("is-done");
         wins[app].classList.remove("is-reading");
+        wins[app].style.transformOrigin = "";
         stage.querySelector(`.cselect[data-app="${app}"]`)?.remove();
       });
     });
 
-    // Complete: every source is in.
-    at(t, () => {
-      count.textContent = `${apps.length} ${apps.length === 1 ? "source" : "sources"} collected`;
-      count.classList.add("is-done");
-      state.textContent = "Context ready";
-      copied(snap);
-    });
-    at(t + 1300, () => handoff(snap, panel));
+    const done = 260 + (apps.length - 1) * STEP + 220 + 700 + 120;
+    at(done, finish);
+    at(done + 700, () => handoff(snap, holder, board));
   }
 
-  // Stage C: the panel carries the collected context into the chat, where it becomes the attachment.
-  function handoff(snap, panel) {
+  // Stage C: the clipboard carries the collected context to the chat and hands it over as the attachment.
+  function handoff(snap, holder, board) {
     scriptedChange(() => desk.focusApp("assistant"));
     if (reduce.matches) {
-      panel.remove();
+      holder.remove();
       attached(snap);
       return;
     }
-    const from = relTo(panel);
+    const from = relTo(holder);
     const slot = relTo(composer);
     const dx = slot.x + 24 + 60 - (from.x + from.w / 2);
     const dy = slot.y + 24 - (from.y + from.h / 2);
-    move(panel, [
+    move(board, [{ transform: `${TILT} scale(1)` }, { transform: "none" }], { duration: 520, easing: "cubic-bezier(0.45, 0, 0.2, 1)" });
+    move(holder, [
       { transform: "none", opacity: 1 },
-      { transform: `translate(${dx * 0.85}px, ${dy * 0.85}px) scale(0.5)`, opacity: 0.9, offset: 0.7 },
-      { transform: `translate(${dx}px, ${dy}px) scale(0.3)`, opacity: 0 },
-    ], { duration: 760, easing: "cubic-bezier(0.45, 0, 0.2, 1)" });
-    at(560, () => attached(snap));
+      { transform: `translate(${dx * 0.9}px, ${dy * 0.9 - 14}px) scale(0.62)`, opacity: 1, offset: 0.75 },
+      { transform: `translate(${dx}px, ${dy}px) scale(0.36)`, opacity: 0 },
+    ], { duration: 620, easing: "cubic-bezier(0.45, 0, 0.2, 1)" });
+    at(480, () => attached(snap));
   }
 
   // On the clipboard now: the tray icon shows it, and Ctrl+V in the chat can paste it again.

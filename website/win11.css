@@ -540,42 +540,19 @@
   .flow li, .flow li span, .flow li::before, .flow li::after { transition: none; animation: none; }
 }
 
-/* Progressive collection (os-demo.js): the window being read glows and carries a small tag; its card
-   travels into the ContextSnap panel in the middle of the screen. */
+/* Collection (os-demo.js): the window being read glows and carries a small tag; data streams out of it. */
 .cselect {
   position: absolute; display: flex; align-items: center; gap: 6px; padding: 3px 9px 3px 7px; border-radius: 999px;
   background: #fff; color: #0b4f9c; font: 600 11px/16px var(--font); box-shadow: 0 0 0 1px rgba(0, 103, 192, 0.35), 0 4px 10px rgba(0, 0, 0, 0.12);
 }
 .cselect i { width: 7px; height: 7px; border-radius: 50%; background: #0067c0; animation: cselect-dot 1s ease-in-out infinite; }
 @keyframes cselect-dot { 50% { opacity: 0.35; } }
-.ccard {
-  position: absolute; width: 190px; padding: 9px 11px; border-radius: 10px; background: #fff; opacity: 0;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 14px 30px -12px rgba(15, 30, 60, 0.45);
-}
-.ccard-label { display: flex; align-items: center; gap: 7px; margin: 0 0 5px; color: #1b1b1b; font-size: 12px; line-height: 16px; }
-.ccard-ic { width: 16px; height: 16px; flex: none; }
-.ccard-line { margin: 0; overflow: hidden; color: #5c5c5c; font: 10.5px/15px var(--mono); white-space: nowrap; text-overflow: ellipsis; }
-.cpanel {
-  position: absolute; z-index: 2; padding: 12px; border-radius: 14px; background: rgba(252, 252, 252, 0.97);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 24px 56px -18px rgba(15, 30, 60, 0.55);
-}
-.cpanel-head { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; color: #1b1b1b; font-size: 13px; line-height: 18px; }
-.cpanel-logo { width: 18px; height: 18px; }
-.cpanel-state { margin-left: auto; color: #5c5c5c; font-size: 11.5px; }
-.cpanel-items { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.cpanel-item {
-  display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 7px 10px; border-radius: 9px; background: #fff;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.07); transition: opacity 320ms var(--ease-out), transform 320ms var(--ease-out), background-color 320ms var(--ease-out);
-}
-.cpanel-item.is-pending { opacity: 0.35; transform: none; background: transparent; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08); }
-.cpanel-item.is-pending > * { visibility: hidden; }
-.cpanel-ic { width: 20px; height: 20px; flex: none; }
-.cpanel-text { display: flex; flex-direction: column; min-width: 0; }
-.cpanel-text b { color: #1b1b1b; font-size: 12.5px; line-height: 16px; }
-.cpanel-text small { overflow: hidden; color: #6b6b6b; font-size: 11px; line-height: 15px; white-space: nowrap; text-overflow: ellipsis; }
-.cpanel-check { position: relative; width: 16px; height: 16px; flex: none; margin-left: auto; border-radius: 50%; background: #0f7b0f; }
-.cpanel-check::after { content: ""; position: absolute; left: 5px; top: 3px; width: 4px; height: 7px; border: solid #fff; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
-.cpanel-item:not(.is-pending) .cpanel-check { animation: step-done 360ms var(--spring); }
-.cpanel-foot { margin: 10px 0 0; color: #5c5c5c; font-size: 11.5px; line-height: 16px; text-align: center; transition: color 240ms var(--ease-out); }
-.cpanel-foot.is-done { color: #0f7b0f; font-weight: 600; }
-@media (prefers-reduced-motion: reduce) { .cselect i { animation: none; } .cpanel-item { transition: none; } }
+.cbit { position: absolute; height: 4px; border-radius: 2px; background: #6aa2e0; opacity: 0; }
+@media (prefers-reduced-motion: reduce) { .cselect i { animation: none; } }
+
+/* The layer pulled out of a window, and the text-like bars on it and on the clipboard's pages. */
+.csuck { position: absolute; display: flex; flex-direction: column; gap: 7%; padding: 6% 8%; border-radius: 10px; background: rgba(255, 255, 255, 0.92); box-shadow: 0 0 0 1px rgba(0, 103, 192, 0.25), 0 18px 40px -16px rgba(15, 30, 60, 0.45); opacity: 0; transform-origin: 50% 50%; will-change: transform, opacity; }
+.csuck-bar, .clipb-bar { display: block; height: 6px; border-radius: 3px; background: #cdd6e2; }
+.csuck-bar:first-child { height: 9px; background: #a9bbd3; }
+.clipb-bar { height: 3px; margin: 3px 6px 0; border-radius: 2px; background: #c9d1dc; }
+.clipb-bar:first-child { margin-top: 6px; height: 4px; background: #9fb2cc; }
