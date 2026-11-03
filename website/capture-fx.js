@@ -47,6 +47,9 @@ window.contextSnapFX = (() => {
     const reach = Math.min(width, height) * 0.16; // never further in than this
     const maxPixels = Math.max(3, Math.floor(reach / pitch));
     const spacing = pitch * 2; // one column of bars, one empty column: separate bars, not a mesh
+    // On anything larger than an icon, bars stay out of the corners altogether: no edge's bars come
+    // closer to a corner than the deepest bar reaches, so the bars of two edges never meet or tangle.
+    const cornerGap = Math.min(width, height) >= 200 ? inset + maxPixels * pitch + pitch : 0;
     const bars = [];
     const edge = (length, side) => {
       const count = Math.floor((length - pitch) / spacing);
@@ -59,6 +62,7 @@ window.contextSnapFX = (() => {
         // Near a corner a bar may only reach as deep as it is far from that corner, so bars from two
         // edges meet along the diagonal and never cross.
         const corner = Math.min(along, length - along - size);
+        if (corner < cornerGap) continue;
         const room = Math.floor((corner - 2 - inset - size) / pitch) + 1;
         const length_ = Math.min(Math.max(1, Math.round((0.15 + shaped[i] * 0.7) * maxPixels)), room);
         if (length_ < 1) continue;
