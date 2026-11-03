@@ -276,7 +276,7 @@
     os.classList.toggle("is-status", Boolean(text));
   };
   const clearOverlays = () => {
-    for (const win of Object.values(wins)) { win.classList.remove("is-reading"); win.style.transformOrigin = ""; }
+    for (const win of Object.values(wins)) win.classList.remove("is-reading");
     os.classList.remove("is-keys");
     setPill("");
     keys.forEach((key) => key.classList.remove("is-down"));
@@ -332,9 +332,9 @@
     at(Math.max(0, fx.duration - 320), () => extract(snap, source));
   }
 
-  // Stage B: the clipboard pulls the context out of each window in turn. The window glows and leans
-  // toward the clipboard; a window-sized layer is drawn out of it, accelerating as it shrinks, with a
-  // stream of data fragments, and slides under the clip as a page. A fixed timeline; no randomness.
+  // Stage B: the clipboard collects each window in turn. The window glows, a card with its data rises
+  // out of it and travels onto the clipboard, where it is stacked as a page with its source's icon.
+  // Then the stacked clipboard goes into the chat. A fixed timeline; no randomness.
   const COLLECT = {
     browser: { label: "Browser context", icon: "chrome" },
     pdf: { label: "PDF document", icon: "pdf" },
@@ -343,7 +343,6 @@
   const BARS = [92, 76, 84, 58, 70];
   const TILT = "rotateX(16deg) rotateY(-12deg) rotateZ(-3deg)";
   const SPRING = "cubic-bezier(0.34, 1.4, 0.64, 1)";
-  const SUCK = "cubic-bezier(0.55, 0, 0.85, 0.35)"; // slow start, then pulled in fast
   const EASE = "cubic-bezier(0.22, 0.8, 0.24, 1)";
 
   function extract(snap) {
@@ -372,11 +371,14 @@
     board.append(papers, clip, label);
     holder.append(board);
     stage.append(holder);
-    const P = { x: C.x, y: C.y + H * 0.06 }; // the paper, just below the clip
+    // The paper area of the clipboard (see .clipb-papers): where each card lands, at exactly its size.
+    const paper = { w: W * 0.82, h: H * 0.67 };
+    const P = { x: C.x, y: C.y - H / 2 + H * (0.16 + 0.67 / 2) };
 
-    const addPage = () => {
+    const addPage = (app) => {
       const page = el("span", "clipb-paper");
       page.style.setProperty("--i", String(papers.children.length));
+      if (app) page.append(sim.appIcon(COLLECT[app].icon, "clipb-ic"));
       // Text-like bars, not readable text: it reads as data without being words.
       for (const width of BARS) {
         const bar = el("i", "clipb-bar");
@@ -394,7 +396,7 @@
     };
 
     if (reduce.matches || !apps.length) {
-      apps.forEach(addPage);
+      apps.forEach((app) => addPage(app));
       finish();
       at(reduce.matches ? 500 : 300, () => handoff(snap, holder, board));
       return;
@@ -423,72 +425,51 @@
         move(tag, [{ opacity: 0, transform: "translateY(-4px) scale(0.9)" }, { opacity: 1, transform: "none" }], { duration: 220, easing: EASE });
       });
 
+      // The data card rises out of the window, then travels onto the clipboard.
+      let card = null;
       at(pull, () => {
         const win = relTo(wins[app]);
-        const cx = win.x + win.w / 2;
-        const cy = win.y + win.h / 2;
-        // The window leans toward the clipboard while it is being emptied.
-        const origin = `${Math.round(((P.x - win.x) / win.w) * 100)}% ${Math.round(((P.y - win.y) / win.h) * 100)}%`;
-        wins[app].style.transformOrigin = origin;
-        move(wins[app], [{ transform: "none" }, { transform: "scale(0.985)", offset: 0.5 }, { transform: "none" }], { duration: PULL, easing: "ease-in-out", fill: "none" });
-
-        // The layer: the window's size, drawn out of it and squeezed into the clipboard.
-        const layer = el("div", "csuck");
-        layer.style.left = `${Math.round(win.x)}px`;
-        layer.style.top = `${Math.round(win.y)}px`;
-        layer.style.width = `${Math.round(win.w)}px`;
-        layer.style.height = `${Math.round(win.h)}px`;
-        for (const width of BARS) {
-          const bar = el("i", "csuck-bar");
+        card = el("div", "cdata");
+        const head = el("p", "cdata-head");
+        head.append(sim.appIcon(COLLECT[app].icon, "cdata-ic"), el("b", "", COLLECT[app].label));
+        card.append(head, ...BARS.slice(0, 3).map((width) => {
+          const bar = el("i", "cdata-bar");
           bar.style.width = `${width}%`;
-          layer.append(bar);
-        }
-        stage.append(layer);
-        const dx = P.x - cx;
-        const dy = P.y - cy;
-        const sx = (W * 0.7) / win.w;
-        const sy = (H * 0.55) / win.h;
-        move(layer, [
-          { transform: "translate(0px, 0px) scale(1, 1)", opacity: 0 },
-          { transform: `translate(${dx * 0.08}px, ${dy * 0.08}px) scale(0.92, 0.88)`, opacity: 0.85, offset: 0.25 },
-          { transform: `translate(${dx * 0.6}px, ${dy * 0.6}px) scale(${0.25 + sx}, ${0.18 + sy})`, opacity: 0.9, offset: 0.75 },
-          { transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`, opacity: 0 },
-        ], { duration: PULL, easing: SUCK });
-
-        // The stream: fragments from across the window, pulled in behind the layer, stretching as they speed up.
-        for (let b = 0; b < 9; b++) {
-          const fx = win.x + win.w * (0.18 + (b % 3) * 0.32);
-          const fy = win.y + win.h * (0.25 + Math.floor(b / 3) * 0.25);
-          const width = 14 + ((b * 7) % 20);
-          const bit = el("i", "cbit");
-          bit.style.width = `${width}px`;
-          bit.style.left = `${Math.round(fx - width / 2)}px`;
-          bit.style.top = `${Math.round(fy)}px`;
-          stage.append(bit);
-          const tx = P.x - fx;
-          const ty = P.y - fy;
-          const angle = (Math.atan2(ty, tx) * 180) / Math.PI;
-          move(bit, [
-            { transform: `translate(0px, 0px) rotate(${angle}deg) scaleX(0.6)`, opacity: 0 },
-            { transform: `translate(${tx * 0.25}px, ${ty * 0.25}px) rotate(${angle}deg) scaleX(1)`, opacity: 0.95, offset: 0.35 },
-            { transform: `translate(${tx}px, ${ty}px) rotate(${angle}deg) scaleX(2.2)`, opacity: 0 },
-          ], { duration: PULL - 80, delay: 40 + b * 30, easing: SUCK });
-        }
+          return bar;
+        }));
+        // Page-shaped from the start: the clipboard page's proportions, larger while it travels.
+        const cw = Math.round(Math.min(150, Math.max(110, win.w * 0.36)));
+        const ch = Math.round(cw * (paper.h / paper.w));
+        card.style.width = `${cw}px`;
+        card.style.height = `${ch}px`;
+        stage.append(card);
+        const x0 = win.x + win.w / 2 - cw / 2;
+        const y0 = win.y + win.h / 2 - ch / 2;
+        card.style.left = `${Math.round(x0)}px`;
+        card.style.top = `${Math.round(y0)}px`;
+        const dx = P.x - (x0 + cw / 2);
+        const dy = P.y - (y0 + ch / 2);
+        const k = paper.w / cw; // lands at exactly the clipboard page's size, tilted like the board
+        move(card, [
+          { transform: "translate3d(0px, 10px, 0px) scale(0.9)", opacity: 0 },
+          { transform: "translate3d(0px, -8px, 0px) scale(1)", opacity: 1, offset: 0.3 },
+          { transform: `translate3d(${dx * 0.5}px, ${dy * 0.5 - 34}px, 20px) rotateX(8deg) rotateY(-6deg) scale(${(1 + k) / 2})`, opacity: 1, offset: 0.65 },
+          { transform: `translate3d(${dx}px, ${dy}px, 2px) ${TILT} scale(${k})`, opacity: 1 },
+        ], { duration: PULL, easing: "cubic-bezier(0.4, 0, 0.2, 1)" });
       });
 
-      // In: a new page under the clip, the window lets go.
-      at(pull + PULL - 40, () => {
-        stage.querySelectorAll(".csuck, .cbit").forEach((node) => node.remove());
-        addPage();
+      // In: the card becomes the top page of the stack, the window lets go.
+      at(pull + PULL, () => {
+        card?.remove();
+        addPage(app);
         labelText.textContent = `${COLLECT[app].label} · ${i + 1}/${apps.length}`;
         label.classList.add("is-done");
         wins[app].classList.remove("is-reading");
-        wins[app].style.transformOrigin = "";
         stage.querySelector(`.cselect[data-app="${app}"]`)?.remove();
       });
     });
 
-    const done = 260 + (apps.length - 1) * STEP + 220 + 700 + 120;
+    const done = 260 + (apps.length - 1) * STEP + 220 + 700 + 160;
     at(done, finish);
     at(done + 700, () => handoff(snap, holder, board));
   }

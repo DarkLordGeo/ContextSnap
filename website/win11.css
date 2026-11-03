@@ -547,12 +547,19 @@
 }
 .cselect i { width: 7px; height: 7px; border-radius: 50%; background: #0067c0; animation: cselect-dot 1s ease-in-out infinite; }
 @keyframes cselect-dot { 50% { opacity: 0.35; } }
-.cbit { position: absolute; height: 4px; border-radius: 2px; background: #6aa2e0; opacity: 0; }
 @media (prefers-reduced-motion: reduce) { .cselect i { animation: none; } }
 
-/* The layer pulled out of a window, and the text-like bars on it and on the clipboard's pages. */
-.csuck { position: absolute; display: flex; flex-direction: column; gap: 7%; padding: 6% 8%; border-radius: 10px; background: rgba(255, 255, 255, 0.92); box-shadow: 0 0 0 1px rgba(0, 103, 192, 0.25), 0 18px 40px -16px rgba(15, 30, 60, 0.45); opacity: 0; transform-origin: 50% 50%; will-change: transform, opacity; }
-.csuck-bar, .clipb-bar { display: block; height: 6px; border-radius: 3px; background: #cdd6e2; }
-.csuck-bar:first-child { height: 9px; background: #a9bbd3; }
-.clipb-bar { height: 3px; margin: 3px 6px 0; border-radius: 2px; background: #c9d1dc; }
-.clipb-bar:first-child { margin-top: 6px; height: 4px; background: #9fb2cc; }
+/* The data card that travels from a window to the clipboard, and the text-like bars on it and on the
+   clipboard's pages (data, not readable text). */
+.cdata {
+  position: absolute; overflow: hidden; padding: 10px 11px; border-radius: 6px; background: #fbfbfa; opacity: 0; transform-origin: 50% 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 14px 30px -12px rgba(15, 30, 60, 0.45); will-change: transform, opacity;
+}
+.cdata-head { display: flex; align-items: center; gap: 7px; margin: 0 0 4px; color: #1b1b1b; font-size: 12px; line-height: 16px; }
+.cdata-ic { width: 16px; height: 16px; flex: none; }
+.cdata-bar { display: block; height: 5px; margin-top: 5px; border-radius: 3px; background: #d4dbe5; }
+.clipb-ic { display: block; width: 10px; height: 10px; margin: 5px 0 0 6px; }
+.clipb-bar { display: block; height: 3px; margin: 3px 6px 0; border-radius: 2px; background: #c9d1dc; }
+.clipb-bar:first-of-type { margin-top: 4px; height: 4px; background: #9fb2cc; }
+/* A visible stack: each new page sits a little higher and to the side of the one before. */
+.clipb-paper { transform: translate(calc(var(--i) * 2px), calc(var(--i) * -4px)) rotate(calc((var(--i) - 1) * -1.2deg)); }
