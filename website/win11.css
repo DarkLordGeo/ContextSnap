@@ -20,7 +20,7 @@
 .desk-actions { display: flex; align-items: center; gap: 8px; }
 /* Steps: a circle per step, the label beside it. Dashes sit exactly in the middle of the gap between two
    steps. Labels that are hidden (narrow screens) collapse and expand smoothly instead of jumping. */
-.flow { --flow-gap: 20px; display: flex; align-items: center; gap: var(--flow-gap); margin: 0 auto; padding: 0; list-style: none; counter-reset: step; }
+.flow { --flow-gap: 20px; position: relative; display: flex; align-items: center; gap: var(--flow-gap); margin: 0 auto; padding: 0; list-style: none; counter-reset: step; }
 .flow li {
   counter-increment: step; position: relative; display: flex; align-items: center; padding: 4px 10px 4px 4px; border-radius: 999px;
   color: var(--text-3); font-size: 13px; line-height: 20px; white-space: nowrap;
@@ -46,11 +46,17 @@
 .flow li.is-done::before { content: "✓"; background: var(--surface-2); box-shadow: none; animation: step-done 360ms var(--spring); }
 @keyframes step-done { from { transform: scale(0.6); } }
 /* The step that becomes active springs in after its connector fills, and its number sends out one ring. */
-.flow li.is-active { animation: step-on 520ms var(--spring) 160ms backwards; }
 .flow li.is-active::before { animation: step-ring 900ms var(--ease-out) 260ms; }
 @keyframes step-on { from { transform: scale(0.9); } }
 @keyframes step-ring { from { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.55); } to { box-shadow: 0 0 0 7px rgba(255, 255, 255, 0); } }
-.flow li.is-active { background: var(--text); color: #fff; }
+/* One black pill slides from step to step behind the steps (position set by os-demo.js). */
+.flow::before {
+  content: ""; position: absolute; top: 0; bottom: 0; left: var(--pill-x, 0); width: var(--pill-w, 0); border-radius: 999px;
+  background: var(--text); opacity: var(--pill-on, 0);
+  transition: left 420ms var(--ease-out), width 420ms var(--ease-out), opacity 200ms var(--ease-out);
+}
+.flow li { z-index: 1; }
+.flow li.is-active { color: #fff; }
 .flow li.is-active::before { background: #fff; color: var(--text); box-shadow: none; }
 
 /* The screen ------------------------------------------------------------------------------------------ */
@@ -537,7 +543,7 @@
   .win:not([hidden]), .start-menu, .tray-menu, .ca-menu, .ca-msg, .ca-attach.is-new .ca-file { animation: none; }
   .os-keys, .os-pill { transition: opacity 150ms ease; transform: translate(-50%, 0); }
   .t-caret, .ca-dots, .ca-dots::before, .ca-dots::after { animation: none; }
-  .flow li, .flow li span, .flow li::before, .flow li::after { transition: none; animation: none; }
+  .flow::before, .flow li, .flow li span, .flow li::before, .flow li::after { transition: none; animation: none; }
 }
 
 /* Collection (os-demo.js): the window being read glows and carries a small tag; data streams out of it. */

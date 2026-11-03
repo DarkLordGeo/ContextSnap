@@ -237,6 +237,17 @@
   // chat → attach → ask → answer. Sheets, document, and answer are all built from the snapshot.
   const STEPS = ["work", "capture", "extract", "attach", "ask", "answer"];
   const stepItems = $$(".flow li", section);
+  // The black pill behind the active step slides to it; while the step's label opens (narrow screens),
+  // the pill follows its width for the length of that transition.
+  const flowEl = $(".flow", section);
+  let pillFrame = 0;
+  const placePill = () => {
+    const active = stepItems.find((item) => item.classList.contains("is-active"));
+    flowEl.style.setProperty("--pill-on", active ? "1" : "0");
+    if (!active) return;
+    flowEl.style.setProperty("--pill-x", `${active.offsetLeft}px`);
+    flowEl.style.setProperty("--pill-w", `${active.offsetWidth}px`);
+  };
   const setStep = (name) => {
     const index = STEPS.indexOf(name);
     stepItems.forEach((item, i) => {
@@ -245,7 +256,15 @@
       if (i === index) item.setAttribute("aria-current", "step");
       else item.removeAttribute("aria-current");
     });
+    cancelAnimationFrame(pillFrame);
+    const until = performance.now() + 420;
+    const follow = () => {
+      placePill();
+      if (performance.now() < until) pillFrame = requestAnimationFrame(follow);
+    };
+    follow();
   };
+  window.addEventListener("resize", placePill);
 
   let token = 0;
   let timers = [];
@@ -406,18 +425,20 @@
       { transform: `${TILT} scale(1)`, opacity: 1 },
     ], { duration: 420, easing: SPRING });
 
-    // Back to back: the next window starts while the previous card is still on its way.
-    const STEP = 480;
-    const LEAD = 180; // first window, after the clipboard appears
-    const RISE = 130; // glow first, then the card
-    const PULL = 560; // card flight
+    // Together with the clipboard: the windows are read in a quick ripple, no window switching between them.
+    const STEP = 170;
+    const LEAD = 0; // the first card leaves as the clipboard appears
+    const RISE = 60; // glow first, then the card
+    const PULL = 520; // card flight
     apps.forEach((app, i) => {
       const start = LEAD + i * STEP;
       const pull = start + RISE;
 
+      // A window that is not on screen (phones show one at a time) sends its card from the screen's middle.
+      const rectOf = (name) => (wins[name].offsetWidth ? relTo(wins[name]) : { x: box.w / 2 - 60, y: box.h * 0.3, w: 120, h: 80 });
       at(start, () => {
-        scriptedChange(() => desk.focusApp(app));
         wins[app].classList.add("is-reading");
+        if (!wins[app].offsetWidth) return;
         const win = relTo(wins[app]);
         const tag = el("span", "cselect");
         tag.append(el("i"), "Collecting");
@@ -431,7 +452,7 @@
       // The data card rises out of the window, then travels onto the clipboard.
       let card = null;
       at(pull, () => {
-        const win = relTo(wins[app]);
+        const win = rectOf(app);
         card = el("div", "cdata");
         const head = el("p", "cdata-head");
         head.append(sim.appIcon(COLLECT[app].icon, "cdata-ic"), el("b", "", COLLECT[app].label));
@@ -474,7 +495,7 @@
 
     const done = LEAD + (apps.length - 1) * STEP + RISE + PULL + 140;
     at(done, finish);
-    at(done + 500, () => handoff(snap, holder, board));
+    at(done + 380, () => handoff(snap, holder, board));
   }
 
   // Stage C: the clipboard carries the collected context to the chat and hands it over as the attachment.
