@@ -493,9 +493,16 @@ html:has(#consent-banner) { --reserve: 112px; }
 .provider:focus-visible { outline: 2px solid var(--c-text); outline-offset: 1px; }
 .provider-progress { position: absolute; left: 7px; right: 7px; bottom: 3px; height: 2px; border-radius: 1px; background: currentColor; opacity: 0.55; transform: scaleX(0); transform-origin: left; }
 
-/* The collection beside the keyboard (hero-providers.js): the sample desktop's clipboard and data cards
-   (their styles are in win11.css), in a layer over the desk with the same perspective. */
-.hc { position: absolute; inset: 0; z-index: 5; pointer-events: none; perspective: 1100px; perspective-origin: 50% 35%; }
+/* The collection beside the keyboard (hero-providers.js): three compact mock source cards that rise
+   from the keyboard, compress into a stack beside the chat, and hop into it. */
+.hc { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+.hc-card {
+  position: absolute; display: flex; align-items: center; gap: 8px; width: 140px; height: 38px; padding: 0 11px; border-radius: 10px;
+  background: #fff; color: var(--text); font: 600 12px/16px var(--font); white-space: nowrap; opacity: 0;
+  box-shadow: 0 0 0 1px var(--line-strong), 0 12px 24px -12px rgba(29, 29, 31, 0.45);
+}
+.hc-card b { overflow: hidden; text-overflow: ellipsis; }
+.hc-ic { width: 16px; height: 16px; flex: none; }
 
 /* The ContextSnap.md card that flies from the C key into the composer. */
 .snap-fly {

@@ -121,19 +121,15 @@
     collectLayer = null;
   }
 
-  // The collection beside the keyboard, with the same clipboard as the sample desktop below: it appears
-  // beside the keyboard, three page-shaped mock cards (browser, PDF, notes) rise from the keyboard in a
-  // quick ripple and land on it at the page's size, stacking; then it carries the stack into the chat.
-  // Illustrative cards only, not windows. Returns false (and does nothing) when there is no room beside
-  // the keyboard (narrow layouts), so the caller falls back to the card from the C key.
+  // The collection beside the keyboard: three compact mock cards (browser, PDF, notes) rise from the
+  // keyboard, compress together into one small stack beside the chat, and the stack hops into the chat as
+  // ContextSnap.md (flyFrom). Illustrative cards only, not windows; no clipboard here (the sample desktop
+  // below has that). Returns false (and does nothing) when there is no room beside the keyboard.
   const SOURCES = [
     { label: "Browser context", icon: "chrome" },
     { label: "PDF document", icon: "pdf" },
     { label: "Notes", icon: "notes" },
   ];
-  const TILT = "rotateX(16deg) rotateY(-12deg) rotateZ(-3deg)";
-  const SPRING = "cubic-bezier(0.34, 1.4, 0.64, 1)";
-  const BARS = [92, 76, 84, 58, 70];
   const node = (tag, className, text) => {
     const element = document.createElement(tag);
     if (className) element.className = className;
@@ -151,107 +147,48 @@
     demo.append(layer);
     collectLayer = layer;
 
-    // The clipboard: against the chat, in the middle of the desk.
-    const W = 104;
-    const H = Math.round(W * 1.28);
-    const C = { x: room - W / 2 - 34, y: area.height * 0.46 };
-    const holder = node("div", "clipb");
-    holder.style.width = `${W}px`;
-    holder.style.height = `${H}px`;
-    holder.style.left = `${Math.round(C.x - W / 2)}px`;
-    holder.style.top = `${Math.round(C.y - H / 2)}px`;
-    const board = node("div", "clipb-board");
-    const papers = node("div", "clipb-papers");
-    const clip = node("span", "clipb-clip");
-    const label = node("p", "clipb-label");
-    const labelText = node("span", "", "ContextSnap");
-    label.append(node("span", "clipb-check"), labelText);
-    board.append(papers, clip, label);
-    holder.append(board);
-    layer.append(holder);
-    const paper = { w: W * 0.82, h: H * 0.67 };
-    const P = { x: C.x, y: C.y - H / 2 + H * (0.16 + 0.67 / 2) };
-    board.animate([{ transform: `translateY(20px) ${TILT} scale(0.72)`, opacity: 0 }, { transform: `${TILT} scale(1)`, opacity: 1 }], { duration: 420, easing: SPRING, fill: "forwards" });
-
-    const addPage = (source) => {
-      const page = node("span", "clipb-paper");
-      page.style.setProperty("--i", String(papers.children.length));
-      page.append(sim.appIcon(source.icon, "clipb-ic"));
-      for (const width of BARS) {
-        const bar = node("i", "clipb-bar");
-        bar.style.width = `${width}%`;
-        page.append(bar);
-      }
-      papers.append(page);
-      clip.animate([{ transform: "scaleY(0.8)" }, { transform: "scaleY(1)" }], { duration: 220, easing: SPRING });
-      board.animate([{ transform: `translateY(3px) ${TILT} scale(0.97)` }, { transform: `${TILT} scale(1)` }], { duration: 300, easing: SPRING, fill: "forwards" });
-    };
-
-    // The cards: page-shaped, rising from the keyboard's top rows, one right after another.
-    const cw = 112;
-    const ch = Math.round(cw * (paper.h / paper.w));
-    const STEP = 170;
-    const PULL = 560;
-    SOURCES.forEach((source, i) => {
-      const card = node("div", "cdata");
-      card.style.width = `${cw}px`;
-      card.style.height = `${ch}px`;
-      const head = node("p", "cdata-head");
-      head.append(sim.appIcon(source.icon, "cdata-ic"), node("b", "", source.label));
-      card.append(head, ...BARS.slice(0, 3).map((width) => {
-        const bar = node("i", "cdata-bar");
-        bar.style.width = `${width}%`;
-        return bar;
-      }));
+    const CW = 140;
+    const CH = 38;
+    const G = { x: room - CW / 2 - 30, y: area.height * 0.42 }; // where they compress, beside the chat
+    const cards = SOURCES.map((source, i) => {
+      const card = node("div", "hc-card");
+      card.append(sim.appIcon(source.icon, "hc-ic"), node("b", "", source.label));
+      card.style.left = `${Math.round(room * (0.14 + i * 0.22) - CW / 2)}px`;
+      card.style.top = `${Math.round(area.height * 0.3 - CH / 2 + (i % 2) * 14)}px`;
       layer.append(card);
-      const x0 = room * (0.16 + i * 0.2) - cw / 2;
-      const y0 = area.height * 0.34 - ch / 2;
-      card.style.left = `${Math.round(x0)}px`;
-      card.style.top = `${Math.round(y0)}px`;
-      const dx = P.x - (x0 + cw / 2);
-      const dy = P.y - (y0 + ch / 2);
-      const k = paper.w / cw;
+      return card;
+    });
+    const ease = "cubic-bezier(0.22, 0.8, 0.24, 1)";
+    // Rise out of the keyboard, one right after another.
+    cards.forEach((card, i) => card.animate([
+      { opacity: 0, transform: "translateY(16px) scale(0.9)" },
+      { opacity: 1, transform: "none" },
+    ], { duration: 260, delay: i * 90, easing: ease, fill: "both" }));
+    // Compress: each slides to the same spot beside the chat, shrinking into a small stack.
+    const COMPRESS = 420;
+    cards.forEach((card, i) => {
+      const x = parseFloat(card.style.left) + CW / 2;
+      const y = parseFloat(card.style.top) + CH / 2;
+      const dx = G.x - x + (i - 1) * 3;
+      const dy = G.y - y - i * 3;
       card.animate([
-        { transform: "translate3d(0px, 14px, 0px) scale(0.9)", opacity: 0 },
-        { transform: "translate3d(0px, -6px, 0px) scale(1)", opacity: 1, offset: 0.3 },
-        { transform: `translate3d(${dx * 0.5}px, ${dy * 0.5 - 30}px, 20px) rotateX(8deg) rotateY(-6deg) scale(${(1 + k) / 2})`, opacity: 1, offset: 0.65 },
-        { transform: `translate3d(${dx}px, ${dy}px, 2px) ${TILT} scale(${k})`, opacity: 1 },
-      ], { duration: PULL, delay: i * STEP, easing: "cubic-bezier(0.4, 0, 0.2, 1)", fill: "both" });
-      later2(i * STEP + PULL, () => {
-        card.remove();
-        addPage(source);
-        labelText.textContent = `${source.label} · ${i + 1}/${SOURCES.length}`;
-        label.classList.add("is-done");
-      });
+        { transform: "none" },
+        { transform: `translate(${dx}px, ${dy}px) scale(0.62)` },
+      ], { duration: COMPRESS, delay: 420 + i * 70, easing: "cubic-bezier(0.5, 0, 0.2, 1)", fill: "forwards" });
     });
-
-    // Complete, then the clipboard carries the stack into the composer.
-    const complete = (SOURCES.length - 1) * STEP + PULL + 120;
-    later2(complete, () => {
-      labelText.textContent = `${SOURCES.length} sources`;
-      board.animate([{ transform: `${TILT} scale(1)` }, { transform: `${TILT} scale(1.05)`, offset: 0.4 }, { transform: `${TILT} scale(1)` }], { duration: 340, easing: "ease-out", fill: "forwards" });
+    const squeezed = 420 + (SOURCES.length - 1) * 70 + COMPRESS;
+    // A small squeeze of the stack, then it hops into the chat.
+    later2(squeezed, () => {
+      cards.forEach((card) => card.animate([{ scale: "1" }, { scale: "0.9" }, { scale: "1" }], { duration: 200, easing: "ease-out", composite: "add" }));
     });
-    later2(complete + 480, () => {
-      const to = composerBox.getBoundingClientRect();
-      const from = holder.getBoundingClientRect();
-      const dx = to.left + 70 - (from.left + from.width / 2);
-      const dy = to.top + 24 - (from.top + from.height / 2);
-      board.animate([{ transform: `${TILT} scale(1)` }, { transform: "none" }], { duration: 520, easing: "cubic-bezier(0.45, 0, 0.2, 1)", fill: "forwards" });
-      holder.animate([
-        { transform: "none", opacity: 1 },
-        { transform: `translate(${dx * 0.9}px, ${dy * 0.9 - 14}px) scale(0.62)`, opacity: 1, offset: 0.75 },
-        { transform: `translate(${dx}px, ${dy}px) scale(0.36)`, opacity: 0 },
-      ], { duration: 620, easing: "cubic-bezier(0.45, 0, 0.2, 1)", fill: "forwards" });
-    });
-    later2(complete + 480 + 600, () => {
-      layer.remove();
-      if (collectLayer === layer) collectLayer = null;
-      done();
+    later2(squeezed + 180, () => {
+      const rect = cards[cards.length - 1].getBoundingClientRect();
+      flyFrom(rect, done);
     });
     return true;
   };
 
-  // Flies a ContextSnap.md card into the composer, then calls `done`: through the clipboard beside the
+  // Flies a ContextSnap.md card into the composer, then calls `done`: from the compressed cards beside the
   // keyboard when there is room, otherwise from the C key. Without motion (or when either end is not
   // visible) it calls `done` straight away.
   const flyIn = (done) => {
