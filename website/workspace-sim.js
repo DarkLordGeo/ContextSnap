@@ -225,7 +225,7 @@
       }
 
       const group = (name) => parts.filter((part) => part.group === name);
-      const lines = ["# Context Snapshot", "", `_Captured ${stamp()} by Snapctx. Sample data from the website demo._`];
+      const lines = ["# Context Snapshot", "", `_Captured ${stamp()} by ContextSnap. Sample data from the website demo._`];
       for (const part of group("head")) lines.push("", ...part.lines);
       lines.push("", "## Visible text");
       if (group("active").length) for (const part of group("active")) lines.push("", ...part.lines);
@@ -322,9 +322,9 @@
         : "This snapshot has no Git status, so I can't tell. Capture again with more context.";
     }
     if (snap.redactions) {
-      return `Snapctx already redacted ${snap.redactions === 1 ? "one value" : `${snap.redactions} values`} before copying: the password in the database URL in \`src/db.ts\` shows as \`[REDACTED]\`. File names and window titles are still visible.`;
+      return `ContextSnap already redacted ${snap.redactions === 1 ? "one value" : `${snap.redactions} values`} before copying: the password in the database URL in \`src/db.ts\` shows as \`[REDACTED]\`. File names and window titles are still visible.`;
     }
-    return "I don't see credentials. Snapctx redacts keys, tokens, passwords, and email addresses before copying; file names and window titles stay visible.";
+    return "I don't see credentials. ContextSnap redacts keys, tokens, passwords, and email addresses before copying; file names and window titles stay visible.";
   };
   // Which parts of the snapshot an answer relied on, shown under the answer.
   const usedFor = (id, snap) => {
@@ -447,7 +447,7 @@
     icon.setAttribute("aria-hidden", "true");
     const chevron = node("span", "ctx-chevron");
     chevron.setAttribute("aria-hidden", "true");
-    head.append(icon, node("b", "", "Snapctx.md"), node("span", "ctx-meta", metaOf(snap)), chevron);
+    head.append(icon, node("b", "", "ContextSnap.md"), node("span", "ctx-meta", metaOf(snap)), chevron);
     const pre = node("pre", "md ctx-md");
     pre.id = id;
     pre.tabIndex = 0;

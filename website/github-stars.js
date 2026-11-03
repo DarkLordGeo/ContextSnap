@@ -4,7 +4,7 @@
 (() => {
   const badges = [...document.querySelectorAll("[data-gh-stars]")];
   if (!badges.length) return;
-  const KEY = "snapctx-gh-stars";
+  const KEY = "contextsnap-gh-stars";
   const MAX_AGE = 60 * 60 * 1000;
   const format = (count) => new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(count);
   const show = (count) => {

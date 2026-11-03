@@ -1,5 +1,5 @@
 // The sample Windows desktop: windows, taskbar, Start and tray menus, a sample AI chat, and the whole
-// Snapctx workflow played out on it: a research session (browser tabs, a paper, notes) → shortcut →
+// ContextSnap workflow played out on it: a research session (browser tabs, a paper, notes) → shortcut →
 // capture → paste → ask → answer. The desktop state and the snapshot come from research-sim.js; the
 // capture lights come from capture-fx.js.
 // Everything is simulated in the page. Nothing on the visitor's computer is read (not even the real
@@ -233,7 +233,7 @@
   setInterval(clock, 30000);
 
   // The workflow ---------------------------------------------------------------------------------------
-  // Capture the active window → extract its context as layered sheets → assemble Snapctx.md in the
+  // Capture the active window → extract its context as layered sheets → assemble ContextSnap.md in the
   // chat → attach → ask → answer. Sheets, document, and answer are all built from the snapshot.
   const STEPS = ["work", "capture", "extract", "attach", "ask", "answer"];
   const stepItems = $$(".flow li", section);
@@ -325,7 +325,7 @@
     layer.style.width = `${Math.round(area.w)}px`;
     layer.style.height = `${Math.round(area.h)}px`;
     fx.play(layer, { width: Math.round(area.w), height: Math.round(area.h), zoom: inner, origin: "50% 45%" });
-    announce("Snapctx is capturing the sample desktop.");
+    announce("ContextSnap is capturing the sample desktop.");
     const snap = desk.snapshot();
     pending = snap;
     // The sheets lift off while the bars are sinking back, so the two stages read as one motion.
@@ -351,7 +351,7 @@
   };
 
   // Stage B and C: sheets lift out of the captured window in a shallow fan, fly onto a small clipboard
-  // and slide under its clip, stacking into one document, Snapctx.md (the real app copies to the
+  // and slide under its clip, stacking into one document, ContextSnap.md (the real app copies to the
   // clipboard). The clipboard then carries it to the chat, where it becomes the attachment.
   const TILT = "rotateX(16deg) rotateY(-12deg) rotateZ(-3deg)";
   const SPRING = "cubic-bezier(0.34, 1.4, 0.64, 1)";
@@ -399,7 +399,7 @@
     const papers = el("div", "clipb-papers");
     const clip = el("span", "clipb-clip");
     const label = el("p", "clipb-label");
-    label.append(el("b", "", "Snapctx.md"), el("span", "clipb-check"));
+    label.append(el("b", "", "ContextSnap.md"), el("span", "clipb-check"));
     board.append(papers, clip, label);
     holder.append(board);
     stage.append(holder);
@@ -517,7 +517,7 @@
     attach(snap);
     setStep("attach");
     setPill("Attached");
-    announce("Snapctx.md is attached in the chat.");
+    announce("ContextSnap.md is attached in the chat.");
     at(reduce.matches ? 0 : 160, () => {
       motions.forEach((motion) => motion.cancel());
       motions = [];
@@ -566,7 +566,7 @@
       desk.reset();
       desk.focusApp("browser");
     });
-    announce("Replaying: a research session in a browser, a paper, and notes is captured with Snapctx and summarized by the AI chat.");
+    announce("Replaying: a research session in a browser, a paper, and notes is captured with ContextSnap and summarized by the AI chat.");
     // Each source in turn, as it is: the browser (on its open tab), then the paper, then the notes.
     const spot = (app) => {
       for (const win of Object.values(wins)) win.classList.toggle("is-spot", win.dataset.app === app);
@@ -852,8 +852,8 @@
       const chip = el("button", "ca-sent-file");
       chip.type = "button";
       chip.dataset.snapIndex = String(sentSnaps.length - 1);
-      chip.append(el("span", "md-ic", "MD"), el("span", "", "Snapctx.md"));
-      chip.setAttribute("aria-label", "Open the attached Snapctx.md");
+      chip.append(el("span", "md-ic", "MD"), el("span", "", "ContextSnap.md"));
+      chip.setAttribute("aria-label", "Open the attached ContextSnap.md");
       message.append(chip);
       detach();
     }
@@ -912,7 +912,7 @@
     }
     if (snap && used.length) {
       const footer = el("p", "ca-used");
-      footer.append(el("span", "ca-used-label", "From Snapctx.md"));
+      footer.append(el("span", "ca-used-label", "From ContextSnap.md"));
       for (const label of used) footer.append(el("span", "ca-used-item", label));
       body.append(footer);
     }
@@ -942,7 +942,7 @@
       paste();
     }
   }, true);
-  // Snapctx itself takes the C press when it is running (see keyboard-demo.js); only its release reaches us.
+  // ContextSnap itself takes the C press when it is running (see keyboard-demo.js); only its release reaches us.
   let cDown = false;
   document.addEventListener("keydown", (event) => { if (event.code === "KeyC") cDown = true; }, true);
   document.addEventListener("keyup", (event) => {

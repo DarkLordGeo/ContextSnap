@@ -332,7 +332,7 @@ html:has(#consent-banner) { --reserve: 112px; }
 .ctx { width: 100%; border-radius: 14px; background: #fff; box-shadow: inset 0 0 0 1px var(--line-strong); overflow: hidden; }
 .ctx-head { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: 12px; line-height: 16px; box-shadow: 0 1px 0 var(--line); }
 .ctx-meta { margin-left: auto; color: var(--text-3); white-space: nowrap; }
-/* The attached Snapctx.md: a document icon on a tile in the chat's own file color (--c-file). */
+/* The attached ContextSnap.md: a document icon on a tile in the chat's own file color (--c-file). */
 .ctx-icon { display: inline-grid; place-items: center; width: 20px; height: 20px; flex: none; border-radius: 6px; background: var(--c-file, #ff5588); color: #fff; }
 .ctx-doc { width: 62%; height: 62%; }
 .md { margin: 0; font: 400 12px/20px var(--mono); color: #3f3d40; white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 2; }
@@ -495,7 +495,7 @@ html:has(#consent-banner) { --reserve: 112px; }
 .provider:focus-visible { outline: 2px solid var(--c-text); outline-offset: 1px; }
 .provider-progress { position: absolute; left: 7px; right: 7px; bottom: 3px; height: 2px; border-radius: 1px; background: currentColor; opacity: 0.55; transform: scaleX(0); transform-origin: left; }
 
-/* The Snapctx.md card that flies from the C key into the composer. */
+/* The ContextSnap.md card that flies from the C key into the composer. */
 .snap-fly {
   position: absolute; left: 0; top: 0; z-index: 6; display: grid; gap: 5px; width: 150px; padding: 10px 12px 12px; border-radius: 12px;
   background: #fff; box-shadow: 0 0 0 1px rgba(29, 29, 31, 0.12), 0 14px 30px -12px rgba(29, 29, 31, 0.45); pointer-events: none; will-change: transform, opacity;

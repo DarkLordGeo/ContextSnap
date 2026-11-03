@@ -1,6 +1,6 @@
-// The hero's chat shown as four popular AI chats in turn (illustrations; Snapctx copies to the clipboard
+// The hero's chat shown as four popular AI chats in turn (illustrations; ContextSnap copies to the clipboard
 // and works with any chat). Each turn tells the whole story: the shortcut is tapped on the keyboard, a
-// Snapctx.md card lifts off the C key and flies into that chat's composer, the question is sent, and the
+// ContextSnap.md card lifts off the C key and flies into that chat's composer, the question is sent, and the
 // answer streams in (workspace-sim.js). Then the next chat fades in.
 //
 // The rotation pauses while the pointer is over the chat, while the visitor uses the shortcut or a
@@ -115,7 +115,7 @@
     fly.hidden = true;
   }
 
-  // Flies a Snapctx.md card from the C key into the composer, then calls `done`. Without motion (or when
+  // Flies a ContextSnap.md card from the C key into the composer, then calls `done`. Without motion (or when
   // either end is not visible) it calls `done` straight away.
   const flyIn = (done) => {
     cancelFlight();
@@ -161,7 +161,7 @@
       later(cycle, 800);
       return;
     }
-    const tapped = window.snapctxKeyboard?.tap() ?? 0;
+    const tapped = window.contextSnapKeyboard?.tap() ?? 0;
     later(() => {
       if (!canPlay()) {
         later(cycle, 800);
@@ -212,7 +212,7 @@
     new IntersectionObserver(([entry]) => { inView = entry.isIntersecting; }, { threshold: 0.4 }).observe(demo);
   }
 
-  window.snapctxHero = { flyIn, hold };
+  window.contextSnapHero = { flyIn, hold };
 
   apply(0);
   if (!still.matches) {
