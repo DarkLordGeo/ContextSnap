@@ -276,6 +276,7 @@
     os.classList.toggle("is-status", Boolean(text));
   };
   const clearOverlays = () => {
+    for (const win of Object.values(wins)) win.classList.remove("is-reading");
     os.classList.remove("is-keys");
     setPill("");
     keys.forEach((key) => key.classList.remove("is-down"));
@@ -333,6 +334,8 @@
 
   // The sheets are the snapshot's parts, the same ones as the context cards on the page, at most five.
   const sheetsFor = (snap) => snap.parts.slice(0, 5).map((part) => ({
+    // The window the part was read from: the active one for the header, none for system context.
+    app: part.group === "head" ? snap.active : part.group === "system" ? null : part.id,
     label: part.category,
     icon: part.source.icon,
     lines: sim.previewLines(part),
@@ -414,19 +417,39 @@
       rz: (i - c) * 2.6,
     }));
     const fanned = (f) => `translate3d(${f.x}px, ${f.y}px, ${f.z}px) rotateX(16deg) rotateY(${f.ry}deg) rotateZ(${f.rz}deg) scale(1)`;
+    // Each sheet peels off the window it was read from, one window at a time: the window lights up, a
+    // layer the size of the window lifts off it, shrinks to a sheet, and joins the fan.
+    const LIFT = 760;
+    const GAP = 170;
     const elements = sheets.map((sheet, i) => {
       const element = sheetElement(sheet, w, h);
       element.style.left = `${Math.round(S.x - w / 2)}px`;
       element.style.top = `${Math.round(S.y - h / 2)}px`;
       element.style.zIndex = String(i + 2);
       stage.append(element);
-      move(element, [
-        { transform: "translate3d(0px, 14px, 0px) rotateX(0deg) scale(0.62)", opacity: 0 },
-        { transform: fanned(fan[i]), opacity: 1 },
-      ], { duration: 560, delay: 80 + i * 90, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
+      const from = sheet.app && wins[sheet.app] && desk.visible(sheet.app) ? relTo(wins[sheet.app]) : null;
+      const delay = 80 + i * GAP;
+      if (from) {
+        const dx = from.x + from.w / 2 - S.x;
+        const dy = from.y + from.h / 2 - S.y;
+        const k = Math.min(3.2, Math.max(1, Math.min(from.w / w, from.h / h) * 0.86));
+        at(delay, () => wins[sheet.app].classList.add("is-reading"));
+        at(delay + LIFT * 0.7, () => wins[sheet.app].classList.remove("is-reading"));
+        move(element, [
+          { transform: `translate3d(${dx}px, ${dy}px, 0px) rotateX(0deg) scale(${k})`, opacity: 0 },
+          { transform: `translate3d(${dx}px, ${dy - 10}px, 20px) rotateX(6deg) scale(${k * 0.98})`, opacity: 0.9, offset: 0.22 },
+          { transform: `translate3d(${dx * 0.4 + fan[i].x * 0.6}px, ${dy * 0.4 + fan[i].y * 0.6 - 26}px, ${fan[i].z}px) rotateX(12deg) scale(${(k + 1) / 2})`, opacity: 1, offset: 0.62 },
+          { transform: fanned(fan[i]), opacity: 1 },
+        ], { duration: LIFT, delay, easing: "cubic-bezier(0.3, 0.7, 0.2, 1)" });
+      } else {
+        move(element, [
+          { transform: "translate3d(0px, 14px, 0px) rotateX(0deg) scale(0.62)", opacity: 0 },
+          { transform: fanned(fan[i]), opacity: 1 },
+        ], { duration: 560, delay, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
+      }
       return element;
     });
-    const emerged = 80 + 560 + (n - 1) * 90;
+    const emerged = 80 + LIFT + (n - 1) * GAP;
 
     // Each sheet takes its own arc onto the clipboard, ends just above the paper, then slides under the clip.
     at(emerged + 140, () => {
