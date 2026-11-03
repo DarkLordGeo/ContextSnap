@@ -320,12 +320,25 @@
 
 /* Provider marks: a letter on the provider's color, small and quiet. Not the providers' logos. */
 .pv { display: inline-grid; place-items: center; width: 18px; height: 18px; flex: none; border-radius: 5px; color: #fff; font: 700 10px/1 var(--font); }
-.pv-openai { background: #0d0d0d; }
-.pv-anthropic { background: #c96442; }
-.pv-google { background: #4285f4; }
-.pv-xai { background: #262626; font-family: var(--mono); }
-.pv-deepseek { background: #4d6bfe; }
-.pv-meta { background: #0866ff; }
+.pv { color: #0d0d0d; }
+.pv-logo { width: 100%; height: 100%; }
+
+/* The chat dressed as the picked product. ChatGPT is the base look above. */
+.ca[data-skin="claude"] { background: #faf9f5; color: #3d3929; }
+.ca[data-skin="claude"] .ca-head { border-bottom-color: rgba(61, 57, 41, 0.1); }
+.ca[data-skin="claude"] .ca-model { color: #3d3929; }
+.ca[data-skin="claude"] .ca-bubble { border-radius: 14px; background: #f0eee6; color: #3d3929; }
+.ca[data-skin="claude"] .ca-body { font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif; font-size: 14px; line-height: 22px; }
+.ca[data-skin="claude"] .ca-body code { background: rgba(61, 57, 41, 0.08); }
+.ca[data-skin="claude"] .ca-ai > .pv { display: none; }
+.ca[data-skin="claude"] .ca-composer { border-radius: 16px; box-shadow: 0 0 0 1px rgba(61, 57, 41, 0.15), 0 2px 8px rgba(61, 57, 41, 0.05); }
+.ca[data-skin="claude"] .ca-send { border-radius: 8px; background: #c96442; }
+.ca[data-skin="claude"] .ca-hello { font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif; font-weight: 400; font-size: 20px; }
+.ca[data-skin="gemini"] .ca-bubble { border-radius: 20px 6px 20px 20px; background: #e9eef6; color: #1f1f1f; }
+.ca[data-skin="gemini"] .ca-composer { border-radius: 26px; background: #f0f4f9; box-shadow: none; }
+.ca[data-skin="gemini"] .ca-send { background: #0b57d0; }
+.ca[data-skin="gemini"] .ca-hello { background: linear-gradient(90deg, #4b7cf3, #8a73e6 50%, #d36aa9); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.ca[data-skin="chatgpt"] .ca-ai > .pv { display: none; }
 
 .ca-menu {
   position: absolute; left: 8px; top: 44px; z-index: 5; width: min(260px, calc(100% - 16px)); max-height: calc(100% - 56px); padding: 6px; overflow: auto;

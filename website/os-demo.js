@@ -23,15 +23,13 @@
   const liveStatus = $("[data-os-status]", section);
   const announce = (text) => { liveStatus.textContent = text; };
 
-  // Models in the sample chat. Only the label changes: answers are scripted locally from the snapshot,
-  // whichever model is picked. Keep this list current as model names change.
+  // Models in the sample chat. Picking one dresses the chat as that product (ChatGPT, Claude, or Gemini,
+  // with its official mark); answers are still scripted locally from the snapshot, whichever is picked.
+  // Keep this list current as model names change.
   const MODELS = [
-    { provider: "OpenAI", mark: "openai", letter: "O", models: ["GPT-5", "GPT-5 mini", "o3"] },
-    { provider: "Anthropic", mark: "anthropic", letter: "A", models: ["Claude Sonnet 5.5", "Claude Opus 5.5", "Claude Haiku 5.5"] },
-    { provider: "Google", mark: "google", letter: "G", models: ["Gemini 2.5 Pro", "Gemini 2.5 Flash"] },
-    { provider: "xAI", mark: "xai", letter: "x", models: ["Grok 4", "Grok 3"] },
-    { provider: "DeepSeek", mark: "deepseek", letter: "D", models: ["DeepSeek-V3", "DeepSeek-R1"] },
-    { provider: "Meta", mark: "meta", letter: "M", models: ["Llama 4 Maverick", "Llama 4 Scout"] },
+    { provider: "OpenAI", product: "ChatGPT", mark: "chatgpt", placeholder: "Ask anything", models: ["GPT-5", "GPT-5 mini", "o3"] },
+    { provider: "Anthropic", product: "Claude", mark: "claude", placeholder: "Reply to Claude…", models: ["Claude Sonnet 5.5", "Claude Opus 5.5", "Claude Haiku 5.5"] },
+    { provider: "Google", product: "Gemini", mark: "gemini", placeholder: "Ask Gemini", models: ["Gemini 2.5 Pro", "Gemini 2.5 Flash"] },
   ];
 
   // Small helpers --------------------------------------------------------------------------------------
@@ -682,18 +680,20 @@
 
   let model = { ...MODELS[0], name: MODELS[0].models[0] };
   const mark = (entry) => {
-    const badge = el("span", `pv pv-${entry.mark}`, entry.letter);
+    const badge = el("span", `pv pv-${entry.mark}`);
     badge.setAttribute("aria-hidden", "true");
+    badge.append(sim.appIcon(entry.mark, "pv-logo"));
     return badge;
   };
   const renderModel = () => {
     const current = $("[data-model-mark]");
     current.className = `pv pv-${model.mark}`;
-    current.textContent = model.letter;
+    current.replaceChildren(sim.appIcon(model.mark, "pv-logo"));
     current.setAttribute("aria-hidden", "true");
+    $(".ca").dataset.skin = model.mark;
     $("[data-model-name]").textContent = model.name;
-    modelButton.setAttribute("aria-label", `Model: ${model.name} by ${model.provider}. Change model`);
-    input.placeholder = `Message ${model.name}`;
+    modelButton.setAttribute("aria-label", `Model: ${model.name} by ${model.provider} (shown as ${model.product}). Change model`);
+    input.placeholder = model.placeholder;
     for (const option of $$("[role=option]", modelMenu)) option.setAttribute("aria-selected", String(option.dataset.model === model.name));
   };
   for (const entry of MODELS) {
