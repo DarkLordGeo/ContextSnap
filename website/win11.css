@@ -102,7 +102,7 @@
 .win.is-reading { box-shadow: 0 0 0 3px rgba(0, 103, 192, 0.55), 0 32px 64px rgba(0, 0, 0, 0.28); transition: box-shadow 180ms var(--ease-out); }
 .win.is-spot { box-shadow: 0 0 0 2px var(--accent), 0 32px 64px rgba(0, 0, 0, 0.28), 0 0 0 8px rgba(0, 103, 192, 0.18); }
 
-/* Edge: tabs in the title bar, then the address bar and the page. */
+/* Browser: tabs in the title bar, then the address bar and the page. */
 .br-bar { gap: 0; padding-left: 6px; background: #ebebeb; }
 .win:not(.is-active) .br-bar { background: #f3f3f3; }
 .br-tabs { display: flex; flex: 1; align-self: flex-end; gap: 2px; min-width: 0; height: 28px; }

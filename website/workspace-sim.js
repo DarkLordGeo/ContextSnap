@@ -101,7 +101,7 @@
       terminal: { process: "WindowsTerminal", name: "Terminal", app: "Windows Terminal", icon: "term", title: () => "Windows PowerShell" },
       files: { process: "explorer", name: "File Explorer", app: "File Explorer", icon: "folder", title: () => "src - File Explorer" },
       system: { process: "msinfo32", name: "System Information", app: "System Information", icon: "info", title: () => "System Information" },
-      assistant: { process: "msedge", name: "Assistant", app: "Microsoft Edge", icon: "chat", title: () => "Assistant - Sample chat - Microsoft Edge" },
+      assistant: { process: "chrome", name: "Assistant", app: "Google Chrome", icon: "chat", title: () => "Assistant - Sample chat - Google Chrome" },
     };
     const sourceOf = (app) => ({ name: APPS[app].app, icon: APPS[app].icon });
 

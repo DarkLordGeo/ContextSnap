@@ -70,10 +70,10 @@
   const createResearchDesktop = () => {
     const listeners = new Set();
     const APPS = {
-      browser: { process: "msedge", name: "Edge", app: "Microsoft Edge", icon: "edge", title: () => `${TABS[state.tab].title} - Microsoft Edge` },
-      pdf: { process: "Acrobat", name: "Acrobat Reader", app: "Adobe Acrobat Reader", icon: "pdf", title: () => `${PAPER.file} - Adobe Acrobat Reader` },
+      browser: { process: "chrome", name: "Chrome", app: "Google Chrome", icon: "chrome", title: () => `${TABS[state.tab].title} - Google Chrome` },
+      pdf: { process: "PdfReader", name: "PDF Reader", app: "PDF Reader", icon: "pdf", title: () => `${PAPER.file} - PDF Reader` },
       notes: { process: "Notepad", name: "Notepad", app: "Notepad", icon: "notes", title: () => "research-notes.txt - Notepad" },
-      assistant: { process: "msedge", name: "Assistant", app: "Microsoft Edge", icon: "chat", title: () => "ChatGPT - Microsoft Edge" },
+      assistant: { process: "chrome", name: "Assistant", app: "Google Chrome", icon: "chat", title: () => "ChatGPT - Google Chrome" },
     };
     const SOURCE_LABELS = { browser: "Browser tabs", pdf: "PDF reader text", notes: "Notes", assistant: "AI chat" };
     const sourceOf = (app) => ({ name: APPS[app].app, icon: APPS[app].icon });

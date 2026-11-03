@@ -649,7 +649,7 @@
     current.setAttribute("aria-hidden", "true");
     $(".ca").dataset.skin = model.mark;
     // The browser window is that product's tab: its title and icon follow (and so does the snapshot).
-    desk.APPS.assistant.title = () => `${model.product} - Microsoft Edge`;
+    desk.APPS.assistant.title = () => `${model.product} - Google Chrome`;
     desk.APPS.assistant.name = model.product;
     $('[data-app="assistant"] .win-ic use').setAttribute("href", `#ic-${model.mark}`);
     render();
