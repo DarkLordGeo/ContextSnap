@@ -457,10 +457,8 @@ html:has(#consent-banner) { --reserve: 112px; }
 }
 .chat[data-provider="gemini"] .chat-composer { box-shadow: none; }
 .chat[data-provider="gemini"] .chat-composer.is-focused { box-shadow: 0 0 0 1px #c4d7f5; }
-.chat[data-provider="gemini"] .msg-ai::before {
-  width: 20px; height: 20px; border-radius: 0; background: linear-gradient(45deg, #4b7cf3, #8a73e6 55%, #d36aa9);
-  clip-path: polygon(50% 0, 59% 41%, 100% 50%, 59% 59%, 50% 100%, 41% 59%, 0 50%, 41% 41%);
-}
+/* The official Gemini mark (gemini.svg, from Simple Icons) beside each answer. */
+.chat[data-provider="gemini"] .msg-ai::before { width: 20px; height: 20px; border-radius: 0; background: url("gemini.svg") center / contain no-repeat; }
 .chat[data-provider="gemini"] .msg-ai::after { display: none; }
 .chat[data-provider="gemini"] .chat-title { font-weight: 500; font-size: 17px; }
 
