@@ -99,7 +99,7 @@
 }
 /* During the replay each source is briefly in the spotlight; during the capture, the window a layer is
    being read from glows. */
-.win.is-reading { box-shadow: 0 0 0 2px #fff, 0 0 0 5px rgba(0, 103, 192, 0.55), 0 32px 64px rgba(0, 0, 0, 0.28); transition: box-shadow 180ms var(--ease-out); }
+.win.is-reading { box-shadow: 0 0 0 3px rgba(0, 103, 192, 0.55), 0 32px 64px rgba(0, 0, 0, 0.28); transition: box-shadow 180ms var(--ease-out); }
 .win.is-spot { box-shadow: 0 0 0 2px var(--accent), 0 32px 64px rgba(0, 0, 0, 0.28), 0 0 0 8px rgba(0, 103, 192, 0.18); }
 
 /* Edge: tabs in the title bar, then the address bar and the page. */
@@ -309,7 +309,7 @@
 /* Capture: keys, status pill, and the capture layer (placed over the captured window by os-demo.js) - */
 .capture.is-local { inset: 0 0 48px; border-radius: 8px; }
 /* On the sample desktop the capture also brings a faint Windows-blue glow in from the screen edges. */
-.capture.is-local .capture-scrim { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.8), inset 0 0 48px rgba(0, 103, 192, 0.32); }
+.capture.is-local .capture-scrim { box-shadow: inset 0 0 48px rgba(0, 103, 192, 0.32); }
 .os-keys {
   position: absolute; left: 50%; bottom: 20px; z-index: 64; display: flex; gap: 6px; padding: 10px; border-radius: 12px;
   background: rgba(255, 255, 255, 0.8); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
