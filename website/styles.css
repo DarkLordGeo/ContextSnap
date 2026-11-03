@@ -105,6 +105,12 @@ kbd {
 .button.glass, .button.ghost { background: #fff; color: var(--text); box-shadow: 0 0 0 1px var(--line-strong), var(--shadow-sm); }
 .button.glass:hover, .button.ghost:hover { background: var(--bg-warm); }
 .button[aria-disabled="true"] { background: #ecebe8; color: var(--text-3); box-shadow: none; pointer-events: none; }
+/* GitHub star count, filled in by github-stars.js; hidden until the count arrives. */
+.gh-stars { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 999px; background: rgba(29, 29, 31, 0.07); color: var(--text-2); font-size: 13px; line-height: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.gh-stars[hidden] { display: none; }
+.gh-stars svg { flex: none; width: 13px; height: 13px; color: #e3a008; }
+.nav-links .gh-stars { margin-left: 6px; }
+.closing-card .gh-stars { background: rgba(255, 255, 255, 0.14); color: rgba(255, 255, 255, 0.86); }
 .text-link { display: inline-flex; align-items: center; gap: 4px; min-height: 48px; padding: 0 8px; color: var(--text); font-weight: 600; text-decoration: none; }
 .text-link span { transition: transform 200ms var(--ease-out); }
 .text-link:hover span { transform: translateX(4px); }
