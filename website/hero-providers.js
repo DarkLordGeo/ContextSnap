@@ -122,8 +122,8 @@
   }
 
   // The collection beside the keyboard: three compact mock cards (browser, PDF, notes) rise from the
-  // keyboard, compress together into one small stack beside the chat, and the stack hops into the chat as
-  // ContextSnap.md (flyFrom). Illustrative cards only, not windows; no clipboard here (the sample desktop
+  // keyboard, compress together into one small stack beside the chat, and the stack hops straight into the
+  // chat's composer. Illustrative cards only, not windows; no clipboard here (the sample desktop
   // below has that). Returns false (and does nothing) when there is no room beside the keyboard.
   const SOURCES = [
     { label: "Browser context", icon: "chrome" },
@@ -150,46 +150,55 @@
     const CW = 140;
     const CH = 38;
     const G = { x: room - CW / 2 - 30, y: area.height * 0.42 }; // where they compress, beside the chat
-    const cards = SOURCES.map((source, i) => {
+    const to = composerBox.getBoundingClientRect();
+    const T = { x: to.left - area.left + 60, y: to.top - area.top + 22 }; // the composer's attachment spot
+    // Each run they rise from different spots over the keyboard, near the stack rather than far away.
+    const spot = () => ({
+      x: Math.min(room - CW - 8, Math.max(8, room * (0.18 + Math.random() * 0.5) - CW / 2)),
+      y: area.height * (0.16 + Math.random() * 0.42) - CH / 2,
+    });
+    // One continuous motion per card, no hand-over between animations: rise, a short hold, compress into
+    // the stack (all together), then the stack hops into the chat as one.
+    const RISE_STEP = 80;
+    const RISE = 240;
+    const COMPRESS_AT = 560;
+    const HOP_AT = 940;
+    const END = 1460;
+    const frac = (ms, d, s0) => Math.min(1, Math.max(0, (ms - s0) / d));
+    SOURCES.forEach((source, i) => {
       const card = node("div", "hc-card");
       card.append(sim.appIcon(source.icon, "hc-ic"), node("b", "", source.label));
-      card.style.left = `${Math.round(room * (0.14 + i * 0.22) - CW / 2)}px`;
-      card.style.top = `${Math.round(area.height * 0.3 - CH / 2 + (i % 2) * 14)}px`;
+      const p0 = spot();
+      card.style.left = `${Math.round(p0.x)}px`;
+      card.style.top = `${Math.round(p0.y)}px`;
       layer.append(card);
-      return card;
-    });
-    const ease = "cubic-bezier(0.22, 0.8, 0.24, 1)";
-    // Rise out of the keyboard, one right after another.
-    cards.forEach((card, i) => card.animate([
-      { opacity: 0, transform: "translateY(16px) scale(0.9)" },
-      { opacity: 1, transform: "none" },
-    ], { duration: 260, delay: i * 90, easing: ease, fill: "both" }));
-    // Compress: each slides to the same spot beside the chat, shrinking into a small stack.
-    const COMPRESS = 420;
-    cards.forEach((card, i) => {
-      const x = parseFloat(card.style.left) + CW / 2;
-      const y = parseFloat(card.style.top) + CH / 2;
-      const dx = G.x - x + (i - 1) * 3;
-      const dy = G.y - y - i * 3;
+      const x = p0.x + CW / 2;
+      const y = p0.y + CH / 2;
+      const sx = G.x - x + (i - 1) * 3; // stacked, a few pixels apart
+      const sy = G.y - y - i * 3;
+      const ex = T.x - x;
+      const ey = T.y - y;
+      const start = i * RISE_STEP;
+      const d = END - start;
       card.animate([
-        { transform: "none" },
-        { transform: `translate(${dx}px, ${dy}px) scale(0.62)` },
-      ], { duration: COMPRESS, delay: 420 + i * 70, easing: "cubic-bezier(0.5, 0, 0.2, 1)", fill: "forwards" });
+        { offset: 0, transform: "translate(0px, 16px) scale(0.9)", opacity: 0, easing: "cubic-bezier(0.22, 0.8, 0.24, 1)" },
+        { offset: frac(start + RISE, d, start), transform: "translate(0px, 0px) scale(1)", opacity: 1 },
+        { offset: frac(COMPRESS_AT, d, start), transform: "translate(0px, 0px) scale(1)", opacity: 1, easing: "cubic-bezier(0.5, 0, 0.2, 1)" },
+        { offset: frac(HOP_AT, d, start), transform: `translate(${sx}px, ${sy}px) scale(0.62)`, opacity: 1, easing: "cubic-bezier(0.3, 0, 0.6, 1)" },
+        { offset: frac((HOP_AT + END) / 2, d, start), transform: `translate(${(sx + ex) / 2}px, ${Math.min(sy, ey) - 46}px) scale(0.48)`, opacity: 1, easing: "cubic-bezier(0.4, 0, 0.7, 1)" },
+        { offset: 1, transform: `translate(${ex}px, ${ey}px) scale(0.28)`, opacity: 0 },
+      ], { duration: d, delay: start, fill: "both" });
     });
-    const squeezed = 420 + (SOURCES.length - 1) * 70 + COMPRESS;
-    // A small squeeze of the stack, then it hops into the chat.
-    later2(squeezed, () => {
-      cards.forEach((card) => card.animate([{ scale: "1" }, { scale: "0.9" }, { scale: "1" }], { duration: 200, easing: "ease-out", composite: "add" }));
-    });
-    later2(squeezed + 180, () => {
-      const rect = cards[cards.length - 1].getBoundingClientRect();
-      flyFrom(rect, done);
+    later2(END + 40, () => {
+      layer.remove();
+      if (collectLayer === layer) collectLayer = null;
+      done();
     });
     return true;
   };
 
-  // Flies a ContextSnap.md card into the composer, then calls `done`: from the compressed cards beside the
-  // keyboard when there is room, otherwise from the C key. Without motion (or when either end is not
+  // Brings the context into the composer, then calls `done`: as the compressed cards beside the keyboard
+  // when there is room, otherwise as a ContextSnap.md card from the C key. Without motion (or when either end is not
   // visible) it calls `done` straight away.
   const flyIn = (done) => {
     cancelFlight();
