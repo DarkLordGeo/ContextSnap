@@ -217,16 +217,18 @@
     // starts as the collector's cards (collector.js) stack up and leave the middle of the screen.
     const pasteAt = clearAt + (reduce.matches ? 250 : 1300);
     at(clearAt + 250, run, () => { demo.dataset.state = "idle"; });
-    at(pasteAt, run, () => {
+    at(pasteAt, run, () => window.snapctxHero ? window.snapctxHero.flyIn(() => { if (run === token) deliver(); }) : deliver());
+    const deliver = () => {
       const length = sim.deliver(snap);
       at(length, run, () => {
         busy = false;
         status.textContent = `Sample snapshot with ${snap.count} sources pasted into a sample chat, with an answer based only on it. Nothing was read from your computer.`;
       });
-    });
+    };
   };
 
   const runShortcut = (source) => {
+    window.snapctxHero?.hold(); // the hero's chat rotation waits while the visitor's capture plays
     cancelRun();
     busy = true;
     const run = token;
@@ -372,6 +374,18 @@
     physicalModifiers.ctrl = physicalModifiers.alt = physicalModifiers.shift = false;
     syncHintKeys();
   };
+  // hero-providers.js taps the shortcut before each sample capture: the keys go down and up, silently.
+  window.snapctxKeyboard = {
+    tap() {
+      if (busy || reduce.matches) return 0;
+      ORDER.forEach((name, i) => {
+        setTimeout(() => press(combo[name], false), i * 90);
+        setTimeout(() => release(combo[name], false), 470 + (ORDER.length - 1 - i) * 45);
+      });
+      return 650;
+    },
+  };
+
   window.addEventListener("blur", releasePhysical);
   document.addEventListener("visibilitychange", () => { if (document.hidden) releasePhysical(); });
 })();

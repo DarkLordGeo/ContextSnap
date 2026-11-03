@@ -5,7 +5,7 @@
 <!-- Google tag (gtag.js): loaded by gtag.js only after the visitor accepts analytics cookies -->
 <script src="gtag.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Snapctx: Your desktop context. One shortcut. Ready for AI.</title>
+<title>Snapctx: Give your AI the context it's missing</title>
 <meta name="description" content="Snapctx captures what you are working on as readable, redacted Markdown and copies it to your clipboard with Ctrl + Alt + Shift + C. Processed locally on Windows and Linux.">
 <meta name="theme-color" content="#f7f5f2">
 <meta property="og:title" content="Snapctx">
@@ -17,6 +17,13 @@
 </head>
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <defs><linearGradient id="pv-gemini-fill" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#4b7cf3"/><stop offset="0.55" stop-color="#8a73e6"/><stop offset="1" stop-color="#d36aa9"/></linearGradient></defs>
+  <symbol id="pv-chatgpt" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5"><rect x="9.3" y="2.6" width="5.4" height="11.4" rx="2.7"/><rect x="9.3" y="2.6" width="5.4" height="11.4" rx="2.7" transform="rotate(60 12 12)"/><rect x="9.3" y="2.6" width="5.4" height="11.4" rx="2.7" transform="rotate(120 12 12)"/><rect x="9.3" y="2.6" width="5.4" height="11.4" rx="2.7" transform="rotate(180 12 12)"/><rect x="9.3" y="2.6" width="5.4" height="11.4" rx="2.7" transform="rotate(240 12 12)"/><rect x="9.3" y="2.6" width="5.4" height="11.4" rx="2.7" transform="rotate(300 12 12)"/></g></symbol>
+  <symbol id="pv-claude" viewBox="0 0 24 24"><g stroke="#d97757" stroke-width="2.3" stroke-linecap="round"><path d="M12 12V2.8"/><path d="M12 12l5.2-7.6"/><path d="M12 12l8.6-3.2"/><path d="M12 12l9 1.4"/><path d="M12 12l6.6 6.4"/><path d="M12 12l1.6 9"/><path d="M12 12l-3.8 8.4"/><path d="M12 12l-8.2 4.6"/><path d="M12 12l-9-0.8"/><path d="M12 12L4.6 6.2"/><path d="M12 12L7.8 3.6"/></g></symbol>
+  <symbol id="pv-gemini" viewBox="0 0 24 24"><path d="M12 2c.6 5.4 4.6 9.4 10 10-5.4.6-9.4 4.6-10 10-.6-5.4-4.6-9.4-10-10 5.4-.6 9.4-4.6 10-10z" fill="url(#pv-gemini-fill)"/></symbol>
+  <symbol id="pv-cursor" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 2.5l8.5 4.8v9.4L12 21.5l-8.5-4.8V7.3z"/><path d="M3.5 7.3L12 12l8.5-4.7M12 12v9.5"/></g><path d="M12 12l8.5-4.7v9.4z" fill="currentColor" opacity="0.35"/></symbol>
+</svg>
 <header class="site-header">
   <div class="nav-bar">
     <a class="wordmark" href="/" aria-label="Snapctx home"><span class="mark" aria-hidden="true"></span>Snapctx</a>
@@ -34,8 +41,8 @@
   <section class="stage" aria-labelledby="stage-title">
     <div class="wrap">
       <div class="stage-head">
-        <h1 id="stage-title">Your desktop context. One shortcut. Ready for AI.</h1>
-        <p class="lead">Snapctx copies what you're working on as Markdown, ready to paste into any AI chat.</p>
+        <h1 id="stage-title">Give your AI the context it's missing.</h1>
+        <p class="lead">Capture your desktop context. Send it to your favorite AI. One shortcut.</p>
         <div class="stage-actions">
           <a class="button ghost" href="https://github.com/DarkLordGeo/ContextSnap" rel="noopener">View on GitHub</a>
           <a class="button dark" href="#download">Download free</a>
@@ -121,9 +128,9 @@
 
         <section class="chat" id="chat" aria-labelledby="chat-title">
           <header class="chat-head">
-            <span class="chat-avatar" aria-hidden="true"></span>
-            <h2 class="chat-title" id="chat-title">Assistant</h2>
-            <span class="chat-sub">Sample conversation</span>
+            <svg class="chat-mark" aria-hidden="true"><use data-chat-mark href="#pv-chatgpt"/></svg>
+            <h2 class="chat-title" id="chat-title" data-chat-title>ChatGPT</h2><span class="chat-caret" aria-hidden="true"></span>
+            <div class="providers" role="tablist" aria-label="AI chat shown. Illustrations of popular chats; Snapctx is not affiliated with them." title="Illustrations of popular AI chats. Snapctx works with any chat you paste into and is not affiliated with these products."><button type="button" class="provider" role="tab" data-provider-tab="chatgpt" aria-selected="true" aria-label="ChatGPT"><svg aria-hidden="true"><use href="#pv-chatgpt"/></svg><i class="provider-progress"></i></button><button type="button" class="provider" role="tab" data-provider-tab="claude" aria-selected="false" aria-label="Claude" tabindex="-1"><svg aria-hidden="true"><use href="#pv-claude"/></svg><i class="provider-progress"></i></button><button type="button" class="provider" role="tab" data-provider-tab="gemini" aria-selected="false" aria-label="Gemini" tabindex="-1"><svg aria-hidden="true"><use href="#pv-gemini"/></svg><i class="provider-progress"></i></button><button type="button" class="provider" role="tab" data-provider-tab="cursor" aria-selected="false" aria-label="Cursor" tabindex="-1"><svg aria-hidden="true"><use href="#pv-cursor"/></svg><i class="provider-progress"></i></button></div>
           </header>
           <div class="chat-log" data-log>
             <p class="chat-day">Today</p>
@@ -145,6 +152,7 @@
             </div>
           </div>
         </section>
+        <div class="snap-fly" aria-hidden="true" hidden><b><span class="ctx-icon">#</span>Snapctx.md</b><i></i><i></i><i></i></div>
 
       </div>
 
@@ -474,6 +482,7 @@
 <script src="os-demo.js" defer></script>
 <script src="collector.js" defer></script>
 <script src="keyboard-demo.js" defer></script>
+<script src="hero-providers.js" defer></script>
 <script src="/_vercel/insights/script.js" defer></script>
 </body>
 </html>
