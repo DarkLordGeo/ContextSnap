@@ -149,7 +149,7 @@
       }
 
       const group = (name) => parts.filter((part) => part.group === name);
-      const lines = ["# Context Snapshot", "", `_Captured ${stamp()} by Snapctx. Sample data from the website demo._`];
+      const lines = ["# Context Snapshot", "", `_Captured ${stamp()} by ContextSnap. Sample data from the website demo._`];
       for (const part of group("head")) lines.push("", ...part.lines);
       lines.push("", "## Visible text");
       for (const part of group("active")) lines.push("", ...part.lines);
@@ -185,7 +185,7 @@
   };
 
   // The sample assistant's answers, built only from what the snapshot contains, as blocks for the chat:
-  // { p } paragraphs (with `code`), { list } bullets, and `used` for the "From Snapctx.md" footer.
+  // { p } paragraphs (with `code`), { list } bullets, and `used` for the "From ContextSnap.md" footer.
   const answer = (id, snap) => {
     if (!snap) return { blocks: [{ p: "I can't see your research yet. Press `Ctrl` `Alt` `Shift` `C` and paste the snapshot here." }], used: [] };
     const has = (app) => app in snap.textOf;

@@ -332,7 +332,7 @@ html:has(#consent-banner) { --reserve: 112px; }
 .ctx { width: 100%; border-radius: 14px; background: #fff; box-shadow: inset 0 0 0 1px var(--line-strong); overflow: hidden; }
 .ctx-head { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: 12px; line-height: 16px; box-shadow: 0 1px 0 var(--line); }
 .ctx-meta { margin-left: auto; color: var(--text-3); white-space: nowrap; }
-/* The attached Snapctx.md: a document icon on a tile in the chat's own file color (--c-file). */
+/* The attached ContextSnap.md: a document icon on a tile in the chat's own file color (--c-file). */
 .ctx-icon { display: inline-grid; place-items: center; width: 20px; height: 20px; flex: none; border-radius: 6px; background: var(--c-file, #ff5588); color: #fff; }
 .ctx-doc { width: 62%; height: 62%; }
 .md { margin: 0; font: 400 12px/20px var(--mono); color: #3f3d40; white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 2; }
@@ -369,6 +369,7 @@ html:has(#consent-banner) { --reserve: 112px; }
 .chat-composer.is-focused { box-shadow: 0 0 0 1px rgba(29, 29, 31, 0.32), 0 4px 14px rgba(29, 29, 31, 0.08); }
 .composer-attach { display: flex; align-items: center; gap: 8px; width: fit-content; max-width: 100%; padding: 6px 12px 6px 6px; border-radius: 12px; background: var(--bg-warm); box-shadow: inset 0 0 0 1px var(--line); animation: attach-in 360ms var(--spring) both; }
 .composer-attach[hidden] { display: none; }
+.composer-attach.is-handoff { animation: none; } /* the context stack has just landed on it */
 .composer-attach .ctx-icon { width: 30px; height: 30px; border-radius: 8px; }
 .attach-text { display: flex; flex-direction: column; min-width: 0; font-size: 12px; line-height: 16px; }
 .attach-text b { font-weight: 600; }
@@ -442,10 +443,10 @@ html:has(#consent-banner) { --reserve: 112px; }
 }
 .chat[data-provider="claude"] .msg-ai { padding-left: 0; }
 .chat[data-provider="claude"] .msg-ai::before, .chat[data-provider="claude"] .msg-ai::after { display: none; }
+/* Claude's spark under the latest answer, as in Claude's own chat. */
 .chat[data-provider="claude"] .msg-reply:last-child::after {
-  display: block; position: static; content: ""; width: 18px; height: 18px; margin-top: 8px; border: 0; transform: none;
-  background: radial-gradient(circle, #d97757 0 2px, transparent 2.5px), conic-gradient(from 0deg, #d97757 0 6deg, transparent 6deg 30deg, #d97757 30deg 36deg, transparent 36deg 60deg, #d97757 60deg 66deg, transparent 66deg 90deg, #d97757 90deg 96deg, transparent 96deg 120deg, #d97757 120deg 126deg, transparent 126deg 150deg, #d97757 150deg 156deg, transparent 156deg 180deg, #d97757 180deg 186deg, transparent 186deg 210deg, #d97757 210deg 216deg, transparent 216deg 240deg, #d97757 240deg 246deg, transparent 246deg 270deg, #d97757 270deg 276deg, transparent 276deg 300deg, #d97757 300deg 306deg, transparent 306deg 330deg, #d97757 330deg 336deg, transparent 336deg);
-  -webkit-mask: radial-gradient(circle, #000 8.5px, transparent 9px); mask: radial-gradient(circle, #000 8.5px, transparent 9px);
+  display: block; position: static; content: ""; width: 18px; height: 18px; margin-top: 8px; border: 0; border-radius: 0; transform: none;
+  background: url("claude.svg") center / contain no-repeat;
 }
 .chat[data-provider="claude"] .chat-title { font-weight: 500; }
 
@@ -457,10 +458,8 @@ html:has(#consent-banner) { --reserve: 112px; }
 }
 .chat[data-provider="gemini"] .chat-composer { box-shadow: none; }
 .chat[data-provider="gemini"] .chat-composer.is-focused { box-shadow: 0 0 0 1px #c4d7f5; }
-.chat[data-provider="gemini"] .msg-ai::before {
-  width: 20px; height: 20px; border-radius: 0; background: linear-gradient(45deg, #4b7cf3, #8a73e6 55%, #d36aa9);
-  clip-path: polygon(50% 0, 59% 41%, 100% 50%, 59% 59%, 50% 100%, 41% 59%, 0 50%, 41% 41%);
-}
+/* The official Gemini mark (gemini.svg, from Simple Icons) beside each answer. */
+.chat[data-provider="gemini"] .msg-ai::before { width: 20px; height: 20px; border-radius: 0; background: url("gemini.svg") center / contain no-repeat; }
 .chat[data-provider="gemini"] .msg-ai::after { display: none; }
 .chat[data-provider="gemini"] .chat-title { font-weight: 500; font-size: 17px; }
 
@@ -495,7 +494,21 @@ html:has(#consent-banner) { --reserve: 112px; }
 .provider:focus-visible { outline: 2px solid var(--c-text); outline-offset: 1px; }
 .provider-progress { position: absolute; left: 7px; right: 7px; bottom: 3px; height: 2px; border-radius: 1px; background: currentColor; opacity: 0.55; transform: scaleX(0); transform-origin: left; }
 
-/* The Snapctx.md card that flies from the C key into the composer. */
+/* The collection beside the keyboard (hero-providers.js): three compact mock source cards that rise
+   from the keyboard, compress into a stack beside the chat, and hop into it. */
+.hc { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+.hc-card {
+  position: absolute; display: flex; align-items: center; gap: 8px; width: 160px; height: 42px; padding: 0 12px; border-radius: 11px;
+  background: #fff; color: var(--text); font: 600 12px/16px var(--font); white-space: nowrap; opacity: 0; will-change: transform, opacity;
+  box-shadow: 0 0 0 1px var(--line-strong), 0 12px 24px -12px rgba(29, 29, 31, 0.45);
+}
+.hc-card b { overflow: hidden; text-overflow: ellipsis; }
+.hc-card { overflow: hidden; }
+/* The attachment's face, fading in over the top card as it arrives. */
+.hc-face { position: absolute; inset: 0; margin: 0; width: auto; max-width: none; animation: none; }
+.hc-ic { width: 16px; height: 16px; flex: none; }
+
+/* The ContextSnap.md card that flies from the C key into the composer. */
 .snap-fly {
   position: absolute; left: 0; top: 0; z-index: 6; display: grid; gap: 5px; width: 150px; padding: 10px 12px 12px; border-radius: 12px;
   background: #fff; box-shadow: 0 0 0 1px rgba(29, 29, 31, 0.12), 0 14px 30px -12px rgba(29, 29, 31, 0.45); pointer-events: none; will-change: transform, opacity;

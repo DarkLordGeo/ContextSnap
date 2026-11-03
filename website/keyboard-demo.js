@@ -213,11 +213,11 @@
       sim.collector.collect(snap, demo); // the page's context collector receives this demo's snapshot
     });
 
-    // 3. The snapshot is pasted into the chat, the question typed and sent, and the answer streams in. It
-    // starts as the collector's cards (collector.js) stack up and leave the middle of the screen.
-    const pasteAt = clearAt + (reduce.matches ? 250 : 1300);
+    // 3. The context starts moving halfway through the window-edge effect: the mock cards compress and hop
+    // into the chat (hero-providers.js), then the question is typed and sent, and the answer streams in.
+    const pasteAt = reduce.matches ? clearAt + 250 : Math.round(fx.duration / 2);
     at(clearAt + 250, run, () => { demo.dataset.state = "idle"; });
-    at(pasteAt, run, () => window.snapctxHero ? window.snapctxHero.flyIn(() => { if (run === token) deliver(); }) : deliver());
+    at(pasteAt, run, () => window.contextSnapHero ? window.contextSnapHero.flyIn(() => { if (run === token) deliver(); }) : deliver());
     const deliver = () => {
       const length = sim.deliver(snap);
       at(length, run, () => {
@@ -228,7 +228,7 @@
   };
 
   const runShortcut = (source) => {
-    window.snapctxHero?.hold(); // the hero's chat rotation waits while the visitor's capture plays
+    window.contextSnapHero?.hold(); // the hero's chat rotation waits while the visitor's capture plays
     cancelRun();
     busy = true;
     const run = token;
@@ -375,7 +375,7 @@
     syncHintKeys();
   };
   // hero-providers.js taps the shortcut before each sample capture: the keys go down and up, silently.
-  window.snapctxKeyboard = {
+  window.contextSnapKeyboard = {
     tap() {
       if (busy || reduce.matches) return 0;
       ORDER.forEach((name, i) => {

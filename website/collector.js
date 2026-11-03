@@ -237,7 +237,7 @@
   const render = () => {
     const snap = delivered;
     empty.hidden = Boolean(snap);
-    meta.textContent = snap ? `${plural(snap.parts.length)} · ${snap.markdown.length.toLocaleString("en-US")} characters · the same snapshot as Snapctx.md` : "";
+    meta.textContent = snap ? `${plural(snap.parts.length)} · ${snap.markdown.length.toLocaleString("en-US")} characters · the same snapshot as ContextSnap.md` : "";
     list.replaceChildren(...(snap?.parts ?? []).map((part, i) => {
       const item = el("li");
       const card = el("button", "collect-card");

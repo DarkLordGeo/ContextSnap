@@ -20,7 +20,7 @@
 .desk-actions { display: flex; align-items: center; gap: 8px; }
 /* Steps: a circle per step, the label beside it. Dashes sit exactly in the middle of the gap between two
    steps. Labels that are hidden (narrow screens) collapse and expand smoothly instead of jumping. */
-.flow { --flow-gap: 20px; display: flex; align-items: center; gap: var(--flow-gap); margin: 0 auto; padding: 0; list-style: none; counter-reset: step; }
+.flow { --flow-gap: 20px; position: relative; display: flex; align-items: center; gap: var(--flow-gap); margin: 0 auto; padding: 0; list-style: none; counter-reset: step; }
 .flow li {
   counter-increment: step; position: relative; display: flex; align-items: center; padding: 4px 10px 4px 4px; border-radius: 999px;
   color: var(--text-3); font-size: 13px; line-height: 20px; white-space: nowrap;
@@ -46,11 +46,17 @@
 .flow li.is-done::before { content: "✓"; background: var(--surface-2); box-shadow: none; animation: step-done 360ms var(--spring); }
 @keyframes step-done { from { transform: scale(0.6); } }
 /* The step that becomes active springs in after its connector fills, and its number sends out one ring. */
-.flow li.is-active { animation: step-on 520ms var(--spring) 160ms backwards; }
 .flow li.is-active::before { animation: step-ring 900ms var(--ease-out) 260ms; }
 @keyframes step-on { from { transform: scale(0.9); } }
 @keyframes step-ring { from { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.55); } to { box-shadow: 0 0 0 7px rgba(255, 255, 255, 0); } }
-.flow li.is-active { background: var(--text); color: #fff; }
+/* One black pill slides from step to step behind the steps (position set by os-demo.js). */
+.flow::before {
+  content: ""; position: absolute; top: 0; bottom: 0; left: var(--pill-x, 0); width: var(--pill-w, 0); border-radius: 999px;
+  background: var(--text); opacity: var(--pill-on, 0);
+  transition: left 420ms var(--ease-out), width 420ms var(--ease-out), opacity 200ms var(--ease-out);
+}
+.flow li { z-index: 1; }
+.flow li.is-active { color: #fff; }
 .flow li.is-active::before { background: #fff; color: var(--text); box-shadow: none; }
 
 /* The screen ------------------------------------------------------------------------------------------ */
@@ -87,9 +93,9 @@
 .win:not([hidden]) { animation: win-in 180ms var(--ease-out); }
 .win.is-active { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18), 0 32px 64px rgba(0, 0, 0, 0.28), 0 2px 21px rgba(0, 0, 0, 0.2); }
 .win.is-max { left: 0 !important; top: 0 !important; width: 100% !important; height: 100% !important; border-radius: 0; }
-.win[data-app="browser"] { left: 2%; top: 3%; width: 50%; height: 60%; }
-.win[data-app="pdf"] { left: 13%; top: 38%; width: 40%; height: 58%; }
-.win[data-app="notes"] { left: 44%; top: 10%; width: 23%; height: 48%; }
+.win[data-app="browser"] { left: 2%; top: 3%; width: 43%; height: 50%; }
+.win[data-app="pdf"] { left: 5%; top: 49%; width: 40%; height: 48%; }
+.win[data-app="notes"] { left: 47%; top: 4%; width: 18%; height: 52%; }
 /* Tablets: fewer, larger windows: the browser and paper on the left, notes between, the chat on the right. */
 @media (min-width: 768px) and (max-width: 1100px) {
   .win[data-app="browser"] { left: 1%; top: 2%; width: 60%; height: 56%; }
@@ -391,16 +397,13 @@
 .ca-model span:not(.pv) { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .ca-model:hover, .ca-model[aria-expanded="true"] { background: #f4f4f4; }
 .ca-chev { width: 7px; height: 7px; flex: none; margin: -3px 2px 0; border: solid #8f8f8f; border-width: 0 1.5px 1.5px 0; transform: rotate(45deg); }
-.ca-demo { flex: none; margin-left: auto; color: #8f8f8f; font-size: 11px; line-height: 16px; white-space: nowrap; }
-/* A narrow chat window keeps the model's logo and name readable: the demo note shortens to "Demo",
-   and the model name truncates before anything overlaps. */
+/* A narrow chat window keeps the model's logo and name readable: the name truncates before it overlaps. */
 .ca { container-type: inline-size; }
 .ca-model { flex: 0 1 auto; overflow: hidden; }
 @container (max-width: 340px) {
-  .ca-demo-more { display: none; }
   .ca-head { gap: 6px; }
 }
-.ca-new { padding: 4px 10px; border: 1px solid #e3e3e3; border-radius: 999px; background: #fff; color: #0d0d0d; font: 500 12px/16px var(--font); cursor: pointer; white-space: nowrap; }
+.ca-new { margin-left: auto; padding: 4px 10px; border: 1px solid #e3e3e3; border-radius: 999px; background: #fff; color: #0d0d0d; font: 500 12px/16px var(--font); cursor: pointer; white-space: nowrap; }
 .ca-new:hover { background: #f4f4f4; }
 
 /* Provider marks: a letter on the provider's color, small and quiet. Not the providers' logos. */
@@ -533,7 +536,6 @@
   .win, .win-dark { left: 0 !important; top: 0 !important; width: 100% !important; height: 100% !important; border-radius: 0; box-shadow: none; }
   .win:not(.is-active) { display: none; }
   .start-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .ca-demo { display: none; }
   .ca-hint { display: none; }
 }
 
@@ -541,5 +543,29 @@
   .win:not([hidden]), .start-menu, .tray-menu, .ca-menu, .ca-msg, .ca-attach.is-new .ca-file { animation: none; }
   .os-keys, .os-pill { transition: opacity 150ms ease; transform: translate(-50%, 0); }
   .t-caret, .ca-dots, .ca-dots::before, .ca-dots::after { animation: none; }
-  .flow li, .flow li span, .flow li::before, .flow li::after { transition: none; animation: none; }
+  .flow::before, .flow li, .flow li span, .flow li::before, .flow li::after { transition: none; animation: none; }
 }
+
+/* Collection (os-demo.js): the window being read glows and carries a small tag; data streams out of it. */
+.cselect {
+  position: absolute; display: flex; align-items: center; gap: 6px; padding: 3px 9px 3px 7px; border-radius: 999px;
+  background: #fff; color: #0b4f9c; font: 600 11px/16px var(--font); box-shadow: 0 0 0 1px rgba(0, 103, 192, 0.35), 0 4px 10px rgba(0, 0, 0, 0.12);
+}
+.cselect i { width: 7px; height: 7px; border-radius: 50%; background: #0067c0; animation: cselect-dot 1s ease-in-out infinite; }
+@keyframes cselect-dot { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .cselect i { animation: none; } }
+
+/* The data card that travels from a window to the clipboard, and the text-like bars on it and on the
+   clipboard's pages (data, not readable text). */
+.cdata {
+  position: absolute; overflow: hidden; padding: 10px 11px; border-radius: 6px; background: #fbfbfa; opacity: 0; transform-origin: 50% 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 14px 30px -12px rgba(15, 30, 60, 0.45); will-change: transform, opacity;
+}
+.cdata-head { display: flex; align-items: center; gap: 7px; margin: 0 0 4px; color: #1b1b1b; font-size: 12px; line-height: 16px; }
+.cdata-ic { width: 16px; height: 16px; flex: none; }
+.cdata-bar { display: block; height: 5px; margin-top: 5px; border-radius: 3px; background: #d4dbe5; }
+.clipb-ic { display: block; width: 10px; height: 10px; margin: 5px 0 0 6px; }
+.clipb-bar { display: block; height: 3px; margin: 3px 6px 0; border-radius: 2px; background: #c9d1dc; }
+.clipb-bar:first-of-type { margin-top: 4px; height: 4px; background: #9fb2cc; }
+/* A visible stack: each new page sits a little higher and to the side of the one before. */
+.clipb-paper { transform: translate(calc(var(--i) * 2px), calc(var(--i) * -4px)) rotate(calc((var(--i) - 1) * -1.2deg)); }

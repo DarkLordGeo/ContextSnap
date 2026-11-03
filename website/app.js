@@ -70,9 +70,9 @@ if (document.querySelector(".download")) {
         spec("size", platform.size);
         spec("sha256", platform.sha256);
         // The install and checksum commands name the downloaded file, the folder it extracts to, and the
-        // program in it (releases before the rename to Snapctx are named ContextSnap).
+        // program in it. Release files named Snapctx-* (an interim name) are matched too.
         const file = decodeURIComponent(new URL(platform.file).pathname.split("/").pop());
-        const program = file.toLowerCase().startsWith("snapctx") ? "Snapctx" : "ContextSnap";
+        const program = file.toLowerCase().startsWith("snapctx") ? "Snapctx" : "ContextSnap"; // the program inside the download
         for (const element of all("[data-file]")) element.textContent = file;
         for (const element of all("[data-exe]")) element.textContent = `${program}.exe`;
         // The Windows card explains the installer or, for releases before it, the ZIP.

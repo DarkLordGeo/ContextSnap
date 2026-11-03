@@ -5,10 +5,10 @@
 <!-- Google tag (gtag.js): loaded by gtag.js only after the visitor accepts analytics cookies -->
 <script src="gtag.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Snapctx: Give your AI the context it's missing</title>
-<meta name="description" content="Snapctx captures what you are working on as readable, redacted Markdown and copies it to your clipboard with Ctrl + Alt + Shift + C. Processed locally on Windows and Linux.">
+<title>ContextSnap: Give your AI the context it's missing</title>
+<meta name="description" content="ContextSnap captures what you are working on as readable, redacted Markdown and copies it to your clipboard with Ctrl + Alt + Shift + C. Processed locally on Windows and Linux.">
 <meta name="theme-color" content="#f7f5f2">
-<meta property="og:title" content="Snapctx">
+<meta property="og:title" content="ContextSnap">
 <meta property="og:description" content="One shortcut turns your current context into Markdown on your clipboard. Processed on your machine. You choose where to paste it.">
 <meta property="og:type" content="website">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -31,7 +31,7 @@
 </svg>
 <header class="site-header">
   <div class="nav-bar">
-    <a class="wordmark" href="/" aria-label="Snapctx home"><span class="mark" aria-hidden="true"></span>Snapctx</a>
+    <a class="wordmark" href="/" aria-label="ContextSnap home"><span class="mark" aria-hidden="true"></span>ContextSnap</a>
     <nav class="nav-links" aria-label="Main">
       <ul>
         <li><a href="#desktop">Try it</a></li>
@@ -134,7 +134,7 @@
           <header class="chat-head">
             <svg class="chat-mark" aria-hidden="true"><use data-chat-mark href="#pv-chatgpt"/></svg>
             <h2 class="chat-title" id="chat-title" data-chat-title>ChatGPT</h2>
-            <div class="providers" role="tablist" aria-label="AI chat shown. Illustrations of popular chats; Snapctx is not affiliated with them." title="Illustrations of popular AI chats. Snapctx works with any chat you paste into and is not affiliated with these products."><button type="button" class="provider" role="tab" data-provider-tab="chatgpt" aria-selected="true" aria-label="ChatGPT"><svg aria-hidden="true"><use href="#pv-chatgpt"/></svg><i class="provider-progress"></i></button><button type="button" class="provider" role="tab" data-provider-tab="claude" aria-selected="false" aria-label="Claude" tabindex="-1"><svg aria-hidden="true"><use href="#pv-claude"/></svg><i class="provider-progress"></i></button><button type="button" class="provider" role="tab" data-provider-tab="gemini" aria-selected="false" aria-label="Gemini" tabindex="-1"><svg aria-hidden="true"><use href="#pv-gemini"/></svg><i class="provider-progress"></i></button><button type="button" class="provider" role="tab" data-provider-tab="cursor" aria-selected="false" aria-label="Cursor" tabindex="-1"><svg aria-hidden="true"><use href="#pv-cursor"/></svg><i class="provider-progress"></i></button></div>
+            <div class="providers" role="tablist" aria-label="AI chat shown. Illustrations of popular chats; ContextSnap is not affiliated with them." title="Illustrations of popular AI chats. ContextSnap works with any chat you paste into and is not affiliated with these products."><button type="button" class="provider" role="tab" data-provider-tab="chatgpt" aria-selected="true" aria-label="ChatGPT"><svg aria-hidden="true"><use href="#pv-chatgpt"/></svg><i class="provider-progress"></i></button><button type="button" class="provider" role="tab" data-provider-tab="claude" aria-selected="false" aria-label="Claude" tabindex="-1"><svg aria-hidden="true"><use href="#pv-claude"/></svg><i class="provider-progress"></i></button><button type="button" class="provider" role="tab" data-provider-tab="gemini" aria-selected="false" aria-label="Gemini" tabindex="-1"><svg aria-hidden="true"><use href="#pv-gemini"/></svg><i class="provider-progress"></i></button><button type="button" class="provider" role="tab" data-provider-tab="cursor" aria-selected="false" aria-label="Cursor" tabindex="-1"><svg aria-hidden="true"><use href="#pv-cursor"/></svg><i class="provider-progress"></i></button></div>
           </header>
           <div class="chat-log" data-log>
             <p class="chat-day">Today</p>
@@ -147,7 +147,7 @@
           <div class="chat-composer" data-composer-box aria-hidden="true">
             <div class="composer-attach" data-attach hidden>
               <span class="ctx-icon"><svg class="ctx-doc" aria-hidden="true"><use href="#ic-doc"/></svg></span>
-              <span class="attach-text"><b>Snapctx.md</b><span data-attach-meta></span></span>
+              <span class="attach-text"><b>ContextSnap.md</b><span data-attach-meta></span></span>
             </div>
             <div class="composer-row">
               <span class="composer-plus"></span>
@@ -156,7 +156,7 @@
             </div>
           </div>
         </section>
-        <div class="snap-fly" aria-hidden="true" hidden><b><span class="ctx-icon"><svg class="ctx-doc" aria-hidden="true"><use href="#ic-doc"/></svg></span>Snapctx.md</b><i></i><i></i><i></i></div>
+        <div class="snap-fly" aria-hidden="true" hidden><b><span class="ctx-icon"><svg class="ctx-doc" aria-hidden="true"><use href="#ic-doc"/></svg></span>ContextSnap.md</b><i></i><i></i><i></i></div>
 
       </div>
 
@@ -181,7 +181,7 @@
 
     <div class="desk-frame">
     <div class="desk-bar">
-      <h2 id="desktop-title">Try it on a sample Windows desktop</h2>
+      <h2 id="desktop-title">Watch ContextSnap collect your research</h2>
       <ol class="flow" aria-label="Steps">
         <li data-step="work"><span>Work</span></li>
         <li data-step="capture"><span>Capture</span></li>
@@ -224,22 +224,22 @@
           <div class="ca">
             <div class="ca-head">
               <button type="button" class="ca-model" aria-haspopup="listbox" aria-expanded="false" data-model-button><span class="pv" data-model-mark></span><span data-model-name></span><span class="ca-chev" aria-hidden="true"></span></button>
-              <span class="ca-demo" title="Website demo: no model is called">Demo<span class="ca-demo-more"> · no model is called</span></span>
+              
               <button type="button" class="ca-new" data-new-chat>New chat</button>
             </div>
             <div class="ca-menu" role="listbox" aria-label="Model" tabindex="-1" data-model-menu hidden></div>
             <div class="ca-log" role="log" aria-live="polite" data-ca-log>
               <div class="ca-empty" data-ca-empty>
                 <p class="ca-hello">What are you working on?</p>
-                <p>Paste a Snapctx snapshot and ask about your screen.</p>
+                <p>Paste a ContextSnap snapshot and ask about your screen.</p>
                 <p class="ca-keys"><kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Shift</kbd><kbd>C</kbd><span>then</span><kbd>Ctrl</kbd><kbd>V</kbd></p>
               </div>
             </div>
             <div class="ca-suggest" data-ca-suggest></div>
             <form class="ca-composer" data-ca-form>
               <div class="ca-attach" data-ca-attach hidden>
-                <button type="button" class="ca-file" data-ca-inspect><span class="md-ic" aria-hidden="true">MD</span><span><b>Snapctx.md</b><small data-ca-attach-meta></small></span></button>
-                <button type="button" class="ca-remove" data-ca-remove aria-label="Remove Snapctx.md"></button>
+                <button type="button" class="ca-file" data-ca-inspect><span class="md-ic" aria-hidden="true">MD</span><span><b>ContextSnap.md</b><small data-ca-attach-meta></small></span></button>
+                <button type="button" class="ca-remove" data-ca-remove aria-label="Remove ContextSnap.md"></button>
               </div>
               <textarea class="ca-input" rows="1" data-ca-input aria-label="Message"></textarea>
               <div class="ca-row">
@@ -247,8 +247,8 @@
                 <button type="submit" class="ca-send" aria-label="Send" data-ca-send></button>
               </div>
             </form>
-            <section class="ca-inspect" aria-label="Snapctx.md" data-ca-inspector hidden>
-              <header><b>Snapctx.md</b><span data-ca-inspect-meta></span><button type="button" class="ca-close" data-ca-inspect-close aria-label="Close"></button></header>
+            <section class="ca-inspect" aria-label="ContextSnap.md" data-ca-inspector hidden>
+              <header><b>ContextSnap.md</b><span data-ca-inspect-meta></span><button type="button" class="ca-close" data-ca-inspect-close aria-label="Close"></button></header>
               <pre class="snap-md" tabindex="0" data-ca-inspect-md></pre>
             </section>
           </div>
@@ -269,8 +269,8 @@
           <div class="start-foot"><button type="button" data-os-replay>Replay demo</button><button type="button" data-os-reset>Reset desktop</button></div>
         </div>
 
-        <div class="tray-menu" role="dialog" aria-label="Snapctx" hidden>
-          <p class="menu-title"><img src="favicon.svg" alt="">Snapctx</p>
+        <div class="tray-menu" role="dialog" aria-label="ContextSnap" hidden>
+          <p class="menu-title"><img src="favicon.svg" alt="">ContextSnap</p>
           <button type="button" class="tray-item" data-capture>Capture now<span>Ctrl+Alt+Shift+C</span></button>
           <p class="tray-sub">Include</p>
           <div class="levels" role="radiogroup" aria-label="Context to include (website illustration)">
@@ -294,7 +294,7 @@
           <button type="button" class="tb-btn tb-app" data-app="assistant" aria-label="ChatGPT"><svg aria-hidden="true"><use href="#ic-chatgpt"/></svg></button>
         </div>
         <div class="tb-tray">
-          <button type="button" class="tb-btn tb-cs" aria-label="Snapctx" aria-expanded="false" data-tray><img src="favicon.svg" alt=""><span class="tb-badge" aria-hidden="true"></span></button>
+          <button type="button" class="tb-btn tb-cs" aria-label="ContextSnap" aria-expanded="false" data-tray><img src="favicon.svg" alt=""><span class="tb-badge" aria-hidden="true"></span></button>
           <span class="tb-sys" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M4 10l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="tb-sys tb-status" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M1.5 6.2a9.2 9.2 0 0 1 13 0M3.6 8.4a6.2 6.2 0 0 1 8.8 0M5.7 10.6a3.2 3.2 0 0 1 4.6 0" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><circle cx="8" cy="12.7" r="0.9" fill="currentColor"/></svg><svg viewBox="0 0 16 16"><path d="M2.5 6h2.2L8 3.2v9.6L4.7 10H2.5z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M10.4 5.6a3.4 3.4 0 0 1 0 4.8M12.2 3.9a5.8 5.8 0 0 1 0 8.2" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg><svg viewBox="0 0 16 16"><rect x="1.5" y="5" width="11.5" height="6.5" rx="1.4" fill="none" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="6.5" width="7" height="3.5" rx="0.5" fill="currentColor"/><path d="M14.3 7v2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg></span>
           <span class="tb-clock" aria-hidden="true"><span data-time></span><span data-date></span></span>
         </div>
@@ -308,7 +308,7 @@
   <section class="get" id="download" aria-labelledby="download-title">
     <div class="wrap">
       <div class="get-head">
-        <h2 id="download-title">Get Snapctx</h2>
+        <h2 id="download-title">Get ContextSnap</h2>
         <p>Runs quietly in the background and copies your context when you press the shortcut.</p>
         <ul class="get-tags" aria-label="License">
           <li>Free</li>
@@ -359,9 +359,9 @@
           <section class="dl-group" aria-label="Windows install steps">
             <h4>Install</h4>
             <ol class="dl-steps" data-variant="installer" hidden>
-              <li>Run <code>Snapctx-Setup.exe</code>. It is not code-signed yet, so if SmartScreen says “Windows protected your PC”, choose <b>More info</b> → <b>Run anyway</b>.</li>
-              <li>Choose whether Snapctx starts when you sign in. No administrator rights are needed.</li>
-              <li>Snapctx starts when setup finishes. Press <kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Shift</kbd><kbd>C</kbd> in any app, then paste.</li>
+              <li>Run <code data-file>ContextSnap-Setup.exe</code>. It is not code-signed yet, so if SmartScreen says “Windows protected your PC”, choose <b>More info</b> → <b>Run anyway</b>.</li>
+              <li>Choose whether ContextSnap starts when you sign in. No administrator rights are needed.</li>
+              <li>ContextSnap starts when setup finishes. Press <kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>Shift</kbd><kbd>C</kbd> in any app, then paste.</li>
             </ol>
             <ol class="dl-steps" data-variant="zip">
               <li>Extract the ZIP to a folder you keep; the app runs from there.</li>
@@ -425,7 +425,7 @@
     <div class="wrap">
       <div class="get-head">
         <h2 id="privacy-title">Privacy</h2>
-        <p>Snapctx is built to share only what you choose, with no one but you.</p>
+        <p>ContextSnap is built to share only what you choose, with no one but you.</p>
       </div>
       <ul class="privacy-list">
         <li><h3>You control every capture</h3><p>It captures only when you press the shortcut. Nothing watches or records in the background.</p></li>
@@ -443,7 +443,7 @@
         <h2 id="closing-title">Stop describing your screen.</h2>
         <p>Press one shortcut and your AI chat sees what you see.</p>
         <div class="closing-actions">
-          <a class="button dark" href="#download">Download Snapctx</a>
+          <a class="button dark" href="#download">Download ContextSnap</a>
           <a class="button ghost" href="https://github.com/DarkLordGeo/ContextSnap" rel="noopener">Star on GitHub<span class="gh-stars" data-gh-stars hidden><svg aria-hidden="true"><use href="#ic-star"/></svg><span data-gh-stars-count></span><span class="visually-hidden"> stars</span></span></a>
         </div>
       </div>
