@@ -100,21 +100,11 @@
     sim.setPlaceholder(provider.placeholder);
   };
 
-  // A short cross-fade between chats; instant with reduced motion.
+  // Switching chats swaps the skin in place: the window does not move; its colors ease over (CSS).
   const show = (i) => {
     cancelFlight();
     index = i;
-    if (still.matches) {
-      apply(i);
-      return;
-    }
-    const away = { opacity: 0, transform: "translateY(10px) scale(0.985)" };
-    const here = { opacity: 1, transform: "none" };
-    chat.getAnimations().forEach((animation) => animation.cancel());
-    chat.animate([here, away], { duration: 180, easing: "cubic-bezier(0.4, 0, 1, 1)" }).onfinish = () => {
-      apply(i);
-      chat.animate([away, here], { duration: 380, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
-    };
+    apply(i);
   };
 
   // The card from the keyboard to the composer ---------------------------------------------------------
