@@ -651,7 +651,13 @@
     // The browser window is that product's tab: its title and icon follow (and so does the snapshot).
     desk.APPS.assistant.title = () => `${model.product} - Google Chrome`;
     desk.APPS.assistant.name = model.product;
+    // Its window, taskbar button, and Start menu entry show that product's logo and name.
     $('[data-app="assistant"] .win-ic use').setAttribute("href", `#ic-${model.mark}`);
+    const taskButton = $('.tb-app[data-app="assistant"]');
+    taskButton.querySelector("use").setAttribute("href", `#ic-${model.mark}`);
+    taskButton.setAttribute("aria-label", model.product);
+    $('.start-app[data-open="assistant"] use').setAttribute("href", `#ic-${model.mark}`);
+    $("[data-chat-app-name]").textContent = model.product;
     render();
     $("[data-model-name]").textContent = model.name;
     modelButton.setAttribute("aria-label", `Model: ${model.name} by ${model.provider} (shown as ${model.product}). Change model`);
