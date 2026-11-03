@@ -122,7 +122,7 @@
   }
 
   // The collection beside the keyboard: three compact mock cards (browser, PDF, notes) rise from the
-  // keyboard, compress together into one small stack beside the chat, and the stack hops straight into the
+  // keyboard, compress together into one stack beside the chat, and the stack glides straight into the
   // chat's composer. Illustrative cards only, not windows; no clipboard here (the sample desktop
   // below has that). Returns false (and does nothing) when there is no room beside the keyboard.
   const SOURCES = [
@@ -185,7 +185,7 @@
         { offset: frac(start + RISE, d, start), transform: "translate(0px, 0px) scale(1)", opacity: 1 },
         { offset: frac(COMPRESS_AT, d, start), transform: "translate(0px, 0px) scale(1)", opacity: 1, easing: "cubic-bezier(0.5, 0, 0.2, 1)" },
         { offset: frac(HOP_AT, d, start), transform: `translate(${sx}px, ${sy}px) scale(1)`, opacity: 1, easing: "cubic-bezier(0.3, 0, 0.6, 1)" },
-        { offset: frac((HOP_AT + END) / 2, d, start), transform: `translate(${(sx + ex) / 2}px, ${Math.min(sy, ey) - 46}px) scale(0.78)`, opacity: 1, easing: "cubic-bezier(0.4, 0, 0.7, 1)" },
+        { offset: frac((HOP_AT + END) / 2, d, start), transform: `translate(${(sx + ex) / 2}px, ${(sy + ey) / 2}px) scale(0.78)`, opacity: 1, easing: "cubic-bezier(0.4, 0, 0.7, 1)" }, // straight, no lift
         { offset: 1, transform: `translate(${ex}px, ${ey}px) scale(0.42)`, opacity: 0 },
       ], { duration: d, delay: start, fill: "both" });
     });
