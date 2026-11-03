@@ -150,8 +150,15 @@
     const CW = 160;
     const CH = 42;
     const G = { x: room - CW / 2 - 30, y: area.height * 0.42 }; // where they compress, beside the chat
-    const to = composerBox.getBoundingClientRect();
-    const T = { x: to.left - area.left + 60, y: to.top - area.top + 22 }; // the composer's attachment spot
+    // Where the attachment chip will sit once it is shown (measured with it briefly shown, before paint).
+    const attach = composerBox.querySelector("[data-attach]");
+    const wasHidden = attach.hidden;
+    attach.hidden = false;
+    const chip = attach.getBoundingClientRect();
+    attach.hidden = wasHidden;
+    // The chip grows once its details are filled in, so the stack lines up with its left edge, not its middle.
+    const landScale = Math.min(1, chip.height / CH);
+    const T = { x: chip.left + (CW * landScale) / 2 - area.left, y: chip.top + chip.height / 2 - area.top };
     // Each run they rise from different spots over the keyboard, near the stack rather than far away.
     const spot = () => ({
       x: Math.min(room - CW - 8, Math.max(8, room * (0.18 + Math.random() * 0.5) - CW / 2)),
@@ -187,13 +194,17 @@
         { duration: RISE, delay: i * RISE_STEP, easing: "cubic-bezier(0.22, 0.8, 0.24, 1)", fill: "both" });
       card.animate([{ transform: rest }, { transform: stacked }],
         { duration: COMPRESS, delay: COMPRESS_AT, easing: "cubic-bezier(0.65, 0, 0.35, 1)", fill: "forwards" });
-      card.animate([{ transform: stacked, opacity: 1 }, { transform: `translate(${ex}px, ${ey}px) scale(0.42)`, opacity: 0 }],
+      card.animate([{ transform: stacked, opacity: 1 }, { transform: `translate(${ex}px, ${ey}px) scale(${landScale})`, opacity: 1 }],
         { duration: GLIDE, delay: GLIDE_AT, easing: "cubic-bezier(0.55, 0, 0.3, 1)", fill: "forwards" });
     });
-    later2(END + 40, () => {
-      layer.remove();
-      if (collectLayer === layer) collectLayer = null;
-      done();
+    // Landed on the chip's spot: the attachment appears underneath, then the stack clears, so it never
+    // vanishes before the attachment is there.
+    later2(END, () => done());
+    later2(END + 380, () => {
+      layer.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 140, easing: "ease-out", fill: "forwards" }).onfinish = () => {
+        layer.remove();
+        if (collectLayer === layer) collectLayer = null;
+      };
     });
     return true;
   };
