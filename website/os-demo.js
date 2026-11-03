@@ -1,15 +1,18 @@
 // The sample Windows desktop: windows, taskbar, Start and tray menus, a sample AI chat, and the whole
-// Snapctx workflow played out on it: work → shortcut → copy → paste → ask → answer. The desktop
-// state and the snapshot come from workspace-sim.js; the capture lights come from capture-fx.js.
+// Snapctx workflow played out on it: a research session (browser tabs, a paper, notes) → shortcut →
+// capture → paste → ask → answer. The desktop state and the snapshot come from research-sim.js; the
+// capture lights come from capture-fx.js.
 // Everything is simulated in the page. Nothing on the visitor's computer is read (not even the real
 // clipboard: pasting into the sample chat only ever inserts the sample snapshot), and no model or
 // service is called.
 (() => {
   const os = document.getElementById("os");
   const sim = window.contextSnapSim;
-  const desk = sim?.desktop; // this demo's own sample desktop
+  const desk = sim?.research; // this demo's own research desktop (research-sim.js)
+  const content = sim?.researchContent;
   const fx = window.contextSnapFX;
-  if (!os || !sim || !fx) return;
+  if (!os || !desk || !content || !fx) return;
+  const QUESTIONS = content.QUESTIONS;
 
   const section = document.getElementById("desktop");
   const inner = os.querySelector(".os-inner");
@@ -47,85 +50,35 @@
   const isTyping = (target) => target instanceof Element && Boolean(target.closest("input, textarea, [contenteditable]:not([contenteditable='false'])"));
 
   // Desktop rendering ---------------------------------------------------------------------------------
-  const editor = $(".editor");
-  const highlight = $(".code-hl");
-  const gutter = $(".gutter");
-  const termOut = $(".term-out");
-  const termCmds = $(".term-cmds");
-  const filesList = $(".files-list");
-  const sysinfo = $(".sysinfo");
   const taskButtons = $$(".tb-app");
   const maximized = new Set();
+  const tabsEl = $("[data-br-tabs]");
+  const urlEl = $("[data-br-url]");
+  const pageEl = $("[data-br-page]");
 
-  const TOKENS = /(\/\/.*$)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`)|\b(import|from|export|return|if|await|throw|async)\b|\b(const|let|function|new|true|false|null)\b|\b(\d+(?:\.\d+)?)\b|\b([A-Z][A-Za-z]*)\b|([A-Za-z_$][\w$]*)(?=\s*\()/gm;
-  const TOKEN_CLASS = [null, "tk-com", "tk-str", "tk-ctl", "tk-kw", "tk-num", "tk-type", "tk-fn"];
-  const renderCode = (text, json) => {
-    const fragment = document.createDocumentFragment();
-    let last = 0;
-    for (const match of text.matchAll(TOKENS)) {
-      if (match.index > last) fragment.append(text.slice(last, match.index));
-      const group = match.findIndex((value, index) => index > 0 && value !== undefined);
-      let className = TOKEN_CLASS[group];
-      if (json && group === 2) className = /^\s*:/.test(text.slice(match.index + match[0].length)) ? "tk-key" : "tk-str";
-      fragment.append(el("span", className, match[0]));
-      last = match.index + match[0].length;
-    }
-    fragment.append(text.slice(last) + "\n");
-    highlight.replaceChildren(fragment);
-    gutter.textContent = text.split("\n").map((_, index) => index + 1).join("\n");
-  };
-  const syncScroll = () => {
-    highlight.scrollTop = editor.scrollTop;
-    highlight.scrollLeft = editor.scrollLeft;
-    gutter.scrollTop = editor.scrollTop;
-  };
-
-  const termClass = (line) => {
-    if (/^HTTP\/1\.1 [45]|^Cannot GET|modified:/.test(line)) return "t-err";
-    if (/^HTTP\/1\.1 2|^Server listening/.test(line)) return "t-ok";
-    if (/^> /.test(line)) return "t-dim";
-    if (/^\{/.test(line)) return "t-str";
-    return "";
-  };
-  const renderTerminal = (lines, typing) => {
-    const fragment = document.createDocumentFragment();
-    const promptLine = (command, caret) => {
-      const line = el("span", "t-line");
-      line.append(el("span", "t-prompt", `${sim.PROMPT} `));
-      const [head, ...rest] = command.split(" ");
-      line.append(el("span", "t-cmd", head));
-      if (rest.length) line.append(el("span", "t-arg", ` ${rest.join(" ")}`));
-      if (caret) line.append(el("span", "t-caret"));
-      return line;
-    };
-    for (const text of lines) {
-      if (text.startsWith(`${sim.PROMPT} `)) fragment.append(promptLine(text.slice(sim.PROMPT.length + 1)));
-      else fragment.append(el("span", `t-line ${termClass(text)}`, text || " "));
-    }
-    fragment.append(promptLine(typing ?? "", true));
-    termOut.replaceChildren(fragment);
-    termOut.scrollTop = termOut.scrollHeight;
-  };
-
-  for (const command of ["npm run dev", sim.CURL, "git status", "clear"]) {
-    const button = el("button", "cmd", command === sim.CURL ? "curl /api/users/42" : command);
+  // Browser tabs, the paper, and the notes are sample content (research-sim.js), built as text.
+  const tabButtons = content.TABS.map((tab, i) => {
+    const button = el("button", "br-tab");
     button.type = "button";
-    button.dataset.command = command;
-    termCmds.append(button);
-  }
-  for (const path of Object.keys(sim.FILES)) {
-    const item = el("li");
-    const button = el("button", "file");
-    button.type = "button";
-    button.dataset.path = path;
-    const json = path.endsWith(".json");
-    button.append(el("span", `file-ic${json ? " is-json" : ""}`, json ? "{}" : "TS"), el("span", "file-name", path.replace("src/", "")), el("span", "file-type", json ? "JSON File" : "TypeScript"));
-    item.append(button);
-    filesList.append(item);
-  }
-  $("[data-files-count]").textContent = `${Object.keys(sim.FILES).length} items`;
+    button.setAttribute("role", "tab");
+    button.dataset.tab = String(i);
+    button.append(el("span", "br-fav", tab.site[0].toUpperCase()), el("span", "br-tab-title", tab.title));
+    return button;
+  });
+  tabsEl.append(...tabButtons);
+  const paper = $("[data-pdf]");
+  paper.append(el("p", "pdf-journal", "Energy Systems Letters · Vol. 12 · 2025"), el("h3", "pdf-title", content.PAPER.title), el("p", "pdf-authors", content.PAPER.authors.split(" · ")[0]));
+  const para = (head, before, highlight, after) => {
+    if (head) paper.append(el("p", "pdf-h", head));
+    const p = el("p", "pdf-p");
+    p.append(before, el("mark", "pdf-mark", highlight), after);
+    paper.append(p);
+  };
+  para("Abstract", "We model curtailment on three island grids with high solar shares. ", content.PAPER.highlights[0], " Storage shifted surplus midday energy into the evening peak.");
+  para("3. Results", "Curtailment fell fastest for the first increments of storage. ", content.PAPER.highlights[1], " Beyond that point, extra capacity mostly sat idle in winter.");
+  para("4. Assumptions", "Costs follow 2023 market data. ", content.PAPER.highlights[2], " Lower prices would shorten payback periods.");
+  $("[data-notes]").textContent = content.NOTES.join("\n");
 
-  let terminalTyping = null; // command being typed by the replay
   const render = () => {
     const state = desk.state;
     const current = desk.active();
@@ -144,24 +97,13 @@
       button.classList.toggle("is-active", app === current);
       button.setAttribute("aria-pressed", String(app === current));
     }
-    if (editor.value !== state.files[state.file]) editor.value = state.files[state.file];
-    const json = state.file.endsWith(".json");
-    renderCode(editor.value, json);
-    syncScroll();
-    $("[data-file-tab]").textContent = state.file.split("/").pop();
-    $("[data-lang]").textContent = json ? "JSON" : "TypeScript";
-    const badge = $("[data-lang-badge]");
-    badge.textContent = json ? "{}" : "TS";
-    badge.classList.toggle("is-json", json);
-    renderTerminal(state.terminal, terminalTyping);
-    for (const button of $$(".file", filesList)) {
-      const selected = button.dataset.path === state.file;
-      button.classList.toggle("is-selected", selected);
-      if (selected) button.setAttribute("aria-current", "true");
-      else button.removeAttribute("aria-current");
-    }
-    const rows = [["OS Name", "Windows 11 Pro"], ["System type", "x64-based PC"], ["Processors", "12 logical"], ["Memory", "31.7 GB"], ["Foreground", current ? desk.APPS[current].process : "None"]];
-    sysinfo.replaceChildren(...rows.flatMap(([term, value]) => [el("dt", "", term), el("dd", "", value)]));
+    const tab = content.TABS[state.tab];
+    tabButtons.forEach((button, i) => {
+      button.setAttribute("aria-selected", String(i === state.tab));
+      button.tabIndex = i === state.tab ? 0 : -1;
+    });
+    urlEl.replaceChildren(el("span", "br-host", tab.site), tab.path);
+    pageEl.replaceChildren(el("p", "br-site", tab.site), el("h3", "br-h", tab.heading), ...tab.text.map((line) => el("p", "br-p", line)));
     for (const button of $$(".level")) button.setAttribute("aria-checked", String(Number(button.dataset.level) === state.level));
     $$(".level").forEach((button) => { button.tabIndex = Number(button.dataset.level) === state.level ? 0 : -1; });
     $("[data-level-note]").textContent = `${sim.LEVELS[state.level].note} A website illustration; in the app you choose sources in Settings.`;
@@ -191,7 +133,7 @@
     const app = win.dataset.app;
     if (desk.active() !== app && !event.target.closest(".cap")) open(app);
     const bar = event.target.closest(".win-bar");
-    if (!bar || event.target.closest(".cap") || narrow.matches || maximized.has(app) || event.button !== 0) return;
+    if (!bar || event.target.closest(".cap, .br-tab") || narrow.matches || maximized.has(app) || event.button !== 0) return;
     const box = relTo(win);
     drag = { win, id: event.pointerId, dx: event.clientX - box.x, dy: event.clientY - box.y, area: screen.getBoundingClientRect(), width: box.w };
     try { bar.setPointerCapture(event.pointerId); } catch { /* not capturable */ }
@@ -241,12 +183,9 @@
       const app = task.dataset.app;
       if (desk.active() === app) change((state) => state.min.add(app));
       else open(app);
-    } else if (target.closest(".file")) {
-      const path = target.closest(".file").dataset.path;
-      change((state) => { state.file = path; desk.focusApp("editor"); });
-    } else if (target.closest(".cmd")) {
-      const command = target.closest(".cmd").dataset.command;
-      change(() => { desk.runCommand(command); desk.focusApp("terminal"); });
+    } else if (target.closest(".br-tab")) {
+      const index = Number(target.closest(".br-tab").dataset.tab);
+      change((state) => { state.tab = index; desk.focusApp("browser"); });
     } else if (target.closest("[data-start]")) {
       toggleMenu("start");
     } else if (target.closest("[data-tray]")) {
@@ -266,11 +205,6 @@
     change((state) => { state.level = ((state.level - 1 + step + 3) % 3) + 1; });
     $(`.level[data-level="${desk.state.level}"]`).focus();
   });
-  editor.addEventListener("input", () => {
-    takeOver();
-    desk.update((state) => { state.files[state.file] = editor.value; });
-  });
-  editor.addEventListener("scroll", syncScroll);
 
   // Menus
   const menus = { start: $(".start-menu"), tray: $(".tray-menu") };
@@ -399,7 +333,7 @@
 
   // The sheets are the snapshot's parts, the same ones as the context cards on the page, at most five.
   const sheetsFor = (snap) => snap.parts.slice(0, 5).map((part) => ({
-    label: part.id === "editor" ? `Code · ${snap.file}` : part.category,
+    label: part.category,
     icon: part.source.icon,
     lines: sim.previewLines(part),
   }));
@@ -570,7 +504,7 @@
       phase = "asking";
       setStep("ask");
       setPill("Ready to ask");
-      if (mode === "auto") typeQuestion(sim.QUESTIONS[0].text);
+      if (mode === "auto") typeQuestion(QUESTIONS[0].text);
       else input.focus({ preventScroll: true });
     });
     at(2400, () => setPill(""));
@@ -607,21 +541,24 @@
     setStep("work");
     scriptedChange(() => {
       desk.reset();
-      desk.state.terminal = desk.state.terminal.slice(0, 4);
-      desk.focusApp("terminal");
+      desk.focusApp("browser");
     });
-    announce("Replaying: a developer hits a 404, captures the terminal with Snapctx, and asks the AI chat about it.");
-    const command = sim.CURL;
-    const per = reduce.matches ? 0 : 26;
-    for (let i = 1; i <= command.length; i++) {
-      at(300 + i * per, () => { terminalTyping = command.slice(0, i); renderTerminal(desk.state.terminal, terminalTyping); });
-    }
-    const typed = 300 + command.length * per + 200;
-    at(typed, () => {
-      terminalTyping = null;
-      scriptedChange(() => desk.runCommand(command));
-    });
-    at(typed + (reduce.matches ? 300 : 700), () => shortcut("auto"));
+    announce("Replaying: a research session in a browser, a paper, and notes is captured with Snapctx and summarized by the AI chat.");
+    // Each source in turn: the browser flips through two of its tabs, then the paper, then the notes.
+    const spot = (app) => {
+      for (const win of Object.values(wins)) win.classList.toggle("is-spot", win.dataset.app === app);
+    };
+    const quick = reduce.matches;
+    const beats = [
+      [quick ? 0 : 500, () => { spot("browser"); scriptedChange((state) => { state.tab = 0; desk.focusApp("browser"); }); }],
+      [quick ? 0 : 1300, () => scriptedChange((state) => { state.tab = 2; })],
+      [quick ? 0 : 2100, () => scriptedChange((state) => { state.tab = 1; })],
+      [quick ? 0 : 2900, () => { spot("pdf"); scriptedChange(() => desk.focusApp("pdf")); }],
+      [quick ? 0 : 3900, () => { spot("notes"); scriptedChange(() => desk.focusApp("notes")); }],
+      [quick ? 0 : 4900, () => spot(null)],
+    ];
+    for (const [ms, step] of beats) at(ms, step);
+    at(quick ? 300 : 5300, () => shortcut("auto"));
   }
 
   // The visitor took over (changed the desktop, typed, or chose something): stop driving the sequence.
@@ -630,7 +567,6 @@
     if (mode !== "auto" && !running()) return;
     mode = "manual";
     cancelFlow();
-    if (terminalTyping !== null) { terminalTyping = null; renderTerminal(desk.state.terminal, null); }
     if (phase === "transfer") {
       clearOverlays();
       copied(pending);
@@ -810,7 +746,7 @@
     send(input.value);
   });
 
-  const QUESTION_CHIPS = sim.QUESTIONS.map((question) => {
+  const QUESTION_CHIPS = QUESTIONS.map((question) => {
     const button = el("button", "ca-chip", question.text);
     button.type = "button";
     button.addEventListener("click", () => { takeOver(); send(question.text, question.id); });
@@ -861,7 +797,7 @@
       if (index === text.length || per === 0) {
         input.value = text;
         stopTypingQuestion();
-        at(reduce.matches ? 100 : 350, () => send(text, sim.QUESTIONS[0].id));
+        at(reduce.matches ? 100 : 350, () => send(text, QUESTIONS[0].id));
       }
     }, per || 1);
   }
@@ -872,10 +808,9 @@
 
   // Which sample question a free-text message is closest to.
   const classify = (text) => {
-    if (/404|not found|error|fail|route|request|api|why/i.test(text)) return "404";
-    if (/chang|modif|git|diff|commit|edit/i.test(text)) return "changes";
-    if (/secret|password|sensitive|key|token|leak|credential|private/i.test(text)) return "secrets";
-    return "other";
+    if (/source|cite|back|support|3\.1|evidence|where/i.test(text)) return "sources";
+    if (/miss|gap|open|todo|next|left|unknown/i.test(text)) return "gaps";
+    return "summary";
   };
 
   function send(text, id = classify(text)) {
@@ -925,34 +860,7 @@
   // The answer, as small blocks: paragraphs with inline code, a code block, a list, and the parts of
   // the snapshot it used. All of it is derived from the snapshot that was pasted.
   const reply = (id, snap) => {
-    const blocks = [];
-    if (!snap) {
-      blocks.push({ p: sim.answerFor(id === "other" ? "404" : id, null) });
-    } else if (id === "404") {
-      blocks.push({ p: snap.reply });
-      if (/Rename it to/.test(snap.reply)) {
-        blocks.push({ p: "Fix the route in `src/api.ts`:" }, { code: 'router.get("/api/users/:id", async (req, res) => {' });
-      }
-      const evidence = [];
-      const terminal = snap.textOf.terminal ?? "";
-      const latest = [...terminal.matchAll(/HTTP\/1\.1 (\d{3}.*)/g)].pop()?.[1];
-      const failed = /Cannot GET (\S+)/.exec(terminal);
-      if (latest?.startsWith("2")) evidence.push(`Terminal: the latest request returned \`${latest.trim()}\``);
-      else if (failed) evidence.push(`Terminal: \`GET ${failed[1]}\` returned \`404 Not Found\``);
-      if (snap.file === "src/api.ts" && "editor" in snap.textOf) {
-        const routes = [...snap.textOf.editor.matchAll(/router\.\w+\(\s*["'`]([^"'`]+)/g)].map((m) => `\`${m[1]}\``);
-        if (routes.length) evidence.push(`src/api.ts defines ${routes.join(", ")}`);
-      }
-      if (evidence.length) blocks.push({ list: evidence });
-    } else if (id === "changes") {
-      blocks.push({ p: sim.answerFor("changes", snap) });
-      if (snap.hasGit) blocks.push({ list: ["`src/api.ts` (modified)", "`src/client.ts` (modified)"] });
-    } else if (id === "secrets") {
-      blocks.push({ p: sim.answerFor("secrets", snap) });
-    } else {
-      const seen = snap.sources.filter((source) => source.status === "included").map((source) => source.label);
-      blocks.push({ p: "Here is what your snapshot shows:" }, { list: seen }, { p: "Ask me about the failing request, the files you changed, or anything sensitive in it." });
-    }
+    const { blocks, used } = content.answer(id, snap);
     const message = el("div", "ca-msg ca-ai");
     message.append(mark(model));
     const body = el("div", "ca-body");
@@ -975,7 +883,6 @@
         body.append(list);
       }
     }
-    const used = sim.usedFor(id === "other" ? "404" : id, snap);
     if (snap && used.length) {
       const footer = el("p", "ca-used");
       footer.append(el("span", "ca-used-label", "From Snapctx.md"));
