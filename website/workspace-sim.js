@@ -437,7 +437,13 @@
     head.type = "button";
     head.setAttribute("aria-expanded", "false");
     head.setAttribute("aria-controls", id);
-    const icon = node("span", "ctx-icon", "#");
+    const icon = node("span", "ctx-icon");
+    const doc = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    doc.setAttribute("class", "ctx-doc");
+    const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    use.setAttribute("href", "#ic-doc");
+    doc.append(use);
+    icon.append(doc);
     icon.setAttribute("aria-hidden", "true");
     const chevron = node("span", "ctx-chevron");
     chevron.setAttribute("aria-hidden", "true");
