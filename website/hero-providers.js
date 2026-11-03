@@ -147,8 +147,8 @@
     demo.append(layer);
     collectLayer = layer;
 
-    const CW = 140;
-    const CH = 38;
+    const CW = 160;
+    const CH = 42;
     const G = { x: room - CW / 2 - 30, y: area.height * 0.42 }; // where they compress, beside the chat
     const to = composerBox.getBoundingClientRect();
     const T = { x: to.left - area.left + 60, y: to.top - area.top + 22 }; // the composer's attachment spot
@@ -174,8 +174,8 @@
       layer.append(card);
       const x = p0.x + CW / 2;
       const y = p0.y + CH / 2;
-      const sx = G.x - x + (i - 1) * 3; // stacked, a few pixels apart
-      const sy = G.y - y - i * 3;
+      const sx = G.x - x + (i - 1) * 6; // stacked at full size, each a little offset so the stack reads
+      const sy = G.y - y - i * 6;
       const ex = T.x - x;
       const ey = T.y - y;
       const start = i * RISE_STEP;
@@ -184,9 +184,9 @@
         { offset: 0, transform: "translate(0px, 16px) scale(0.9)", opacity: 0, easing: "cubic-bezier(0.22, 0.8, 0.24, 1)" },
         { offset: frac(start + RISE, d, start), transform: "translate(0px, 0px) scale(1)", opacity: 1 },
         { offset: frac(COMPRESS_AT, d, start), transform: "translate(0px, 0px) scale(1)", opacity: 1, easing: "cubic-bezier(0.5, 0, 0.2, 1)" },
-        { offset: frac(HOP_AT, d, start), transform: `translate(${sx}px, ${sy}px) scale(0.62)`, opacity: 1, easing: "cubic-bezier(0.3, 0, 0.6, 1)" },
-        { offset: frac((HOP_AT + END) / 2, d, start), transform: `translate(${(sx + ex) / 2}px, ${Math.min(sy, ey) - 46}px) scale(0.48)`, opacity: 1, easing: "cubic-bezier(0.4, 0, 0.7, 1)" },
-        { offset: 1, transform: `translate(${ex}px, ${ey}px) scale(0.28)`, opacity: 0 },
+        { offset: frac(HOP_AT, d, start), transform: `translate(${sx}px, ${sy}px) scale(1)`, opacity: 1, easing: "cubic-bezier(0.3, 0, 0.6, 1)" },
+        { offset: frac((HOP_AT + END) / 2, d, start), transform: `translate(${(sx + ex) / 2}px, ${Math.min(sy, ey) - 46}px) scale(0.78)`, opacity: 1, easing: "cubic-bezier(0.4, 0, 0.7, 1)" },
+        { offset: 1, transform: `translate(${ex}px, ${ey}px) scale(0.42)`, opacity: 0 },
       ], { duration: d, delay: start, fill: "both" });
     });
     later2(END + 40, () => {
