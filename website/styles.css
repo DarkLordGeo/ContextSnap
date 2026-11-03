@@ -369,6 +369,7 @@ html:has(#consent-banner) { --reserve: 112px; }
 .chat-composer.is-focused { box-shadow: 0 0 0 1px rgba(29, 29, 31, 0.32), 0 4px 14px rgba(29, 29, 31, 0.08); }
 .composer-attach { display: flex; align-items: center; gap: 8px; width: fit-content; max-width: 100%; padding: 6px 12px 6px 6px; border-radius: 12px; background: var(--bg-warm); box-shadow: inset 0 0 0 1px var(--line); animation: attach-in 360ms var(--spring) both; }
 .composer-attach[hidden] { display: none; }
+.composer-attach.is-handoff { animation: none; } /* the context stack has just landed on it */
 .composer-attach .ctx-icon { width: 30px; height: 30px; border-radius: 8px; }
 .attach-text { display: flex; flex-direction: column; min-width: 0; font-size: 12px; line-height: 16px; }
 .attach-text b { font-weight: 600; }

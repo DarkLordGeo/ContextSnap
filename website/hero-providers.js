@@ -197,14 +197,16 @@
       card.animate([{ transform: stacked, opacity: 1 }, { transform: `translate(${ex}px, ${ey}px) scale(${landScale})`, opacity: 1 }],
         { duration: GLIDE, delay: GLIDE_AT, easing: "cubic-bezier(0.55, 0, 0.3, 1)", fill: "forwards" });
     });
-    // Landed on the chip's spot: the attachment appears underneath, then the stack clears, so it never
-    // vanishes before the attachment is there.
-    later2(END, () => done());
-    later2(END + 380, () => {
-      layer.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 140, easing: "ease-out", fill: "forwards" }).onfinish = () => {
+    // Landed on the chip's spot: the attachment appears in place at once (no pop-in) and the stack is
+    // swapped for it in the same moment, so nothing fades or vanishes.
+    later2(END, () => {
+      attach.classList.add("is-handoff");
+      done(); // shows the attachment on the next tick
+      later2(32, () => {
         layer.remove();
         if (collectLayer === layer) collectLayer = null;
-      };
+      });
+      later2(600, () => attach.classList.remove("is-handoff"));
     });
     return true;
   };
