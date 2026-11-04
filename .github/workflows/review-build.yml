@@ -1,0 +1,27 @@
+# A runnable Windows build of a feature branch for visual review. Not a release: nothing is published,
+# signed, or installed; the build is a workflow artifact that expires after 14 days.
+name: Review build
+
+on:
+  push:
+    branches: ["feature/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      # Self-contained, like the release: runs without installing .NET. Settings still live in %APPDATA%\Snapctx.
+      - run: dotnet publish src/ContextSnap -c Release -r win-x64 --self-contained -p:Version=0.0.0-review -o publish/ContextSnap-review
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ContextSnap-review-win-x64
+          path: publish/ContextSnap-review
+          retention-days: 14
