@@ -149,3 +149,89 @@ public sealed class MainWindowSmokeTests : IDisposable
         });
     }
 }
+
+public sealed class ExcludedApplicationsTests : IDisposable
+{
+    private readonly string _directory = Directory.CreateTempSubdirectory("ContextSnapExcludedUi").FullName;
+
+    public void Dispose()
+    {
+        try
+        {
+            Directory.Delete(_directory, recursive: true);
+        }
+        catch (IOException)
+        {
+        }
+    }
+
+    private static Collectors.RawWindow Window(int pid, string process, string title) =>
+        new(pid, title, pid, process, "AppWindow", IsCloaked: false, IsToolWindow: false, IsOwnedPopup: false, IsForeground: false);
+
+    [Fact]
+    public void Describe_ShowsStoredEntriesWithDefaultsMarked()
+    {
+        var items = ExcludedApplications.Describe(["KeePassXC", "Discord.exe", @"C:\Tools\code.exe"],
+            entry => entry == "Discord" ? "Discord" : null);
+
+        Assert.Equal(["KeePassXC", "Discord", "code"], items.Select(i => i.DisplayName));
+        Assert.Equal(["KeePassXC.exe", "Discord.exe", @"C:\Tools\code.exe"], items.Select(i => i.Detail));
+        Assert.Equal([true, false, false], items.Select(i => i.IsDefault));
+        Assert.Equal("Discord.exe", items[1].Entry); // Remove targets the stored value exactly.
+    }
+
+    [Fact]
+    public void TryAdd_RefusesDuplicatesAndRemoveDropsOnlyThatEntry()
+    {
+        var list = new List<string> { "KeePassXC", "Slack" };
+
+        Assert.True(ExcludedApplications.TryAdd(list, "Discord"));
+        Assert.False(ExcludedApplications.TryAdd(list, "discord.exe"));
+        Assert.False(ExcludedApplications.TryAdd(list, "  "));
+        Assert.Equal(["KeePassXC", "Slack", "Discord"], list);
+
+        Assert.Equal(1, ExcludedApplications.Remove(list, "Slack"));
+        Assert.Equal(-1, ExcludedApplications.Remove(list, "Slack"));
+        Assert.Equal(["KeePassXC", "Discord"], list);
+    }
+
+    [Fact]
+    public void ListRunning_OffersDistinctVisibleAppsWithoutTitlesOrExcludedOnes()
+    {
+        var apps = ExcludedApplications.ListRunning(
+        [
+            Window(1, "Code", "secret-plan.md - Visual Studio Code"),
+            Window(2, "Code", "Second window"),
+            Window(3, "KeePassXC", "Passwords"),
+            Window(4, "Discord", "#general"),
+            Window(99, "Snapctx", "ContextSnap"),
+        ], _ => null, ["KeePassXC"], ownProcessId: 99);
+
+        Assert.Equal(["Code", "Discord"], apps.Select(a => a.ProgramName));
+        Assert.DoesNotContain(apps, a => a.DisplayName.Contains("secret", StringComparison.Ordinal) || a.Detail.Contains('#'));
+    }
+
+    [Fact]
+    public void PrivacyPage_ListsTheRealSetting_AndShowsAnEmptyState()
+    {
+        MainWindowSmokeTests.RunOnSta(() =>
+        {
+            var window = MainWindowSmokeTests.CreateWindow(_directory, new AppSettings { ExcludedProcesses = ["Discord", "KeePassXC"] });
+            MainWindowSmokeTests.Find<ToggleButton>(window, "NavPrivacy").IsChecked = true;
+            MainWindowSmokeTests.Layout(window);
+
+            var list = MainWindowSmokeTests.Find<ItemsControl>(window, "ExcludedList");
+            Assert.Equal(["Discord", "KeePassXC"], ((IEnumerable<ExcludedAppItem>)list.ItemsSource).Select(i => i.Entry));
+            Assert.Equal(Visibility.Collapsed, MainWindowSmokeTests.Find<UIElement>(window, "ExcludedEmptyText").Visibility);
+        });
+
+        var emptyDirectory = Directory.CreateDirectory(Path.Combine(_directory, "empty")).FullName;
+        MainWindowSmokeTests.RunOnSta(() =>
+        {
+            var window = MainWindowSmokeTests.CreateWindow(emptyDirectory, new AppSettings { ExcludedProcesses = [] });
+            MainWindowSmokeTests.Layout(window);
+
+            Assert.Equal(Visibility.Visible, MainWindowSmokeTests.Find<UIElement>(window, "ExcludedEmptyText").Visibility);
+        });
+    }
+}

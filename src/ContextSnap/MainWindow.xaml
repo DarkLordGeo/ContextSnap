@@ -203,28 +203,174 @@
                         <TextBlock Style="{DynamicResource PageTitle}" Text="Privacy" />
                         <TextBlock Style="{DynamicResource SecondaryText}" Margin="0,4,0,20"
                                    Text="What ContextSnap reads, what it never reads, and how to keep apps out of your captures." />
-                        <Border Style="{DynamicResource Card}">
+                        <StackPanel x:Name="PrivacyPanel" CheckBox.Click="OnSettingChanged" LostFocus="OnSettingsLostFocus">
+                        <!-- Excluded applications: edits AppSettings.ExcludedProcesses, which every collector enforces -->
+                        <Border Style="{DynamicResource Card}" Padding="20,18,20,14">
                             <StackPanel>
-                                <TextBlock Style="{DynamicResource SectionTitle}" Text="Stays on this PC" />
-                                <TextBlock TextWrapping="Wrap" Text="Snapctx makes no network requests and has no telemetry, accounts, or cloud features. A snapshot leaves this application only when you copy it, and it goes only to your clipboard. Nothing is written to disk except your settings file and, while Start with Windows is on, a Snapctx shortcut in your Startup folder (it contains only the program path)." />
+                                <TextBlock Style="{DynamicResource SectionTitle}" Text="Excluded applications" />
+                                <TextBlock Style="{DynamicResource SecondaryText}"
+                                           Text="Applications on this list won't be included when ContextSnap collects desktop context. Their windows, titles, process details, File Explorer folders, and on-screen text are skipped while collecting, so they never reach the snapshot." />
+                                <WrapPanel Margin="0,14,0,0">
+                                    <Button x:Name="AddExecutableButton" Content="_Add program…" Click="OnAddExecutable" Margin="0,0,8,0"
+                                            ToolTip="Choose a program file (.exe). Every copy of that program is excluded, also after updates."
+                                            AutomationProperties.Name="Add program to exclude" />
+                                    <Button x:Name="ChooseRunningButton" Content="Choose a runnin_g app…" Click="OnChooseRunning"
+                                            ToolTip="Pick from applications that have a window open right now."
+                                            AutomationProperties.Name="Choose a running application to exclude" />
+                                </WrapPanel>
+
+                                <!-- Running-app chooser, inline rather than a dialog -->
+                                <Border x:Name="RunningPicker" Visibility="Collapsed" Margin="0,12,0,0" Padding="6"
+                                        Background="{DynamicResource BandBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                                        BorderThickness="1" CornerRadius="12">
+                                    <StackPanel>
+                                        <TextBlock x:Name="RunningPickerStatus" Style="{DynamicResource FieldHint}" Margin="8,4,8,6"
+                                                   AutomationProperties.LiveSetting="Polite" />
+                                        <ListBox x:Name="RunningList" MaxHeight="240" BorderThickness="0" Background="Transparent"
+                                                 ItemContainerStyle="{DynamicResource PickerItem}"
+                                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                                 MouseDoubleClick="OnRunningDoubleClick" KeyDown="OnRunningKeyDown"
+                                                 AutomationProperties.Name="Applications with open windows">
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate DataType="{x:Type local:RunningApp}">
+                                                    <StackPanel AutomationProperties.Name="{Binding DisplayName}">
+                                                        <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Text="{Binding Detail}" FontFamily="{DynamicResource MonoFont}" FontSize="11.5"
+                                                                   Foreground="{DynamicResource MutedTextBrush}" TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+                                        </ListBox>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,4,4">
+                                            <Button Content="Cancel" Click="OnCancelRunning" IsCancel="False" />
+                                            <Button x:Name="ExcludeSelectedButton" Style="{DynamicResource PrimaryButton}" Margin="8,0,0,0"
+                                                    Padding="16,7" MinHeight="36" Content="_Exclude selected" Click="OnExcludeSelected" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <ItemsControl x:Name="ExcludedList" Margin="0,14,0,0" Focusable="False" AutomationProperties.Name="Excluded applications">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type local:ExcludedAppItem}">
+                                            <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="0,10">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border Width="32" Height="32" CornerRadius="9" Background="{DynamicResource Surface2Brush}"
+                                                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                                                        <TextBlock Text="{Binding Monogram}" FontWeight="SemiBold" FontSize="13"
+                                                                   Foreground="{DynamicResource SecondaryTextBrush}"
+                                                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                    </Border>
+                                                    <StackPanel Grid.Column="1" Margin="12,0,12,0" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Text="{Binding Detail}" ToolTip="{Binding Detail}" FontFamily="{DynamicResource MonoFont}"
+                                                                   FontSize="11.5" Foreground="{DynamicResource MutedTextBrush}" TextTrimming="CharacterEllipsis" />
+                                                    </StackPanel>
+                                                    <Border Grid.Column="2" Style="{DynamicResource Tag}" Margin="0,0,8,0"
+                                                            Visibility="{Binding IsDefault, Converter={StaticResource BoolToVisibility}}"
+                                                            ToolTip="Excluded by default. You can remove it.">
+                                                        <TextBlock Style="{DynamicResource TagText}" Text="Default" />
+                                                    </Border>
+                                                    <Button Grid.Column="3" Style="{DynamicResource QuietButton}" Content="Remove" Tag="{Binding Entry}"
+                                                            Click="OnRemoveExcluded" AutomationProperties.Name="{Binding RemoveLabel}" />
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock x:Name="ExcludedEmptyText" Style="{DynamicResource MutedText}" Margin="0,14,0,2" Visibility="Collapsed"
+                                           Text="No applications are excluded. Anything ContextSnap can see may be included in a capture." />
+
+                                <Grid Margin="0,6,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="ExclusionFeedback" Style="{DynamicResource FieldHint}" VerticalAlignment="Center"
+                                               AutomationProperties.LiveSetting="Polite" />
+                                    <Button x:Name="UndoRemoveButton" Grid.Column="1" Style="{DynamicResource QuietButton}" Content="_Undo"
+                                            Visibility="Collapsed" Click="OnUndoRemove" AutomationProperties.Name="Undo remove" />
+                                </Grid>
                             </StackPanel>
                         </Border>
+
                         <Border Style="{DynamicResource Card}">
                             <StackPanel>
-                                <TextBlock Style="{DynamicResource SectionTitle}" Text="What is read" />
-                                <TextBlock TextWrapping="Wrap" LineHeight="20" Text="• Titles of visible application windows and their process names.&#x0a;• Names, PIDs, and executable paths of developer tools in your list.&#x0a;• Folder paths of open File Explorer windows.&#x0a;• For Git repositories in those folders (or your project list): branch, upstream status, changed file names, and the last three commit subjects. Git runs read-only with optional locks and fsmonitor disabled.&#x0a;• Names and sizes of non-hidden items on your Desktop.&#x0a;• Windows version, CPU count, and memory size.&#x0a;• Only if you turn it on: browser tab titles and, optionally, the active tab's address.&#x0a;• When Visible screen text is on (default: focused window only): the text currently shown in that window, read through Windows accessibility (UI Automation) or on-device Windows OCR. This can include anything on screen, such as messages or code, so review the preview before sharing." />
+                                <TextBlock Style="{DynamicResource SectionTitle}" Text="Redaction" />
+                                <CheckBox Content="Redact secrets (API keys, tokens, passwords, connection strings, private keys)" IsChecked="{Binding RedactSecrets}" />
+                                <CheckBox Content="Redact email addresses" IsChecked="{Binding RedactEmails}" />
+                                <CheckBox Content="Hide my identity (user folder becomes ~, user and computer names become [USER] and [HOST])" IsChecked="{Binding HideUserIdentity}" />
+                                <CheckBox Content="Remove query strings and fragments from URLs" IsChecked="{Binding StripUrlQueryStrings}" />
+                                <CheckBox Content="Include executable paths for developer tools" IsChecked="{Binding IncludeExecutablePaths}" />
+                                <CheckBox Content="Include changed file names in Git summaries" IsChecked="{Binding IncludeGitChangedFiles}" />
+                                <CheckBox Content="Keep copied snapshots out of Windows clipboard history and cloud sync" IsChecked="{Binding ExcludeFromClipboardHistory}" />
+                                <TextBlock Style="{DynamicResource MutedText}" Margin="0,6,0,0" FontSize="12"
+                                           Text="Redaction is pattern-based and best-effort. It cannot recognize every secret, so always review the preview before sharing." />
                             </StackPanel>
                         </Border>
+
                         <Border Style="{DynamicResource Card}">
-                            <StackPanel>
-                                <TextBlock Style="{DynamicResource SectionTitle}" Text="What is never read" />
-                                <TextBlock TextWrapping="Wrap" LineHeight="20" Text="• Files or Git diffs from disk (text shown on screen is read only through the visible-text option).&#x0a;• Process command-line arguments or environment-variable values.&#x0a;• Passwords, cookies, browser history, or browser profiles.&#x0a;• Clipboard contents or clipboard history.&#x0a;• Windows from excluded programs such as password managers, and private/incognito browser windows." />
-                            </StackPanel>
+                            <Expander Style="{DynamicResource Disclosure}" Header="A_dvanced: titles, folders, words, screen text"
+                                      AutomationProperties.Name="Advanced exclusions">
+                                <StackPanel>
+                                    <TextBlock Style="{DynamicResource FieldHint}" Margin="0,0,0,12"
+                                               Text="One entry per line. These apply on top of excluded applications." />
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="16" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                                    <Label Padding="0,0,0,4" Target="{Binding ElementName=ExcludedTitlesBox}" Content="Excluded _title keywords" />
+                                    <TextBox x:Name="ExcludedTitlesBox" Style="{DynamicResource ListBoxInput}"
+                                             Text="{Binding ExcludedTitleKeywords, Converter={StaticResource Lines}}"
+                                             ToolTip="Windows and browser tabs whose title contains any of these words are skipped." />
+                                </StackPanel>
+                                <StackPanel Grid.Row="0" Grid.Column="2" Margin="0,0,0,12">
+                                    <Label Padding="0,0,0,4" Target="{Binding ElementName=ExcludedPathsBox}" Content="Excluded _folders" />
+                                    <TextBox x:Name="ExcludedPathsBox" Style="{DynamicResource ListBoxInput}"
+                                             Text="{Binding ExcludedPathPrefixes, Converter={StaticResource Lines}}"
+                                             ToolTip="Folders (and everything below them) never listed. Environment variables and ~ are allowed, e.g. ~\Documents\Private" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Margin="0,0,0,12">
+                                    <Label Padding="0,0,0,4" Target="{Binding ElementName=CustomTermsBox}" Content="_Words to redact" />
+                                    <TextBox x:Name="CustomTermsBox" Style="{DynamicResource ListBoxInput}"
+                                             Text="{Binding CustomRedactionTerms, Converter={StaticResource Lines}}"
+                                             ToolTip="Any occurrence of these words (case-insensitive) is replaced with [REDACTED], e.g. client or project code names." />
+                                </StackPanel>
+                                    <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,12">
+                                        <Label Target="{Binding ElementName=ScreenTextExclusionsBox}" Content="Never read screen te_xt from" />
+                                        <TextBox x:Name="ScreenTextExclusionsBox" Style="{DynamicResource ListBoxInput}"
+                                                 Text="{Binding ScreenTextExclusions, Converter={StaticResource Lines}}"
+                                                 ToolTip="Process names or title keywords, one per line, for example: Signal, Outlook, Bank. Excluded applications are never read either." />
+                                    </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Expander>
                         </Border>
+                        </StackPanel>
+
                         <Border Style="{DynamicResource Card}">
                             <StackPanel>
-                                <TextBlock Style="{DynamicResource SectionTitle}" Text="Redaction limits" />
-                                <TextBlock TextWrapping="Wrap" Text="Redaction recognizes common formats (key=value secrets, bearer tokens, JWTs, GitHub/GitLab/Slack/AWS/Google/Stripe/OpenAI/Anthropic keys, connection-string passwords, URL credentials, private keys, long random-looking tokens, and email addresses). It can miss secrets in unusual formats and can occasionally redact harmless text. Window titles, paths, and file names may still reveal what you are working on. Always review the preview before sharing it." />
+                                <TextBlock Style="{DynamicResource SectionTitle}" Text="How ContextSnap handles your data" />
+                                <TextBlock FontWeight="SemiBold" Margin="0,4,0,4" Text="Stays on this PC" />
+                                <TextBlock Style="{DynamicResource SecondaryText}" Text="ContextSnap makes no network requests and has no telemetry, accounts, or cloud features. A snapshot leaves this application only when you copy it, and it goes only to your clipboard. Nothing is written to disk except your settings file and, while Start with Windows is on, a ContextSnap shortcut in your Startup folder (it contains only the program path)." />
+                                <TextBlock FontWeight="SemiBold" Margin="0,14,0,4" Text="What is read" />
+                                <TextBlock Style="{DynamicResource SecondaryText}" Text="• Titles of visible application windows and their process names.&#x0a;• Names, PIDs, and executable paths of developer tools in your list.&#x0a;• Folder paths of open File Explorer windows.&#x0a;• For Git repositories in those folders (or your project list): branch, upstream status, changed file names, and the last three commit subjects. Git runs read-only with optional locks and fsmonitor disabled.&#x0a;• Names and sizes of non-hidden items on your Desktop.&#x0a;• Windows version, CPU count, and memory size.&#x0a;• Only if you turn it on: browser tab titles and, optionally, the active tab's address.&#x0a;• When Visible screen text is on (default: focused window only): the text currently shown in that window, read through Windows accessibility (UI Automation) or on-device Windows OCR. This can include anything on screen, such as messages or code, so review the preview before sharing." />
+                                <TextBlock FontWeight="SemiBold" Margin="0,14,0,4" Text="What is never read" />
+                                <TextBlock Style="{DynamicResource SecondaryText}" Text="• Files or Git diffs from disk (text shown on screen is read only through the visible-text option).&#x0a;• Process command-line arguments or environment-variable values.&#x0a;• Passwords, cookies, browser history, or browser profiles.&#x0a;• Clipboard contents or clipboard history.&#x0a;• Anything from excluded applications (password managers by default), and private or incognito browser windows." />
+                                <TextBlock FontWeight="SemiBold" Margin="0,14,0,4" Text="Redaction limits" />
+                                <TextBlock Style="{DynamicResource SecondaryText}" Text="Redaction recognizes common formats (key=value secrets, bearer tokens, JWTs, GitHub/GitLab/Slack/AWS/Google/Stripe/OpenAI/Anthropic keys, connection-string passwords, URL credentials, private keys, long random-looking tokens, and email addresses). It can miss secrets in unusual formats and can occasionally redact harmless text. Window titles, paths, and file names may still reveal what you are working on. Always review the preview before sharing it." />
                             </StackPanel>
                         </Border>
                     </StackPanel>
@@ -284,30 +430,13 @@
                                         <TextBox x:Name="ScreenTextWindowsBox" Grid.Row="1" Grid.Column="1" Style="{DynamicResource NumberInput}" Margin="0,0,0,4"
                                                  Text="{Binding MaxScreenTextWindows, ValidatesOnExceptions=True}" ToolTip="1 to 12" />
                                     </Grid>
-                                    <Label Padding="0,4,0,4" Target="{Binding ElementName=ScreenTextExclusionsBox}" Content="Never read text from these apps or windows (process names or title keywords)" />
-                                    <TextBox x:Name="ScreenTextExclusionsBox" Style="{DynamicResource ListBoxInput}" Height="64"
-                                             Text="{Binding ScreenTextExclusions, Converter={StaticResource Lines}}"
-                                             ToolTip="One per line, for example: Signal, Outlook, Bank. The general exclusions below also apply." />
                                 </StackPanel>
                                 <TextBlock Style="{DynamicResource MutedText}" Margin="0,8,0,0" FontSize="12"
                                            Text="Text is read on this PC through Windows UI Automation and, when needed, Windows OCR. Nothing is sent anywhere or saved. Password fields are skipped, and for browsers only the page is read, never tabs or the address bar. Snapctx never clicks, scrolls, or changes focus to read more." />
                             </StackPanel>
                         </Border>
 
-                        <Border Style="{DynamicResource Card}">
-                            <StackPanel>
-                                <TextBlock Style="{DynamicResource SectionTitle}" Text="Privacy and redaction" />
-                                <CheckBox Content="Redact secrets (API keys, tokens, passwords, connection strings, private keys)" IsChecked="{Binding RedactSecrets}" />
-                                <CheckBox Content="Redact email addresses" IsChecked="{Binding RedactEmails}" />
-                                <CheckBox Content="Hide my identity (user folder becomes ~, user and computer names become [USER] and [HOST])" IsChecked="{Binding HideUserIdentity}" />
-                                <CheckBox Content="Remove query strings and fragments from URLs" IsChecked="{Binding StripUrlQueryStrings}" />
-                                <CheckBox Content="Include executable paths for developer tools" IsChecked="{Binding IncludeExecutablePaths}" />
-                                <CheckBox Content="Include changed file names in Git summaries" IsChecked="{Binding IncludeGitChangedFiles}" />
-                                <CheckBox Content="Keep copied snapshots out of Windows clipboard history and cloud sync" IsChecked="{Binding ExcludeFromClipboardHistory}" />
-                                <TextBlock Style="{DynamicResource MutedText}" Margin="0,6,0,0" FontSize="12"
-                                           Text="Redaction is pattern-based and best-effort. It cannot recognize every secret, so always review the preview before sharing." />
-                            </StackPanel>
-                        </Border>
+
 
                         <Border Style="{DynamicResource Card}">
                             <Grid>
@@ -319,42 +448,15 @@
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
-                                <TextBlock Grid.ColumnSpan="3" Style="{DynamicResource SectionTitle}" Text="Exclusions (one per line)" />
-
-                                <StackPanel Grid.Row="1" Margin="0,4,0,10">
-                                    <Label Padding="0,0,0,4" Target="{Binding ElementName=ExcludedProcessesBox}" Content="E_xcluded processes" />
-                                    <TextBox x:Name="ExcludedProcessesBox" Style="{DynamicResource ListBoxInput}"
-                                             Text="{Binding ExcludedProcesses, Converter={StaticResource Lines}}"
-                                             ToolTip="Windows and processes from these programs are never included (for example, password managers)." />
-                                </StackPanel>
-                                <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,4,0,10">
-                                    <Label Padding="0,0,0,4" Target="{Binding ElementName=ExcludedTitlesBox}" Content="Excluded _title keywords" />
-                                    <TextBox x:Name="ExcludedTitlesBox" Style="{DynamicResource ListBoxInput}"
-                                             Text="{Binding ExcludedTitleKeywords, Converter={StaticResource Lines}}"
-                                             ToolTip="Windows and browser tabs whose title contains any of these words are skipped." />
-                                </StackPanel>
-                                <StackPanel Grid.Row="2" Margin="0,0,0,10">
-                                    <Label Padding="0,0,0,4" Target="{Binding ElementName=ExcludedPathsBox}" Content="Excluded _folders" />
-                                    <TextBox x:Name="ExcludedPathsBox" Style="{DynamicResource ListBoxInput}"
-                                             Text="{Binding ExcludedPathPrefixes, Converter={StaticResource Lines}}"
-                                             ToolTip="Folders (and everything below them) never listed. Environment variables and ~ are allowed, e.g. ~\Documents\Private" />
-                                </StackPanel>
-                                <StackPanel Grid.Row="2" Grid.Column="2" Margin="0,0,0,10">
-                                    <Label Padding="0,0,0,4" Target="{Binding ElementName=CustomTermsBox}" Content="_Words to redact" />
-                                    <TextBox x:Name="CustomTermsBox" Style="{DynamicResource ListBoxInput}"
-                                             Text="{Binding CustomRedactionTerms, Converter={StaticResource Lines}}"
-                                             ToolTip="Any occurrence of these words (case-insensitive) is replaced with [REDACTED], e.g. client or project code names." />
-                                </StackPanel>
-                                <StackPanel Grid.Row="3" Margin="0,0,0,4">
+                                <TextBlock Grid.ColumnSpan="3" Style="{DynamicResource SectionTitle}" Text="Lists (one per line)" />
+                                <StackPanel Grid.Row="1" Margin="0,0,0,4">
                                     <Label Padding="0,0,0,4" Target="{Binding ElementName=ProjectFoldersBox}" Content="Pro_ject folders for Git" />
                                     <TextBox x:Name="ProjectFoldersBox" Style="{DynamicResource ListBoxInput}"
                                              Text="{Binding ProjectFolders, Converter={StaticResource Lines}}"
                                              ToolTip="Always checked for Git repositories, in addition to open File Explorer folders. E.g. ~\source\repos\MyApp" />
                                 </StackPanel>
-                                <StackPanel Grid.Row="3" Grid.Column="2" Margin="0,0,0,4">
+                                <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,4">
                                     <Label Padding="0,0,0,4" Target="{Binding ElementName=DevProcessesBox}" Content="De_veloper tools to detect" />
                                     <TextBox x:Name="DevProcessesBox" Style="{DynamicResource ListBoxInput}"
                                              Text="{Binding DeveloperProcesses, Converter={StaticResource Lines}}"

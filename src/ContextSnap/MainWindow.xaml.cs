@@ -7,11 +7,13 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using ContextSnap.Capture;
+using ContextSnap.Collectors;
 using ContextSnap.Collectors.ScreenText;
 using ContextSnap.Configuration;
 using ContextSnap.Notifications;
 using ContextSnap.Output;
 using ContextSnap.Platform;
+using ContextSnap.Privacy;
 
 namespace ContextSnap;
 
@@ -42,6 +44,8 @@ public partial class MainWindow : Window
     private bool _exiting;
     private bool _closeHintShown;
     private string? _lastCopiedText;
+    private (string Entry, int Index, string Name)? _lastRemoved;
+    private readonly Dictionary<string, string?> _friendlyNames = new(StringComparer.OrdinalIgnoreCase);
 
     public MainWindow(SettingsStore store, SnapshotService service, IClipboardWriter clipboard, WpfCopyNotifier notifier,
         StartupRegistration startup)
@@ -61,6 +65,8 @@ public partial class MainWindow : Window
         // Only write when the user changes something; an unreadable file is left untouched until then.
         _savedSettingsJson = Serialize(_settings);
         SettingsPanel.DataContext = _settings;
+        PrivacyPanel.DataContext = _settings;
+        RefreshExcludedList();
         FirstRunText.Visibility = loaded.IsFirstRun ? Visibility.Visible : Visibility.Collapsed;
         SettingsPathText.Text = $"Changes are saved automatically to {store.FilePath}";
         RailVersionText.Text = $"Version {AppVersion.Display}";
@@ -477,7 +483,7 @@ public partial class MainWindow : Window
     /// <summary>Pushes a half-finished text box edit into the settings before capturing or closing.</summary>
     private void CommitPendingSettingsEdit()
     {
-        if (Keyboard.FocusedElement is TextBox box && SettingsPanel.IsAncestorOf(box))
+        if (Keyboard.FocusedElement is TextBox box && (SettingsPanel.IsAncestorOf(box) || PrivacyPanel.IsAncestorOf(box)))
             box.GetBindingExpression(TextBox.TextProperty)?.UpdateSource();
         SaveSettings();
     }
@@ -519,6 +525,215 @@ public partial class MainWindow : Window
     {
         SettingsPanel.DataContext = null;
         SettingsPanel.DataContext = _settings;
+        PrivacyPanel.DataContext = null;
+        PrivacyPanel.DataContext = _settings;
+        RefreshExcludedList();
+    }
+
+    // Excluded applications. The list is AppSettings.ExcludedProcesses itself, which every collector
+    // enforces while collecting; nothing here hides anything on its own.
+
+    private void RefreshExcludedList()
+    {
+        var items = ExcludedApplications.Describe(_settings.ExcludedProcesses,
+            entry => _friendlyNames.GetValueOrDefault(PrivacyRules.IsPathEntry(entry) ? entry : PrivacyRules.ProgramNameOf(entry)));
+        ExcludedList.ItemsSource = items;
+        ExcludedList.Visibility = items.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        ExcludedEmptyText.Visibility = items.Count > 0 ? Visibility.Collapsed : Visibility.Visible;
+        _ = ResolveFriendlyNamesAsync();
+    }
+
+    /// <summary>Looks up program descriptions ("Visual Studio Code") off the UI thread, then refreshes once.</summary>
+    private async Task ResolveFriendlyNamesAsync()
+    {
+        var missing = _settings.ExcludedProcesses
+            .Select(e => PrivacyRules.IsPathEntry(e) ? e.Trim() : PrivacyRules.ProgramNameOf(e))
+            .Where(key => key.Length > 0 && !_friendlyNames.ContainsKey(key))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (missing.Length == 0)
+            return;
+
+        var resolved = await Task.Run(() => missing.Select(key => (key, name: ResolveFriendlyName(key))).ToArray());
+        foreach (var (key, name) in resolved)
+            _friendlyNames[key] = name;
+        if (resolved.Any(r => r.name is not null))
+            RefreshExcludedList();
+    }
+
+    private static string? ResolveFriendlyName(string key)
+    {
+        if (PrivacyRules.IsPathEntry(key))
+            return ExcludedApplications.FriendlyName(key);
+
+        // Only a running copy tells us where the program lives; otherwise the program name is shown.
+        var source = new SystemProcessSource();
+        foreach (var process in System.Diagnostics.Process.GetProcessesByName(key))
+        {
+            using (process)
+            {
+                if (ExcludedApplications.FriendlyName(source.GetExecutablePath(process.Id)) is { } name)
+                    return name;
+            }
+        }
+
+        return null;
+    }
+
+    private void AddExclusion(string entry, string displayName)
+    {
+        if (!ExcludedApplications.TryAdd(_settings.ExcludedProcesses, entry))
+        {
+            ShowExclusionFeedback($"{displayName} is already excluded.");
+            return;
+        }
+
+        SaveSettings();
+        RefreshExcludedList();
+        ShowExclusionFeedback($"{displayName} is excluded. It won't be included in captures.");
+    }
+
+    private void OnAddExecutable(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Choose a program to exclude",
+            Filter = "Programs (*.exe)|*.exe",
+            CheckFileExists = true,
+            DereferenceLinks = true,
+            InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+        };
+        if (dialog.ShowDialog(this) != true)
+            return;
+
+        var entry = PrivacyRules.ExclusionEntryForExecutable(dialog.FileName, out var error);
+        if (entry is null)
+        {
+            ShowExclusionFeedback(error ?? "That file can't be excluded.", isError: true);
+            return;
+        }
+
+        var name = ExcludedApplications.FriendlyName(dialog.FileName) ?? entry;
+        _friendlyNames[entry] = name;
+        AddExclusion(entry, name);
+    }
+
+    private async void OnChooseRunning(object sender, RoutedEventArgs e)
+    {
+        RunningPicker.Visibility = Visibility.Visible;
+        Motion.FadeIn(RunningPicker, offset: 4);
+        RunningList.ItemsSource = null;
+        RunningPickerStatus.Text = "Looking for apps with open windows…";
+        ExcludeSelectedButton.IsEnabled = false;
+
+        var excluded = _settings.ExcludedProcesses.ToArray();
+        IReadOnlyList<RunningApp> apps;
+        try
+        {
+            apps = await Task.Run(() =>
+            {
+                var processes = new SystemProcessSource();
+                return ExcludedApplications.ListRunning(new Win32WindowSource().GetWindows(), processes.GetExecutablePath,
+                    excluded, Environment.ProcessId);
+            });
+        }
+        catch (Exception ex)
+        {
+            RunningPickerStatus.Text = $"Running apps could not be listed ({ex.GetType().Name}). Use Add program instead.";
+            return;
+        }
+
+        foreach (var app in apps)
+            _friendlyNames[app.ProgramName] = app.DisplayName;
+        RunningList.ItemsSource = apps;
+        RunningPickerStatus.Text = apps.Count switch
+        {
+            0 => "No other apps with open windows were found. Use Add program to choose a file.",
+            1 => "1 app with an open window. Window titles are not shown.",
+            _ => $"{apps.Count} apps with open windows. Window titles are not shown.",
+        };
+        if (apps.Count > 0)
+        {
+            RunningList.SelectedIndex = 0;
+            ExcludeSelectedButton.IsEnabled = true;
+            RunningList.UpdateLayout();
+            (RunningList.ItemContainerGenerator.ContainerFromIndex(0) as ListBoxItem)?.Focus();
+        }
+    }
+
+    private void ExcludeSelectedRunningApp()
+    {
+        if (RunningList.SelectedItem is not RunningApp app)
+            return;
+        AddExclusion(app.ProgramName, app.DisplayName);
+        CloseRunningPicker();
+    }
+
+    private void OnExcludeSelected(object sender, RoutedEventArgs e) => ExcludeSelectedRunningApp();
+
+    private void OnRunningDoubleClick(object sender, MouseButtonEventArgs e) => ExcludeSelectedRunningApp();
+
+    private void OnRunningKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            e.Handled = true;
+            ExcludeSelectedRunningApp();
+        }
+        else if (e.Key == Key.Escape)
+        {
+            e.Handled = true;
+            CloseRunningPicker();
+        }
+    }
+
+    private void OnCancelRunning(object sender, RoutedEventArgs e) => CloseRunningPicker();
+
+    private void CloseRunningPicker()
+    {
+        RunningPicker.Visibility = Visibility.Collapsed;
+        RunningList.ItemsSource = null;
+        ChooseRunningButton.Focus();
+    }
+
+    private void OnRemoveExcluded(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string entry })
+            return;
+
+        var name = (ExcludedList.ItemsSource as IEnumerable<ExcludedAppItem>)?.FirstOrDefault(i => i.Entry == entry)?.DisplayName ?? entry;
+        var index = ExcludedApplications.Remove(_settings.ExcludedProcesses, entry);
+        if (index < 0)
+            return;
+
+        SaveSettings();
+        RefreshExcludedList();
+        _lastRemoved = (entry, index, name);
+        ShowExclusionFeedback($"Removed {name}. It can be included in captures again.", canUndo: true);
+        UndoRemoveButton.Focus(); // The row's own button is gone; keep keyboard focus nearby.
+    }
+
+    private void OnUndoRemove(object sender, RoutedEventArgs e)
+    {
+        if (_lastRemoved is not { } removed)
+            return;
+
+        _settings.ExcludedProcesses.Insert(Math.Min(removed.Index, _settings.ExcludedProcesses.Count), removed.Entry);
+        SaveSettings();
+        RefreshExcludedList();
+        ShowExclusionFeedback($"{removed.Name} is excluded again.");
+        AddExecutableButton.Focus();
+    }
+
+    private void ShowExclusionFeedback(string message, bool isError = false, bool canUndo = false)
+    {
+        if (!canUndo)
+            _lastRemoved = null;
+        ExclusionFeedback.Text = message;
+        ExclusionFeedback.Foreground = isError
+            ? new SolidColorBrush(Color.FromRgb(0xB4, 0x23, 0x18))
+            : (Brush)(TryFindResource("MutedTextBrush") ?? SystemColors.GrayTextBrush);
+        UndoRemoveButton.Visibility = canUndo ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void ApplyHotkeySetting()
