@@ -32,10 +32,12 @@
     document.head.appendChild(script);
   };
 
-  // Withdrawing consent also removes the cookies Google Analytics set (_ga, _ga_<id>), and the
-  // ga-disable flag is Google's opt-out switch: a tag already loaded on this page stops sending.
+  // Withdrawing consent also removes the cookies Google Analytics set (_ga, _ga_<id>) and the random
+  // download ID (app.js), and the ga-disable flag is Google's opt-out switch: a tag already loaded on
+  // this page stops sending.
   const disable = () => {
     window[`ga-disable-${MEASUREMENT_ID}`] = true;
+    try { localStorage.removeItem("contextsnap-download-visitor"); } catch { /* nothing stored */ }
     gtag("consent", "update", { analytics_storage: "denied" });
     for (const name of document.cookie.split(";").map((c) => c.split("=")[0].trim())) {
       if (!name.startsWith("_ga")) continue;
@@ -58,7 +60,7 @@
       banner.className = "consent";
       banner.setAttribute("aria-label", "Cookie consent");
       banner.innerHTML =
-        '<p>May we use Google Analytics cookies to understand how visitors use this site? ' +
+        '<p>May we use Google Analytics cookies, and a random ID to estimate unique downloads, to understand how visitors use this site? ' +
         'The ContextSnap apps never send analytics. <a href="/#privacy">Privacy details</a></p>' +
         '<div class="consent-actions">' +
         '<button type="button" class="button ghost" data-choice="denied">Decline</button>' +
