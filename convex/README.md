@@ -3,8 +3,9 @@
 Counts **download requests**: clicks on the website's Windows and Linux download buttons. Not completed
 downloads or installations. Not part of the desktop apps, which send nothing. There is no macOS platform.
 
-Deployment: `colorful-chickadee-319`. The website calls its HTTP actions at
-`https://colorful-chickadee-319.convex.site` (the `.convex.cloud` URL is for client SDKs, which are not used).
+Production deployment: `notable-cow-268`. The website calls its HTTP actions at
+`https://notable-cow-268.convex.site` (the `.convex.cloud` URL is for client SDKs, which are not used).
+The project's dev deployment, `colorful-chickadee-319`, is for testing only.
 
 - `schema.ts`: tables and indexes (`downloads`, `visitors`, `dailyCounts`, `counters`).
 - `downloads.ts`: the `record` mutation and `stats` query (both internal), version validation.
@@ -36,14 +37,14 @@ they are not authentication. Anyone can send fake requests that pass them, so co
 npm ci
 npm run typecheck && npm test
 npx convex login
-npx convex deploy            # asks to pick the project that owns colorful-chickadee-319
+npx convex deploy            # always targets production: notable-cow-268
 npx convex env set STATS_TOKEN "<a long random value>" --prod
 npx convex env set ALLOWED_VERSIONS "1.0.1" --prod
 ```
 
-If `colorful-chickadee-319` is the project's **dev** deployment rather than production, push with
-`npx convex dev --once` and drop `--prod` from the `env set` commands. Check which it is in the Convex
-dashboard; `npx convex deploy` always targets production.
+To test on the **dev** deployment (`colorful-chickadee-319`) instead, point `.env.local` at
+`dev:colorful-chickadee-319`, push with `npx convex dev --once`, and drop `--prod` from the `env set`
+commands.
 
 The website reads the deployment's `.convex.site` URL from `<meta name="contextsnap-downloads">` in
 `index.html` and `stats.html`; the same URL must be in `connect-src` in `website/vercel.json`. Remove the
