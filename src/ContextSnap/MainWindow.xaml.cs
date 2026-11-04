@@ -1,10 +1,11 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using ContextSnap.Capture;
 using ContextSnap.Collectors.ScreenText;
 using ContextSnap.Configuration;
@@ -40,6 +41,7 @@ public partial class MainWindow : Window
     private NotificationAreaIcon? _trayIcon;
     private bool _exiting;
     private bool _closeHintShown;
+    private string? _lastCopiedText;
 
     public MainWindow(SettingsStore store, SnapshotService service, IClipboardWriter clipboard, WpfCopyNotifier notifier,
         StartupRegistration startup)
@@ -61,7 +63,9 @@ public partial class MainWindow : Window
         SettingsPanel.DataContext = _settings;
         FirstRunText.Visibility = loaded.IsFirstRun ? Visibility.Visible : Visibility.Collapsed;
         SettingsPathText.Text = $"Changes are saved automatically to {store.FilePath}";
+        RailVersionText.Text = $"Version {AppVersion.Display}";
         UpdateEnabledCollectorsText();
+        ShowShortcut(_settings.EnableGlobalHotkey ? HotkeyGesture.Parse(_settings.Hotkey) ?? HotkeyGesture.Default : null);
 
         if (loaded.Error is not null)
             SetStatus(StatusKind.Warning, loaded.Error);
@@ -273,6 +277,7 @@ public partial class MainWindow : Window
         {
             case HotkeyCaptureStatus.Copied:
                 SetStatus(StatusKind.Success, $"Shortcut copied {outcome.Capture!.Markdown.Length:N0} characters at {time}.");
+                ShowCopiedBadge();
                 break;
             case HotkeyCaptureStatus.CopyFailed:
                 SetStatus(StatusKind.Error, $"Shortcut capture at {time} could not be copied: {outcome.Error}");
@@ -296,7 +301,8 @@ public partial class MainWindow : Window
         PreviewBox.Visibility = Visibility.Visible;
         EmptyState.Visibility = Visibility.Collapsed;
         PreviewBox.ScrollToHome();
-        Tabs.SelectedIndex = 0;
+        NavCapture.IsChecked = true;
+        HideCopiedBadge();
 
         CollectorChips.ItemsSource = result.Snapshot.AllResults.Select(CollectorChip.From).ToArray();
         CollectorChips.Visibility = Visibility.Visible;
@@ -319,6 +325,7 @@ public partial class MainWindow : Window
             case CopyStatus.Copied:
                 var time = DateTime.Now.ToString("T", CultureInfo.CurrentCulture);
                 SetStatus(StatusKind.Success, $"Copied {PreviewBox.Text.Length:N0} characters to the clipboard at {time}. Paste it into your AI chat.");
+                ShowCopiedBadge();
                 break;
             case CopyStatus.Empty:
                 SetStatus(StatusKind.Warning, CopyService.EmptyError);
@@ -334,6 +341,9 @@ public partial class MainWindow : Window
 
     private void OnPreviewTextChanged(object sender, TextChangedEventArgs e)
     {
+        // An edit means the clipboard no longer matches the preview.
+        if (_lastResult is not null && !string.Equals(PreviewBox.Text, _lastCopiedText, StringComparison.Ordinal))
+            HideCopiedBadge();
         UpdateMetaText();
         CommandManager.InvalidateRequerySuggested();
     }
@@ -342,14 +352,17 @@ public partial class MainWindow : Window
     {
         if (_lastResult is null)
         {
-            MetaText.Text = string.Empty;
+            LastCaptureText.Text = "No capture yet";
+            MetaText.Text = "Press F5 or Ctrl+Enter to capture.";
             return;
         }
 
+        var statistics = TextStatistics.Measure(PreviewBox.Text);
+        LastCaptureText.Text = $"Captured at {_lastResult.Snapshot.CapturedAt.ToLocalTime():T}";
         var parts = new List<string>
         {
-            $"Captured {_lastResult.Snapshot.CapturedAt.ToLocalTime():T}",
-            $"{PreviewBox.Text.Length:N0} / {_settings.MaxOutputCharacters:N0} characters",
+            $"{statistics.Characters:N0} / {_settings.MaxOutputCharacters:N0} characters",
+            statistics.Words == 1 ? "1 word" : $"{statistics.Words:N0} words",
         };
         if (_lastResult.WasTruncated)
             parts.Add("truncated");
@@ -361,14 +374,71 @@ public partial class MainWindow : Window
     private void SetStatus(StatusKind kind, string message)
     {
         StatusText.Text = message;
+        // The site's palette is neutral: near-black for activity and success, amber and red only for problems.
         StatusDot.Fill = new SolidColorBrush(kind switch
         {
-            StatusKind.Busy => Color.FromRgb(0x23, 0x57, 0xD9),
-            StatusKind.Success => Color.FromRgb(0x1F, 0x88, 0x3D),
-            StatusKind.Warning => Color.FromRgb(0xBF, 0x87, 0x00),
-            StatusKind.Error => Color.FromRgb(0xCF, 0x22, 0x2E),
-            _ => Color.FromRgb(0x8C, 0x95, 0x9F),
+            StatusKind.Busy => Color.FromRgb(0x1D, 0x1D, 0x1F),
+            StatusKind.Success => Color.FromRgb(0x1D, 0x1D, 0x1F),
+            StatusKind.Warning => Color.FromRgb(0x9A, 0x62, 0x00),
+            StatusKind.Error => Color.FromRgb(0xB4, 0x23, 0x18),
+            _ => Color.FromRgb(0x8F, 0x8C, 0x88),
         });
+
+        if (kind == StatusKind.Busy && Motion.Enabled)
+        {
+            var pulse = new DoubleAnimation(1, 0.3, TimeSpan.FromMilliseconds(650)) { AutoReverse = true, RepeatBehavior = RepeatBehavior.Forever };
+            StatusDot.BeginAnimation(OpacityProperty, pulse);
+        }
+        else
+        {
+            StatusDot.BeginAnimation(OpacityProperty, null);
+        }
+    }
+
+    // Navigation and Capture page details
+
+    private void OnNavChecked(object sender, RoutedEventArgs e)
+    {
+        if (CapturePage is null)
+            return; // Raised while XAML is loading.
+
+        FrameworkElement target = sender == NavPrivacy ? PrivacyPage : sender == NavSettings ? SettingsPage : CapturePage;
+        foreach (var page in new FrameworkElement[] { CapturePage, PrivacyPage, SettingsPage })
+        {
+            if (page != target)
+                page.Visibility = Visibility.Collapsed;
+        }
+
+        if (target.Visibility == Visibility.Visible)
+            return;
+        if (sender != NavCapture)
+            CommitPendingSettingsEdit();
+        target.Visibility = Visibility.Visible;
+        Motion.FadeIn(target);
+    }
+
+    private void ShowCopiedBadge()
+    {
+        _lastCopiedText = PreviewBox.Text;
+        CopiedBadge.Visibility = Visibility.Visible;
+        Motion.FadeIn(CopiedBadge, offset: 4);
+    }
+
+    private void HideCopiedBadge()
+    {
+        _lastCopiedText = null;
+        CopiedBadge.BeginAnimation(OpacityProperty, null);
+        CopiedBadge.Opacity = 0;
+        CopiedBadge.Visibility = Visibility.Collapsed;
+    }
+
+    /// <summary>Shows the global shortcut as keycaps, or that it is off or unavailable.</summary>
+    private void ShowShortcut(HotkeyGesture? gesture, string? unavailableText = null)
+    {
+        ShortcutKeys.ItemsSource = gesture?.DisplayText.Split('+');
+        ShortcutKeys.Visibility = gesture is null ? Visibility.Collapsed : Visibility.Visible;
+        ShortcutOffText.Text = unavailableText ?? "Off — turn it on in Settings";
+        ShortcutOffText.Visibility = gesture is null ? Visibility.Visible : Visibility.Collapsed;
     }
 
     // Settings
@@ -461,6 +531,7 @@ public partial class MainWindow : Window
             _hotkey.Unregister();
             HotkeyStatusText.Text = "Off.";
             HotkeyHint.Text = string.Empty;
+            ShowShortcut(null);
             return;
         }
 
@@ -469,11 +540,13 @@ public partial class MainWindow : Window
         {
             HotkeyStatusText.Text = $"Active: {gesture.DisplayText} works in any application while Snapctx runs in the background, also after this window is closed.";
             HotkeyHint.Text = $"Tip: press {gesture.DisplayText} in any application to capture and copy in one step.";
+            ShowShortcut(gesture);
         }
         else
         {
             HotkeyStatusText.Text = $"Unavailable: another application is already using {gesture.DisplayText}. Choose another shortcut.";
             HotkeyHint.Text = string.Empty;
+            ShowShortcut(null, $"{gesture.DisplayText} is in use by another app");
         }
     }
 

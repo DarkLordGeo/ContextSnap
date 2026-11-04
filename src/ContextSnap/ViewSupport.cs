@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Windows.Media;
 using System.Windows.Data;
 using ContextSnap.Capture;
@@ -32,14 +32,15 @@ public sealed class EnumMatchConverter : IValueConverter
 /// <summary>A small status badge for one collector in the status bar.</summary>
 public sealed record CollectorChip(string Label, string Details, Brush Background, Brush Foreground)
 {
-    private static readonly Brush OkBackground = Freeze(new SolidColorBrush(Color.FromRgb(0xE6, 0xF4, 0xEA)));
-    private static readonly Brush OkForeground = Freeze(new SolidColorBrush(Color.FromRgb(0x1A, 0x6B, 0x34)));
-    private static readonly Brush NeutralBackground = Freeze(new SolidColorBrush(Color.FromRgb(0xEE, 0xF0, 0xF3)));
-    private static readonly Brush NeutralForeground = Freeze(new SolidColorBrush(Color.FromRgb(0x4B, 0x55, 0x60)));
-    private static readonly Brush WarnBackground = Freeze(new SolidColorBrush(Color.FromRgb(0xFD, 0xF1, 0xDC)));
-    private static readonly Brush WarnForeground = Freeze(new SolidColorBrush(Color.FromRgb(0x8A, 0x4B, 0x00)));
-    private static readonly Brush ErrorBackground = Freeze(new SolidColorBrush(Color.FromRgb(0xFC, 0xE8, 0xE8)));
-    private static readonly Brush ErrorForeground = Freeze(new SolidColorBrush(Color.FromRgb(0xA4, 0x1E, 0x1E)));
+    // The site's neutral palette: collected sections read as quiet tags; only problems get color.
+    private static readonly Brush OkBackground = Freeze(new SolidColorBrush(Color.FromRgb(0xF1, 0xEF, 0xEB)));
+    private static readonly Brush OkForeground = Freeze(new SolidColorBrush(Color.FromRgb(0x48, 0x46, 0x4A)));
+    private static readonly Brush NeutralBackground = Freeze(new SolidColorBrush(Color.FromArgb(0x0F, 0x1D, 0x1D, 0x1F)));
+    private static readonly Brush NeutralForeground = Freeze(new SolidColorBrush(Color.FromRgb(0x6B, 0x69, 0x66)));
+    private static readonly Brush WarnBackground = Freeze(new SolidColorBrush(Color.FromRgb(0xFB, 0xF1, 0xDD)));
+    private static readonly Brush WarnForeground = Freeze(new SolidColorBrush(Color.FromRgb(0x8A, 0x5A, 0x00)));
+    private static readonly Brush ErrorBackground = Freeze(new SolidColorBrush(Color.FromRgb(0xFB, 0xE9, 0xE7)));
+    private static readonly Brush ErrorForeground = Freeze(new SolidColorBrush(Color.FromRgb(0xA1, 0x2A, 0x1F)));
 
     public static CollectorChip From(ICollectorResult result)
     {
