@@ -131,6 +131,7 @@ public sealed class MainWindowSmokeTests : IDisposable
             var capture = Find<Button>(window, "CaptureButton");
             Assert.NotNull(capture.Template.FindName("Chrome", capture));
             Assert.Equal(Visibility.Collapsed, Find<UIElement>(window, "PrivacyPage").Visibility);
+            Assert.StartsWith("Version ", Find<TextBlock>(window, "AboutVersionText").Text);
         });
     }
 

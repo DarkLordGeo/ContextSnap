@@ -69,7 +69,7 @@ public static class LaunchTargetResolver
                 new LaunchTarget(processPath, $"\"{assembly}\" {StartupArgument}", directory, isDevelopment), null);
         }
 
-        return new LaunchTargetResult(null, $"The Snapctx executable was not found in {directory}.");
+        return new LaunchTargetResult(null, $"The ContextSnap executable was not found in {directory}.");
     }
 
     public static LaunchTargetResult ResolveCurrent() =>
@@ -179,11 +179,11 @@ public sealed class StartupRegistration(
             store.Write(path, desired);
         RemoveLegacyShortcut();
 
-        var message = $"Snapctx starts in the background when you sign in (no window, taskbar button, or icon). Shortcut: {path} → {target.FileName}";
+        var message = $"ContextSnap starts in the background when you sign in (no window, taskbar button, or icon). Shortcut: {path} → {target.FileName}";
         var needsAttention = false;
         if (target.IsDevelopmentBuild)
         {
-            message += " (development build: the shortcut follows whichever copy of Snapctx you open last).";
+            message += " (development build: the shortcut follows whichever copy of ContextSnap you open last).";
         }
 
         if (isDisabledByWindows?.Invoke(ShortcutFileName) == true)
@@ -202,8 +202,8 @@ public sealed class StartupRegistration(
         if (existing is null)
         {
             return new StartupState(false, true, removedLegacy
-                ? "Snapctx does not start with Windows. The startup shortcut was removed."
-                : "Snapctx does not start with Windows.", path);
+                ? "ContextSnap does not start with Windows. The startup shortcut was removed."
+                : "ContextSnap does not start with Windows.", path);
         }
 
         if (!IsOwnShortcut(existing))
@@ -213,7 +213,7 @@ public sealed class StartupRegistration(
         }
 
         store.Delete(path);
-        return new StartupState(false, true, "Snapctx does not start with Windows. The startup shortcut was removed.", path);
+        return new StartupState(false, true, "ContextSnap does not start with Windows. The startup shortcut was removed.", path);
     }
 
     /// <summary>Guards against modifying a same-named shortcut that belongs to something else.</summary>

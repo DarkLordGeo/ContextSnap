@@ -51,7 +51,7 @@ public static class Program
         {
             // Last-resort boundary: report instead of terminating; the user can retry or close.
             MessageBox.Show($"An unexpected error occurred:\n\n{e.Exception.GetType().Name}: {e.Exception.Message}",
-                "Snapctx", MessageBoxButton.OK, MessageBoxImage.Error);
+                "ContextSnap", MessageBoxButton.OK, MessageBoxImage.Error);
             e.Handled = true;
         };
 

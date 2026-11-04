@@ -98,7 +98,7 @@ public sealed class NotificationAreaIcon(nint windowHandle, string tooltip) : ID
 
         try
         {
-            AppendMenuW(menu, MfString, (nuint)TrayCommand.Open, "&Open Snapctx");
+            AppendMenuW(menu, MfString, (nuint)TrayCommand.Open, "&Open ContextSnap");
             AppendMenuW(menu, MfString, (nuint)TrayCommand.Capture, captureLabel);
             AppendMenuW(menu, MfSeparator, 0, null);
             AppendMenuW(menu, MfString, (nuint)TrayCommand.Exit, "E&xit");

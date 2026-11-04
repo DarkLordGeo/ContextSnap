@@ -387,7 +387,47 @@
 
                         <Border Style="{DynamicResource Card}">
                             <StackPanel>
-                                <TextBlock Style="{DynamicResource SectionTitle}" Text="What to collect" />
+                                <TextBlock Style="{DynamicResource SectionTitle}" Text="Keyboard shortcut" />
+                                <CheckBox x:Name="HotkeyCheck" IsChecked="{Binding EnableGlobalHotkey}">
+                                    <TextBlock x:Name="HotkeyCheckText" Text="Capture from any app with a global shortcut" TextWrapping="Wrap" />
+                                </CheckBox>
+                                <StackPanel Orientation="Horizontal" Margin="28,6,0,4" IsEnabled="{Binding IsChecked, ElementName=HotkeyCheck}">
+                                    <Label Target="{Binding ElementName=HotkeyBox}" Content="Shortc_ut" Padding="0,0,10,0" VerticalAlignment="Center" />
+                                    <TextBox x:Name="HotkeyBox" Width="200" Text="{Binding Hotkey}" FontFamily="{DynamicResource MonoFont}"
+                                             ToolTip="For example Ctrl+Alt+Shift+C or Ctrl+Win+F9: Ctrl, Alt, or Win (optionally Shift) plus a letter, digit, or F1–F24."
+                                             AutomationProperties.Name="Global shortcut" />
+                                </StackPanel>
+                                <TextBlock x:Name="HotkeyStatusText" Style="{DynamicResource FieldHint}" Margin="28,2,0,2" />
+                                <TextBlock Style="{DynamicResource FieldHint}" Margin="28,0,0,0"
+                                           Text="The shortcut captures and copies the full Markdown in one step, with no window. Redaction, exclusions, and limits still apply. In this window, F5 or Ctrl+Enter captures and Ctrl+Shift+C copies." />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{DynamicResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{DynamicResource SectionTitle}" Text="Start with Windows" />
+                                <CheckBox Content="Start ContextSnap in the background when I sign in" IsChecked="{Binding StartWithWindows}"
+                                          AutomationProperties.HelpText="Adds or removes a shortcut in your Startup folder. At sign-in ContextSnap starts with no window, taskbar button, or icon, ready for the shortcut. No administrator rights are needed." />
+                                <TextBlock x:Name="StartupStatusText" Style="{DynamicResource FieldHint}" Margin="28,0,0,4" />
+                                <CheckBox Content="Show a ContextSnap icon in the notification area" IsChecked="{Binding ShowNotificationAreaIcon}"
+                                          AutomationProperties.HelpText="Off by default. When on, the icon offers Open, Capture, and Exit." />
+                                <TextBlock Style="{DynamicResource FieldHint}" Margin="28,0,0,0"
+                                           Text="Closing this window keeps ContextSnap running in the background while the shortcut is on. To stop it, use Quit ContextSnap below or run Snapctx --exit." />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{DynamicResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{DynamicResource SectionTitle}" Text="Notifications" />
+                                <CheckBox Content="Show a notification when context is copied" IsChecked="{Binding ShowCopyNotifications}"
+                                          AutomationProperties.HelpText="A small notice in the bottom-right corner with character and word counts. It never shows snapshot contents." />
+                                <CheckBox Content="Copy to the clipboard automatically after Capture in this window" IsChecked="{Binding CopyAfterCapture}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{DynamicResource Card}">
+                            <StackPanel>
+                                <TextBlock Style="{DynamicResource SectionTitle}" Text="Collectors" />
                                 <CheckBox Content="Open application windows (titles and process names)" IsChecked="{Binding CollectWindows}" />
                                 <CheckBox Content="Git repositories (branch, change summary, recent commits — never diffs)" IsChecked="{Binding CollectGit}" />
                                 <CheckBox Content="Open File Explorer folders" IsChecked="{Binding CollectExplorerFolders}" />
@@ -399,6 +439,28 @@
                                           IsEnabled="{Binding IsChecked, ElementName=BrowserTabsCheck}" />
                                 <TextBlock Style="{DynamicResource MutedText}" Margin="24,0,0,0" FontSize="12"
                                            Text="Browser tabs are read from Chrome, Edge, Brave, Vivaldi, Opera, and Firefox through Windows UI Automation (the accessibility interface). No browser history, profiles, or cookies are accessed. Private/incognito windows are skipped by the title keywords below." />
+                                <Expander Style="{DynamicResource Disclosure}" Margin="0,10,0,0" Header="Project _folders and developer tools"
+                                          AutomationProperties.Name="Project folders and developer tools">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="16" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                <StackPanel Margin="0,0,0,4">
+                                            <Label Padding="0,0,0,4" Target="{Binding ElementName=ProjectFoldersBox}" Content="Pro_ject folders for Git" />
+                                            <TextBox x:Name="ProjectFoldersBox" Style="{DynamicResource ListBoxInput}"
+                                                     Text="{Binding ProjectFolders, Converter={StaticResource Lines}}"
+                                                     ToolTip="Always checked for Git repositories, in addition to open File Explorer folders. E.g. ~\source\repos\MyApp" />
+                                        </StackPanel>
+                                <StackPanel Grid.Column="2" Margin="0,0,0,4">
+                                            <Label Padding="0,0,0,4" Target="{Binding ElementName=DevProcessesBox}" Content="De_veloper tools to detect" />
+                                            <TextBox x:Name="DevProcessesBox" Style="{DynamicResource ListBoxInput}"
+                                                     Text="{Binding DeveloperProcesses, Converter={StaticResource Lines}}"
+                                                     ToolTip="Process names (without .exe) reported under Developer tools." />
+                                        </StackPanel>
+                                    </Grid>
+                                </Expander>
                             </StackPanel>
                         </Border>
 
@@ -432,42 +494,13 @@
                                     </Grid>
                                 </StackPanel>
                                 <TextBlock Style="{DynamicResource MutedText}" Margin="0,8,0,0" FontSize="12"
-                                           Text="Text is read on this PC through Windows UI Automation and, when needed, Windows OCR. Nothing is sent anywhere or saved. Password fields are skipped, and for browsers only the page is read, never tabs or the address bar. Snapctx never clicks, scrolls, or changes focus to read more." />
+                                           Text="Text is read on this PC through Windows UI Automation and, when needed, Windows OCR. Nothing is sent anywhere or saved. Password fields are skipped, and for browsers only the page is read, never tabs or the address bar. ContextSnap never clicks, scrolls, or changes focus to read more." />
                             </StackPanel>
-                        </Border>
-
-
-
-                        <Border Style="{DynamicResource Card}">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="16" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-                                <TextBlock Grid.ColumnSpan="3" Style="{DynamicResource SectionTitle}" Text="Lists (one per line)" />
-                                <StackPanel Grid.Row="1" Margin="0,0,0,4">
-                                    <Label Padding="0,0,0,4" Target="{Binding ElementName=ProjectFoldersBox}" Content="Pro_ject folders for Git" />
-                                    <TextBox x:Name="ProjectFoldersBox" Style="{DynamicResource ListBoxInput}"
-                                             Text="{Binding ProjectFolders, Converter={StaticResource Lines}}"
-                                             ToolTip="Always checked for Git repositories, in addition to open File Explorer folders. E.g. ~\source\repos\MyApp" />
-                                </StackPanel>
-                                <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,0,0,4">
-                                    <Label Padding="0,0,0,4" Target="{Binding ElementName=DevProcessesBox}" Content="De_veloper tools to detect" />
-                                    <TextBox x:Name="DevProcessesBox" Style="{DynamicResource ListBoxInput}"
-                                             Text="{Binding DeveloperProcesses, Converter={StaticResource Lines}}"
-                                             ToolTip="Process names (without .exe) reported under Developer tools." />
-                                </StackPanel>
-                            </Grid>
                         </Border>
 
                         <Border Style="{DynamicResource Card}">
                             <StackPanel>
-                                <TextBlock Style="{DynamicResource SectionTitle}" Text="Limits" />
+                                <TextBlock Style="{DynamicResource SectionTitle}" Text="Capture limits" />
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
@@ -502,40 +535,26 @@
 
                         <Border Style="{DynamicResource Card}">
                             <StackPanel>
-                                <TextBlock Style="{DynamicResource SectionTitle}" Text="Behavior" />
-                                <CheckBox x:Name="HotkeyCheck" IsChecked="{Binding EnableGlobalHotkey}">
-                                    <TextBlock x:Name="HotkeyCheckText" Text="Global shortcut: capture while Snapctx runs in the background" TextWrapping="Wrap" />
-                                </CheckBox>
-                                <StackPanel Orientation="Horizontal" Margin="24,2,0,4" IsEnabled="{Binding IsChecked, ElementName=HotkeyCheck}">
-                                    <Label Target="{Binding ElementName=HotkeyBox}" Content="Shortc_ut" Padding="0,0,8,0" VerticalAlignment="Center" />
-                                    <TextBox x:Name="HotkeyBox" Width="180" Text="{Binding Hotkey}"
-                                             ToolTip="For example Ctrl+Alt+Shift+C or Ctrl+Win+F9: Ctrl, Alt, or Win (optionally Shift) plus a letter, digit, or F1–F24."
-                                             AutomationProperties.Name="Global shortcut" />
+                                <TextBlock Style="{DynamicResource SectionTitle}" Text="About" />
+                                <StackPanel Orientation="Horizontal">
+                                    <Image Source="ContextSnap.ico" Width="32" Height="32" RenderOptions.BitmapScalingMode="HighQuality" VerticalAlignment="Center" />
+                                    <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                                        <TextBlock Text="ContextSnap" FontFamily="{DynamicResource DisplayFont}" FontSize="15" FontWeight="SemiBold" />
+                                        <TextBlock x:Name="AboutVersionText" Style="{DynamicResource MutedText}" />
+                                    </StackPanel>
                                 </StackPanel>
-                                <TextBlock x:Name="HotkeyStatusText" Style="{DynamicResource MutedText}" Margin="24,0,0,4" FontSize="12" />
-                                <TextBlock Style="{DynamicResource MutedText}" Margin="24,0,0,4" FontSize="12" TextWrapping="Wrap"
-                                           Text="The shortcut always captures and copies the full Markdown snapshot directly, with no window or review. Redaction and output limits still apply." />
-                                <CheckBox Content="Copy to clipboard automatically after Capture" IsChecked="{Binding CopyAfterCapture}" />
-                                <CheckBox Content="Show a notification when a snapshot is copied" IsChecked="{Binding ShowCopyNotifications}"
-                                          AutomationProperties.HelpText="A small, non-intrusive notice in the bottom-right corner with character, word, and size counts. It never shows snapshot contents." />
-                                <CheckBox Content="Start Snapctx in the background when I sign in to Windows" IsChecked="{Binding StartWithWindows}"
-                                          AutomationProperties.HelpText="Adds or removes a Snapctx shortcut in your Startup folder. At sign-in Snapctx starts in the background with no window, taskbar button, or icon, ready for the shortcut. No administrator rights are needed." />
-                                <CheckBox Content="Show a Snapctx icon in the notification area" IsChecked="{Binding ShowNotificationAreaIcon}"
-                                          AutomationProperties.HelpText="Off by default. When on, the icon offers Open, Capture, and Exit." />
-                                <TextBlock Style="{DynamicResource MutedText}" Margin="24,0,0,4" FontSize="12" TextWrapping="Wrap"
-                                           Text="Closing this window keeps Snapctx running in the background while the shortcut is on. Open Snapctx again to show this window. To stop it: Quit Snapctx below, run Snapctx --exit, or end it in Task Manager." />
-                                <TextBlock x:Name="StartupStatusText" Style="{DynamicResource MutedText}" Margin="24,0,0,4" FontSize="12" />
+                                <TextBlock Style="{DynamicResource FieldHint}" Margin="0,12,0,0"
+                                           Text="Captures your desktop context as Markdown on this PC. No accounts, telemetry, or network requests." />
+                                <TextBlock x:Name="SettingsPathText" Style="{DynamicResource FieldHint}" Margin="0,4,0,0" />
+                                <WrapPanel Margin="0,14,0,0">
+                                    <Button Content="Restore _defaults" Click="OnRestoreDefaults" Margin="0,0,8,0" />
+                                    <Button Content="Open diagnostics _log" Click="OnOpenDiagnostics" Margin="0,0,8,0"
+                                            ToolTip="Opens the folder with ContextSnap's local diagnostics log (errors only, never snapshot contents)." />
+                                    <Button Content="_Quit ContextSnap" Click="OnQuit"
+                                            ToolTip="Stops the background process and unregisters the shortcut until ContextSnap is started again." />
+                                </WrapPanel>
                             </StackPanel>
                         </Border>
-
-                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-                            <Button Content="Restore _defaults" Click="OnRestoreDefaults" />
-                            <Button Content="Open diagnostics _log" Click="OnOpenDiagnostics" Margin="8,0,0,0"
-                                    ToolTip="Opens the folder with Snapctx's local diagnostics log (errors only, never snapshot contents)." />
-                            <Button Content="_Quit Snapctx" Click="OnQuit" Margin="8,0,0,0"
-                                    ToolTip="Stops the background process and unregisters the shortcut until Snapctx is started again." />
-                            <TextBlock x:Name="SettingsPathText" Style="{DynamicResource MutedText}" VerticalAlignment="Center" Margin="12,0,0,0" FontSize="12" />
-                        </StackPanel>
                     </StackPanel>
                     </StackPanel>
                 </ScrollViewer>

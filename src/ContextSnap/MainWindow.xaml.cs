@@ -70,6 +70,7 @@ public partial class MainWindow : Window
         FirstRunText.Visibility = loaded.IsFirstRun ? Visibility.Visible : Visibility.Collapsed;
         SettingsPathText.Text = $"Changes are saved automatically to {store.FilePath}";
         RailVersionText.Text = $"Version {AppVersion.Display}";
+        AboutVersionText.Text = $"Version {AppVersion.Display} · .NET {Environment.Version.ToString(2)} · {System.Runtime.InteropServices.RuntimeInformation.OSArchitecture}";
         UpdateEnabledCollectorsText();
         ShowShortcut(_settings.EnableGlobalHotkey ? HotkeyGesture.Parse(_settings.Hotkey) ?? HotkeyGesture.Default : null);
 
@@ -99,7 +100,7 @@ public partial class MainWindow : Window
         var handle = new WindowInteropHelper(this).Handle;
         if (_settings.ShowNotificationAreaIcon && _trayIcon is not { IsAdded: true } && handle != 0)
         {
-            _trayIcon = new NotificationAreaIcon(handle, $"Snapctx — {HotkeyText} to capture");
+            _trayIcon = new NotificationAreaIcon(handle, $"ContextSnap — {HotkeyText} to capture");
             _trayIcon.Add();
         }
         else if (!_settings.ShowNotificationAreaIcon && _trayIcon is not null)
@@ -131,8 +132,8 @@ public partial class MainWindow : Window
             if (!_closeHintShown && _trayIcon is { IsAdded: true })
             {
                 _closeHintShown = true;
-                _trayIcon.ShowInfo("Snapctx is still running",
-                    $"Press {HotkeyText} to capture. To quit, right-click the Snapctx icon and choose Exit.");
+                _trayIcon.ShowInfo("ContextSnap is still running",
+                    $"Press {HotkeyText} to capture. To quit, right-click the ContextSnap icon and choose Exit.");
             }
 
             return;
@@ -753,7 +754,7 @@ public partial class MainWindow : Window
         var gesture = HotkeyGesture.Parse(_settings.Hotkey) ?? HotkeyGesture.Default;
         if (_hotkey.Register(gesture))
         {
-            HotkeyStatusText.Text = $"Active: {gesture.DisplayText} works in any application while Snapctx runs in the background, also after this window is closed.";
+            HotkeyStatusText.Text = $"Active: {gesture.DisplayText} works in any application while ContextSnap runs in the background, also after this window is closed.";
             HotkeyHint.Text = $"Tip: press {gesture.DisplayText} in any application to capture and copy in one step.";
             ShowShortcut(gesture);
         }
