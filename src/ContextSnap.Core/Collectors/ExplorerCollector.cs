@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using ContextSnap.Model;
 using ContextSnap.Platform;
 using ContextSnap.Privacy;
@@ -18,7 +18,15 @@ public sealed record ExplorerSelection(IReadOnlyList<ExplorerFolder> Folders, in
 
 public static class ExplorerFilter
 {
-    public static ExplorerSelection Select(IEnumerable<RawShellWindow> windows, IReadOnlyCollection<string> excludedPathPrefixes)
+    public static ExplorerSelection Select(IEnumerable<RawShellWindow> windows, IReadOnlyCollection<string> excludedPathPrefixes) =>
+        Select(windows, excludedPathPrefixes, excludedProcesses: []);
+
+    /// <summary>
+    /// Keeps file-system folders of File Explorer windows. When File Explorer itself is an excluded
+    /// program, every Explorer window is dropped and counted as excluded.
+    /// </summary>
+    public static ExplorerSelection Select(
+        IEnumerable<RawShellWindow> windows, IReadOnlyCollection<string> excludedPathPrefixes, IReadOnlyCollection<string> excludedProcesses)
     {
         var folders = new List<ExplorerFolder>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -29,6 +37,12 @@ public static class ExplorerFilter
         {
             if (!IsFileExplorer(window.ApplicationPath))
                 continue;
+
+            if (PrivacyRules.IsProcessExcluded(PrivacyRules.FileExplorerProcessName, window.ApplicationPath, excludedProcesses))
+            {
+                excluded++;
+                continue;
+            }
 
             var path = ResolvePath(window);
             if (path is null)
@@ -83,8 +97,14 @@ public sealed class ExplorerCollector(IShellWindowSource source) : ICollector<Ex
     public CollectorOutput<ExplorerFolder> Collect(CollectorContext context, CancellationToken cancellationToken)
     {
         var settings = context.Settings;
+
+        // An excluded File Explorer is not read at all, rather than read and filtered afterwards.
+        // (A path entry for explorer.exe also matches here: the path is not known before reading.)
+        if (PrivacyRules.IsProcessExcluded(PrivacyRules.FileExplorerProcessName, settings.ExcludedProcesses))
+            return new CollectorOutput<ExplorerFolder>([], ["File Explorer is an excluded program, so its folders were not read."]);
+
         var windows = source.GetWindows(TimeSpan.FromSeconds(settings.CollectorTimeoutSeconds));
-        var selection = ExplorerFilter.Select(windows, settings.ExcludedPathPrefixes);
+        var selection = ExplorerFilter.Select(windows, settings.ExcludedPathPrefixes, settings.ExcludedProcesses);
 
         var notes = new List<string>();
         if (selection.VirtualLocations > 0)

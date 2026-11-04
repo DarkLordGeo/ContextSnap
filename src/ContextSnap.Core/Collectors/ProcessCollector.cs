@@ -1,4 +1,4 @@
-using ContextSnap.Model;
+﻿using ContextSnap.Model;
 using ContextSnap.Privacy;
 
 namespace ContextSnap.Collectors;
@@ -52,19 +52,25 @@ public sealed class ProcessCollector(IProcessSource source) : ICollector<Process
         var excluded = 0;
         var matches = new List<(RawProcess, string?)>();
 
+        // A path entry ("C:\Tools\code.exe") needs the executable path to tell same-named programs apart.
+        var hasPathEntries = settings.ExcludedProcesses.Any(PrivacyRules.IsPathEntry);
+
         foreach (var process in source.GetProcesses())
         {
             if (!relevant.Contains(process.Name))
                 continue;
 
-            if (PrivacyRules.IsProcessExcluded(process.Name, settings.ExcludedProcesses))
+            cancellationToken.ThrowIfCancellationRequested();
+            var path = settings.IncludeExecutablePaths || hasPathEntries ? source.GetExecutablePath(process.Id) : null;
+
+            if (PrivacyRules.IsProcessExcluded(process.Name, path, settings.ExcludedProcesses))
             {
                 excluded++;
                 continue;
             }
 
-            cancellationToken.ThrowIfCancellationRequested();
-            var path = settings.IncludeExecutablePaths ? source.GetExecutablePath(process.Id) : null;
+            if (!settings.IncludeExecutablePaths)
+                path = null;
             if (path is not null && PrivacyRules.IsPathExcluded(path, settings.ExcludedPathPrefixes))
                 path = null;
             matches.Add((process, path));
