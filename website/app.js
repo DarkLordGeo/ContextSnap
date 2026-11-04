@@ -52,12 +52,12 @@ for (const toggle of toggles) {
   });
 }
 
-// Download counting (convex/http.ts): a click on a download button sends the platform, the release
-// version, and a random per-browser ID to the Convex deployment named in the page's
-// <meta name="contextsnap-downloads"> tag. It is a download attempt, not a completed download. The link
-// itself is untouched, so the download never waits for this or depends on it: the beacon is queued and
-// the browser follows the link as usual. A visitor who declined analytics in the cookie banner is still
-// counted, but without the ID.
+// Download request counting (convex/http.ts): a click on a download button sends the platform and the
+// release version to the Convex deployment named in the page's <meta name="contextsnap-downloads"> tag.
+// It is a download request, not a completed download or an installation. The link itself is untouched,
+// so the download never waits for this or depends on it. A random per-browser ID (to estimate unique
+// requesters) is added only after the visitor accepted analytics in the cookie banner; until then, and
+// after declining, no ID is stored or sent and any stored one is deleted.
 const countDownload = (() => {
   const endpoint = (() => {
     try {
@@ -69,8 +69,8 @@ const countDownload = (() => {
     }
   })();
   const VISITOR_KEY = "contextsnap-download-visitor";
-  const declined = () => {
-    try { return localStorage.getItem("contextsnap-analytics-consent") === "denied"; } catch { return false; }
+  const accepted = () => {
+    try { return localStorage.getItem("contextsnap-analytics-consent") === "granted"; } catch { return false; }
   };
   const newId = () => {
     if (crypto.randomUUID) return crypto.randomUUID();
@@ -82,7 +82,7 @@ const countDownload = (() => {
   };
   const visitorId = () => {
     try {
-      if (declined()) {
+      if (!accepted()) {
         localStorage.removeItem(VISITOR_KEY);
         return undefined;
       }
@@ -105,9 +105,18 @@ const countDownload = (() => {
       if (now - (lastSent.get(platform) ?? 0) < 4000) return;
       lastSent.set(platform, now);
       const body = JSON.stringify({ platform, version, visitorId: visitorId() });
-      // text/plain keeps it a simple request (no CORS preflight); the beacon outlives the page.
-      const sent = navigator.sendBeacon?.(endpoint, new Blob([body], { type: "text/plain;charset=UTF-8" }));
-      if (!sent) fetch(endpoint, { method: "POST", body, keepalive: true, mode: "no-cors", headers: { "Content-Type": "text/plain;charset=UTF-8" } }).catch(() => {});
+      // Mode "cors" with a text/plain body is still a simple request (no preflight). The Fetch standard
+      // requires a CORS request to carry the page's real Origin header, which the server checks; for a
+      // no-cors POST (or sendBeacon) under this site's Referrer-Policy (no-referrer) it allows
+      // "Origin: null" instead. keepalive lets it finish if the page goes away. No cookies are sent.
+      fetch(endpoint, {
+        method: "POST",
+        body,
+        mode: "cors",
+        credentials: "omit",
+        keepalive: true,
+        headers: { "Content-Type": "text/plain;charset=UTF-8" },
+      }).catch(() => {});
     } catch {
       /* counting never gets in the way of the download */
     }

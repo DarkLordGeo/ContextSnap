@@ -17,6 +17,10 @@ with a version such as `1.0.0`).
 | `publish` | Ubuntu | none (uses `RELEASES_TOKEN`) | Creates release `v<v>` in the releases repository with all packages and checksums (or replaces the assets if it exists), then downloads the installer and the tar.gz **anonymously** from their public URLs and compares SHA-256 with the built files. Fails if either is not publicly downloadable or differs. |
 | `update-website` | Ubuntu | `contents: write`, `pull-requests: write` on this repository | Writes the verified asset URLs, sizes, and SHA-256 into `website/downloads.json` on branch `release/v<v>-downloads` and opens a pull request. Nothing is pushed to the default branch. |
 
+Before merging it, add the new version to the Convex deployment's `ALLOWED_VERSIONS` (if set), or
+download requests for it are not counted: `npx convex env set ALLOWED_VERSIONS "1.0.1,<new version>" --prod`
+(see `convex/README.md`).
+
 Merging that pull request deploys the website through the Vercel Git integration. Until then, and
 whenever `downloads.json` lists no file, the download buttons stay disabled. The website only
 enables a button for an `https://github.com/<owner>/<repo>/releases/download/<tag>/<file>` URL.

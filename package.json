@@ -1,14 +1,19 @@
 {
   "name": "contextsnap-download-analytics",
   "private": true,
-  "description": "Convex backend that counts download attempts from the ContextSnap website. Not part of the desktop app.",
+  "description": "Convex backend that counts download requests from the ContextSnap website. Not part of the desktop app.",
   "scripts": {
     "convex:dev": "convex dev",
     "convex:deploy": "convex deploy",
-    "typecheck": "tsc -p convex --noEmit"
+    "typecheck": "tsc -p convex --noEmit",
+    "test": "vitest run"
   },
   "devDependencies": {
+    "@edge-runtime/vm": "5.0.0",
+    "@types/node": "22.20.5",
     "convex": "1.49.0",
-    "typescript": "5.9.3"
+    "convex-test": "0.0.67",
+    "typescript": "5.9.3",
+    "vitest": "5.1.0"
   }
 }

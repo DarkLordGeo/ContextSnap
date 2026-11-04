@@ -77,8 +77,8 @@
   };
 
   const render = (stats) => {
-    $("[data-total]").textContent = number.format(stats.totalAttempts);
-    $("[data-unique]").textContent = number.format(stats.uniqueDownloaders);
+    $("[data-total]").textContent = number.format(stats.totalRequests);
+    $("[data-unique]").textContent = number.format(stats.uniqueRequesters);
 
     // Windows vs Linux: one split bar plus a labeled legend (identity is never color alone).
     const { windows, linux } = stats.byPlatform;
@@ -100,14 +100,16 @@
       platforms.append(item);
     }
 
-    drawDaily(stats.daily);
-    const rows = $("[data-daily-rows]");
-    rows.replaceChildren(...[...stats.daily].reverse().map((day) => tableRow([day.day, day.windows, day.linux, day.windows + day.linux])));
+    drawBars($("[data-chart]"), stats.daily.map((day) => ({ key: day.day, tick: day.day.slice(5), ...day })), "Download requests per day, Windows and Linux stacked");
+    $("[data-daily-rows]").replaceChildren(...[...stats.daily].reverse().map((day) => tableRow([day.day, day.windows, day.linux, day.windows + day.linux])));
+
+    drawBars($("[data-monthly-chart]"), stats.monthly.map((month) => ({ key: month.month, tick: monthTick(month.month), ...month })), "Download requests per month, Windows and Linux stacked");
+    $("[data-monthly-rows]").replaceChildren(...[...stats.monthly].reverse().map((month) => tableRow([month.month, month.windows, month.linux, month.windows + month.linux])));
 
     const versions = $("[data-versions]");
     versions.replaceChildren(...(stats.byVersion.length
       ? stats.byVersion.map((row) => tableRow([row.version, row.windows, row.linux, row.total]))
-      : [emptyRow("No download attempts yet.")]));
+      : [emptyRow("No download requests yet.")]));
   };
 
   const tableRow = (cells) => {
@@ -124,10 +126,12 @@
     return row;
   };
 
-  // Stacked daily bars (Windows below, Linux above, a 2px gap between), one y-axis from zero, a hover
-  // tooltip per day over a hit area wider than the bar.
-  const drawDaily = (days) => {
-    const chart = $("[data-chart]");
+  // "2026-11" → "Nov 26" (UTC month, so no time zone shift).
+  const monthTick = (month) => new Date(`${month}-01T00:00:00Z`).toLocaleDateString("en", { month: "short", year: "2-digit", timeZone: "UTC" });
+
+  // Stacked bars, one per day or month (Windows below, Linux above, a 2px gap between), one y-axis from
+  // zero, a hover tooltip per bar over a hit area wider than the bar. Each item: {key, tick, windows, linux}.
+  const drawBars = (chart, days, ariaLabel) => {
     chart.replaceChildren();
     const width = Math.max(320, chart.clientWidth || 640);
     const height = 220;
@@ -141,7 +145,7 @@
     const slot = plotW / days.length;
     const barW = Math.max(2, Math.min(28, slot * 0.62));
 
-    const root = svg("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": "Download attempts per day, Windows and Linux stacked" });
+    const root = svg("svg", { viewBox: `0 0 ${width} ${height}`, role: "img", "aria-label": ariaLabel });
     for (let i = 0; i <= 4; i++) {
       const value = step * i;
       root.append(svg("line", { class: "grid", x1: pad.left, x2: width - pad.right, y1: y(value), y2: y(value) }));
@@ -167,12 +171,12 @@
       }
       if (i % every === 0 || i === days.length - 1) {
         const label = svg("text", { class: "axis", x: pad.left + slot * i + slot / 2, y: height - 6, "text-anchor": "middle" });
-        label.textContent = day.day.slice(5);
+        label.textContent = day.tick;
         root.append(label);
       }
       const hit = svg("rect", { class: "hit", x: pad.left + slot * i, y: pad.top, width: slot, height: plotH, rx: 4 });
       const show = () => {
-        tip.replaceChildren(el("b", "", day.day), el("span", "", `Windows ${number.format(day.windows)} · Linux ${number.format(day.linux)}`));
+        tip.replaceChildren(el("b", "", day.key), el("span", "", `Windows ${number.format(day.windows)} · Linux ${number.format(day.linux)}`));
         const box = chart.getBoundingClientRect();
         const scale = box.width / width;
         tip.style.left = `${Math.min(box.width - 80, Math.max(80, (pad.left + slot * (i + 0.5)) * scale))}px`;

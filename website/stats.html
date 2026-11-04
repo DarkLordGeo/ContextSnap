@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Download stats</title>
+<title>Download requests</title>
 <!-- The Convex deployment whose /stats endpoint this page reads (convex/http.ts). -->
-<meta name="contextsnap-downloads" content="https://notable-cow-268.convex.site">
+<meta name="contextsnap-downloads" content="https://colorful-chickadee-319.convex.site">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="stats.css">
 <script src="stats.js" defer></script>
@@ -14,8 +14,8 @@
 <body>
 <main class="viz-root">
   <header class="top">
-    <h1>Download stats</h1>
-    <p class="muted">Clicks on the website's download buttons (attempts, not completed downloads).</p>
+    <h1>Download requests</h1>
+    <p class="muted">Download requests: clicks on the website's download buttons. Not completed downloads or installations.</p>
   </header>
 
   <form class="unlock" data-unlock>
@@ -40,18 +40,18 @@
     </div>
 
     <div class="tiles">
-      <div class="tile"><p class="tile-label">Download attempts</p><p class="tile-value" data-total>–</p><p class="muted small">all time</p></div>
-      <div class="tile"><p class="tile-label">Estimated unique downloaders</p><p class="tile-value" data-unique>–</p><p class="muted small">distinct browsers, all time</p></div>
+      <div class="tile"><p class="tile-label">Download requests</p><p class="tile-value" data-total>–</p><p class="muted small">all time</p></div>
+      <div class="tile"><p class="tile-label">Estimated unique requesters</p><p class="tile-value" data-unique>–</p><p class="muted small">distinct browsers that accepted analytics, all time</p></div>
     </div>
 
     <section class="card" aria-labelledby="platform-title">
-      <h2 id="platform-title">Windows and Linux</h2>
+      <h2 id="platform-title">Requests by platform</h2>
       <div class="split" data-split aria-hidden="true"></div>
       <ul class="legend" data-platforms></ul>
     </section>
 
     <section class="card" aria-labelledby="daily-title">
-      <h2 id="daily-title">Attempts per day <span class="muted small">(UTC)</span></h2>
+      <h2 id="daily-title">Requests per day <span class="muted small">(UTC)</span></h2>
       <ul class="legend legend-inline">
         <li><span class="swatch s-windows"></span>Windows</li>
         <li><span class="swatch s-linux"></span>Linux</li>
@@ -63,8 +63,21 @@
       </details>
     </section>
 
+    <section class="card" aria-labelledby="monthly-title">
+      <h2 id="monthly-title">Requests per month <span class="muted small">(UTC, last 12 months)</span></h2>
+      <ul class="legend legend-inline">
+        <li><span class="swatch s-windows"></span>Windows</li>
+        <li><span class="swatch s-linux"></span>Linux</li>
+      </ul>
+      <div class="chart" data-monthly-chart></div>
+      <details class="table-view">
+        <summary>Show as a table</summary>
+        <table><thead><tr><th scope="col">Month</th><th scope="col">Windows</th><th scope="col">Linux</th><th scope="col">Total</th></tr></thead><tbody data-monthly-rows></tbody></table>
+      </details>
+    </section>
+
     <section class="card" aria-labelledby="version-title">
-      <h2 id="version-title">By release version</h2>
+      <h2 id="version-title">Requests by release version</h2>
       <table class="versions"><thead><tr><th scope="col">Version</th><th scope="col">Windows</th><th scope="col">Linux</th><th scope="col">Total</th></tr></thead><tbody data-versions></tbody></table>
     </section>
   </section>
