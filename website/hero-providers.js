@@ -20,6 +20,7 @@
   ];
   const HOLD = 2600; // ms the finished answer stays before the next chat
   const FLIGHT = 900; // ms for the card from the keyboard to the composer
+  const INTRO_LEAD = 650; // ms the first turn waits, so its cards follow the keyboard's page-load intro
 
   const still = window.matchMedia("(prefers-reduced-motion: reduce)");
   const titleEl = chat.querySelector("[data-chat-title]");
@@ -314,8 +315,8 @@
   };
 
   // The rotation ---------------------------------------------------------------------------------------
-  // The keyboard tap and the context flying into the chat play once, after the page loads; each later chat
-  // in the rotation already has the context attached and just answers.
+  // The context flying into the chat plays once, after the page loads; each later chat in the rotation
+  // already has the context attached and just answers.
   let captured = false;
   const answer = () => {
     const length = sim.deliver(sim.home.snapshot());
@@ -332,14 +333,14 @@
       return;
     }
     captured = true;
-    const tapped = window.contextSnapKeyboard?.tap() ?? 0;
+    // The cards rise just after the keyboard's own page-load intro (keyboard-demo.js), which this does not start.
     later(() => {
       if (!canPlay()) {
         later(cycle, 800);
         return;
       }
       flyIn(answer);
-    }, tapped);
+    }, INTRO_LEAD);
   };
   const next = () => {
     if (!canPlay()) {
