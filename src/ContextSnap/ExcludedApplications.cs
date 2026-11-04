@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using ContextSnap.Collectors;
 using ContextSnap.Configuration;
 using ContextSnap.Privacy;
