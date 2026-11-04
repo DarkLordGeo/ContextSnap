@@ -175,6 +175,7 @@
   let token = 0;
   let timers = [];
   let busy = false; // a run is in progress
+  let ran = false; // the visitor has run the shortcut at least once
   const at = (ms, run, step) => timers.push(setTimeout(() => { if (run === token) step(); }, ms));
   const cancelRun = () => {
     token++;
@@ -213,11 +214,12 @@
       sim.collector.collect(snap, demo); // the page's context collector receives this demo's snapshot
     });
 
-    // 3. The context starts moving halfway through the window-edge effect: the mock cards compress and hop
-    // into the chat (hero-providers.js), then the question is typed and sent, and the answer streams in.
+    // 3. Halfway through the window-edge effect the snapshot is pasted into the chat, then the question is
+    // typed and sent, and the answer streams in. The window's own mock-context cards (hero-providers.js)
+    // are not played from here: they belong to the window's lifecycle, not to the keyboard's.
     const pasteAt = reduce.matches ? clearAt + 250 : Math.round(fx.duration / 2);
     at(clearAt + 250, run, () => { demo.dataset.state = "idle"; });
-    at(pasteAt, run, () => window.contextSnapHero ? window.contextSnapHero.flyIn(() => { if (run === token) deliver(); }) : deliver());
+    at(pasteAt, run, () => deliver());
     const deliver = () => {
       const length = sim.deliver(snap);
       at(length, run, () => {
@@ -228,6 +230,7 @@
   };
 
   const runShortcut = (source) => {
+    ran = true; // the visitor has run it: the page-load intro below no longer plays
     window.contextSnapHero?.hold(); // the hero's chat rotation waits while the visitor's capture plays
     cancelRun();
     busy = true;
@@ -363,17 +366,25 @@
     physicalModifiers.ctrl = physicalModifiers.alt = physicalModifiers.shift = false;
     syncHintKeys();
   };
-  // hero-providers.js taps the shortcut before each sample capture: the keys go down and up, silently.
-  window.contextSnapKeyboard = {
-    tap() {
-      if (busy || reduce.matches) return 0;
-      ORDER.forEach((name, i) => {
-        setTimeout(() => press(combo[name], false), i * 90);
-        setTimeout(() => release(combo[name], false), 470 + (ORDER.length - 1 - i) * 45);
-      });
-      return 650;
-    },
+  // Page-load intro: the shortcut keys go down and up once, silently. The keyboard owns this; it waits
+  // until the keyboard is on screen and the tab is visible, and never plays once the visitor has run the
+  // shortcut themselves. It runs at the moment the hero's first chat turn starts (hero-providers.js).
+  const INTRO_AT = 1400;
+  const intro = () => {
+    if (ran || reduce.matches) return;
+    if (document.hidden || !inView) {
+      setTimeout(intro, 800);
+      return;
+    }
+    ran = true;
+    // A run started during the intro takes over: the intro presses no further keys (its releases still
+    // run, so nothing it pressed is left down).
+    ORDER.forEach((name, i) => {
+      setTimeout(() => { if (!busy) press(combo[name], false); }, i * 90);
+      setTimeout(() => release(combo[name], false), 470 + (ORDER.length - 1 - i) * 45);
+    });
   };
+  setTimeout(intro, INTRO_AT);
 
   window.addEventListener("blur", releasePhysical);
   document.addEventListener("visibilitychange", () => { if (document.hidden) releasePhysical(); });
