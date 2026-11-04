@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using ContextSnap.Model;
 using ContextSnap.Platform;
 using ContextSnap.Privacy;

@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
@@ -418,8 +418,7 @@ public partial class MainWindow : Window
 
         if (target.Visibility == Visibility.Visible)
             return;
-        if (sender != NavCapture)
-            CommitPendingSettingsEdit();
+        CommitPendingSettingsEdit(); // A half-typed list or number is saved before its page is hidden.
         target.Visibility = Visibility.Visible;
         Motion.FadeIn(target);
     }

@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Windows.Media;
 using System.Windows.Data;
 using ContextSnap.Capture;

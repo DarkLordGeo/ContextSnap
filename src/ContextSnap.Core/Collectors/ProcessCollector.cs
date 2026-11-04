@@ -1,4 +1,4 @@
-﻿using ContextSnap.Model;
+using ContextSnap.Model;
 using ContextSnap.Privacy;
 
 namespace ContextSnap.Collectors;

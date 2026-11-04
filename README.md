@@ -306,11 +306,11 @@ _Not collected (turned off): Browser tabs._
 
 **Never collected:** files read from disk, Git diffs, process command-line arguments, environment-variable values, password fields, cookies, browser history or profiles, clipboard contents or history.
 
-**Visible screen text** (on by default for the focused window) can include anything shown in that window: messages, code, documents, or numbers. It is read only when you capture, kept in memory only for that snapshot, and redacted like everything else. The shortcut copies it immediately; capturing from the window shows it in the preview first. Turn it off, switch to focused-only, or add apps and window-title keywords under **Never read text from these apps or windows**. Password managers and private/incognito windows are excluded by default.
+**Visible screen text** (on by default for the focused window) can include anything shown in that window: messages, code, documents, or numbers. It is read only when you capture, kept in memory only for that snapshot, and redacted like everything else. The shortcut copies it immediately; capturing from the window shows it in the preview first. Turn it off, switch to focused-only, or add apps and window-title keywords under **Privacy → Advanced → Never read screen text from**. Password managers and private/incognito windows are excluded by default.
 
 **Collected only as described above**, and then:
 
-1. **Excluded before formatting:** windows and processes of excluded programs (password managers by default), windows and tabs whose titles contain excluded keywords (`InPrivate`, `Incognito`, `Private Browsing`, `Password` by default), and anything under excluded folders.
+1. **Excluded while collecting:** windows, processes, screen text, and (when File Explorer itself is excluded) Explorer folders of excluded applications, managed under **Privacy → Excluded applications** (password managers by default; entries are program names, or full `.exe` paths in the settings file), windows and tabs whose titles contain excluded keywords (`InPrivate`, `Incognito`, `Private Browsing`, `Password` by default), and anything under excluded folders.
 2. **Redacted in every text field** before it is written to Markdown:
    - key/value secrets (`api_key=…`, `password: …`, `GITHUB_TOKEN=…`, connection-string `Password=`/`AccountKey=`), `Authorization`/`Bearer`/`Basic` credentials, JWTs, private-key blocks, credentials in URLs, sensitive URL query parameters;
    - known token formats (GitHub, GitLab, Slack, AWS, Google, Stripe, OpenAI, Anthropic, npm, Hugging Face);
